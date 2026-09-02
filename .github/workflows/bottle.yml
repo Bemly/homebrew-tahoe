@@ -78,14 +78,22 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHCR_PKG: tahoe-intel/${{ inputs.formula }}
         run: |
-          # 用 curl 直连 API，不依赖 gh CLI（卸载 core gh 后可能不可用）
-          curl -fsSL -X PATCH \
+          set -euo pipefail
+          # REST 没有改可见性的端点，用 GraphQL updatePackageVisibility。
+          # 不依赖 gh CLI（前面卸载了 core gh）；GITHUB_TOKEN 带 packages:write。
+          QUERY='mutation {
+            updatePackageVisibility(input: {
+              packageName: "tahoe-intel/${{ inputs.formula }}",
+              packageType: CONTAINER,
+              visibility: PUBLIC
+            }) { package { name visibility } }
+          }'
+          curl -fsSL -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/user/packages/container/${GHCR_PKG//\//%2F}/visibility" \
-            -d '{"visibility":"public"}' || true
+            -H "Content-Type: application/json" \
+            --data "$(jq -n --arg q "$QUERY" '{query: $q}')" \
+            "https://api.github.com/graphql" || true
 
       - name: 提交瓶块
         id: commit
