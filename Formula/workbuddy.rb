@@ -12,6 +12,11 @@ class Workbuddy < Formula
   # 腾讯闭源分发包：不声明 license——闭源无 SPDX 标识可填，audit 对缺省 license 不检查
   # （实测符号 :cannot_redistribute 与字符串 "Proprietary" 均被 audit --strict 拒绝）
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "ce63e48d93819d34cb4f9c25c73963a788cfc21751d952a8b02ec980aec4bd70"
+  end
+
   # Mach-O magic 的十六进制（unpack1("H8")）：thin feedface/feedfacf 及各自小端序，
   # fat cafebabe/bebafeca。用 hex 字符串比较，避开 binary/UTF-8 编码不匹配的坑（实测踩过）
   MACH_O_MAGICS = %w[
