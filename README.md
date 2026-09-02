@@ -81,14 +81,14 @@ Right after an upgrade, before the bottle is rebuilt, brew falls back to the ups
 > If you hit this, change the package to public in
 > Repository Settings → Packages.
 
-## Building a bottle locally (e.g. fastfetch)
+## Trigger a CI bottle build (e.g. fastfetch)
 
 After adding or updating a formula, push the bottle to GHCR so installs don't fall
 back to the upstream direct link:
 
 1. Open **Actions → Build bottle and publish to GHCR** in the GitHub repository.
 2. Click **Run workflow**.
-3. Pick the formula (`gh` or `fastfetch`) and run it.
+3. Enter the formula name (single, comma-separated like `gh,fastfetch`, or `all`) and run it.
 
 The workflow will: trust the tap → install with `--build-bottle` → run `brew bottle`
 → overwrite the existing GHCR tag → `brew pr-upload` pushes to GHCR and writes the

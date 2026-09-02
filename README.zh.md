@@ -72,13 +72,13 @@ brew unlink bemly/tahoe-intel/fastfetch && brew link fastfetch
 > GHCR 包默认私有，匿名 `brew install` 会 401。若遇到，到
 > 仓库 Settings → Packages 把对应包改成 public。
 
-## 本地制瓶（以 fastfetch 为例）
+## 触发制瓶（以 fastfetch 为例）
 
 公式新增或升级后，把瓶推到 GHCR，安装就不会回退到上游直链：
 
 1. 进入 GitHub 仓库的 **Actions → Build bottle and publish to GHCR**。
 2. 点击 **Run workflow**。
-3. 选择公式（`gh` 或 `fastfetch`）并运行。
+3. 填入公式名（单个 / 逗号分隔多个如 `gh,fastfetch` / `all` 表示全部）并运行。
 
 workflow 会：信任 tap → 以 `--build-bottle` 安装 → 跑 `brew bottle` 制瓶
 → 覆盖 GHCR 上已存在的同名 tag → `brew pr-upload` 推 GHCR 并把 `bottle do` 块写回公式 → 提交。

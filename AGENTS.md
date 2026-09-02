@@ -186,17 +186,22 @@ sha256：`1e9a6ba7474a41b3cc2bb1b923afcf40c749c25bd17dc1e62b64464e7445a534`
 
 - `formula`：要检查的软件（目前有 `gh` / `fastfetch`）
 - `dry_run`：`true` 时只检查不提交，先看结果再决定
+  （常规模式：不建分支、不开 PR；批量模式：不提交 `main`、不触发制瓶）
 - `batch`：`true` 时扫描 `Formula/*.rb` 全部软件做批量更新（见下）
 
 ### 7.1 批量模式（batch=true）
 
 常规模式（单 `formula`）只开 PR + [制瓶] issue，不自动制瓶（见 9.6/9.7）。
-`batch=true` 则全自动：
+`batch=true` 则全自动，且带与常规模式一致的三道保护：
 
 1. 遍历 `Formula/*.rb`，对每个软件跑 `check-updates.sh`；
 2. 把检测到更新的软件，其 `url`+`sha256` 改写、旧 `bottle do` 块摘除（同常规）；
-3. 把所有更新**一次性提交到 `main`**（不开 PR）；
-4. 用**一次** `gh workflow run "Build bottle and publish to GHCR" -f formula="a,b,c"`
+3. 提交前对每个更新过的公式跑 `ruby -c` 语法自检（与常规模式一致）；
+4. 上游资源不可下载（`status=upstream-missing`）的软件不进入更新清单，
+   与常规模式一样逐个开告警 issue；
+5. `dry_run=true` 时到此为止：公式已就地改写但不提交、不触发制瓶；
+6. 把所有更新**一次性提交到 `main`**（不开 PR）；
+7. 用**一次** `gh workflow run "Build bottle and publish to GHCR" -f formula="a,b,c"`
    触发 `bottle.yml`，由它在单个 `macos-26-intel` 任务里顺序为这批软件出瓶（见 9.8）。
 
 即 N 个软件更新 = **1 次 watcher（ubuntu）+ 1 次 bottle（macos）**，共 2 次 workflow 运行，
@@ -260,6 +265,10 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
   workflow 里用 `secrets.GITHUB_TOKEN` + `permissions: packages: write`。
 - **GHCR 包默认私有**，匿名 `brew install` 会 401。`bottle.yml` 里尝试用 API 改成公开，
   失败不阻断；兜底是仓库 Settings → Packages 手动改公开。
+- **制瓶版本号取 `brew list --versions`**（brew 的实际安装结果），不从公式文本里 grep 数字——
+  版本号段数不同（`3.0` / `1.2.3.4`）或注释里先出现数字都会导致误判。
+- **`bottle.yml` 的并发组是全局 `bottle`**，不按入参分组：不同入参的两次制瓶若并行，
+  会同时 `git push main`、删/推 GHCR 标签而互相冲突，排队串行执行。
 - 制瓶产物（`*.bottle.json` / `*.bottle.tar.gz`）已进 `.gitignore`，不要提交。
 
 ## 9. 新增软件的 SOP（端到端 Runbook）
@@ -352,6 +361,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 适合「多个软件同时发版」或「想一键把整个 tap 的瓶刷新一遍」：
 
 1. 手动跑 `watch-updates.yml`，勾选 **`batch=true`**（此时 `formula` 忽略）。
+   想先看结果再决定，可同时勾 `dry_run=true`：只就地改写公式，不提交、不触发制瓶。
 2. watcher 在 `ubuntu-latest` 上遍历 `Formula/*.rb`，对每个软件查上游版本；
    有更新的就地改写 `url`+`sha256`、摘除旧 `bottle do` 块，然后**一次性提交到 `main`**。
 3. watcher 紧接着触发**一次** `bottle.yml`，`formula` 传逗号列表（如 `gh,fastfetch`）；

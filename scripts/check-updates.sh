@@ -111,9 +111,12 @@ fi
 escaped_current=$(printf '%s' "$current" | sed 's/\./\\./g')
 tmp="${FORMULA_FILE}.tmp"
 
+# 版本号只出现在 url 行（公式不声明 version，brew 从 URL 扫描），因此：
+# 1) 把版本替换限定在 url 行，避免误伤文件其他位置的数字；
+# 2) 要求版本号前后都不是数字或点，避免 2.6.1 误匹配 12.6.15 / 2.6.10 / 2.6.1.5 这类子串。
 sed -E \
   -e "s|^([[:space:]]*)sha256 \"[0-9a-f]{64}\"|\1sha256 \"${sha}\"|" \
-  -e "s/${escaped_current}/${stable}/g" \
+  -e "/url \"/s|([^0-9.])${escaped_current}([^0-9.])|\1${stable}\2|g" \
   "$FORMULA_FILE" > "$tmp"
 
 mv "$tmp" "$FORMULA_FILE"

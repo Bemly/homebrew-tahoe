@@ -23,8 +23,10 @@ permissions:
   contents: write
   packages: write
 
+# 并发组不按入参分组：不同入参的两次制瓶若并行，会同时 git push main、
+# 删/推 GHCR 标签而互相冲突。全局 group 让所有制瓶任务排队串行执行。
 concurrency:
-  group: bottle-${{ inputs.formula }}
+  group: bottle
   cancel-in-progress: false
 
 env:
@@ -91,7 +93,9 @@ jobs:
             brew uninstall --force "$f" || true
             brew install --build-bottle "bemly/tahoe-intel/$f"
             brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe-intel/$f"
-            version="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "Formula/$f.rb" | head -1)"
+            # 版本号以 brew 实际安装结果为准，不从公式文本 grep 数字——
+            # 版本号段数不同（3.0 / 1.2.3.4）或注释里先出现数字都会导致误判
+            version="$(brew list --versions "$f" | awk 'NR==1{print $2}')"
             if [[ -n "$version" ]]; then
               tag="$f:$version"
               echo "若 GHCR 已存在标签 ${tag}，先删除以便覆盖推送。"
@@ -99,6 +103,8 @@ jobs:
                 "docker://ghcr.io/bemly/tahoe-intel/${tag}" \
                 && echo "已删除旧标签 ${tag}。" \
                 || echo "旧标签 ${tag} 不存在或删除失败（可能首次推送），继续。"
+            else
+              echo "::warning::无法确定 $f 的安装版本号，跳过删除旧标签（pr-upload 仍会覆盖推送）。"
             fi
             brew pr-upload --root-url="$ROOT_URL" --no-commit
             rm -f *.bottle.json

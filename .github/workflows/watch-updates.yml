@@ -53,7 +53,10 @@ jobs:
           fetch-depth: 1
 
       # —— 批量模式：扫描全部公式，更新后直接提交 main 并触发单次制瓶 ——
+      # 与常规模式同等的三道保护：dry_run=true 只扫不提交；提交前 ruby -c 语法自检；
+      # 上游资源不可下载的软件收集进 missing 输出，由下一步逐个开告警 issue。
       - name: 批量扫描并更新
+        id: batch
         if: inputs.batch == true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -61,24 +64,42 @@ jobs:
           set -euo pipefail
           chmod +x scripts/check-updates.sh
           updated=()
+          missing=()
           for rb in Formula/*.rb; do
             f="$(basename "$rb" .rb)"
             out="$(mktemp)"
             # 让脚本把状态写进临时文件（避免循环里反复覆盖 GITHUB_OUTPUT）
             GITHUB_OUTPUT="$out" ./scripts/check-updates.sh "$f" || true
             status="$(grep '^status=' "$out" | cut -d= -f2 || true)"
-            rm -f "$out"
-            if [[ "$status" == "updated" ]]; then
+            if [[ "$status" == "upstream-missing" ]]; then
+              ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
+              missing+=("${f}:${ver}")
+              echo "  -> $f 上游资源不可下载（${ver}），跳过更新"
+            elif [[ "$status" == "updated" ]]; then
               updated+=("$f")
               echo "  -> $f 需要更新"
             fi
+            rm -f "$out"
           done
+          # 上游缺失清单交给后续步骤逐个开告警 issue（与常规模式一致）
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "missing=$(IFS=,; echo "${missing[*]}")" >> "$GITHUB_OUTPUT"
+          fi
           if [[ ${#updated[@]} -eq 0 ]]; then
             echo "没有软件需要更新。"
             exit 0
           fi
           list="$(IFS=,; echo "${updated[*]}")"
           echo "需要更新的软件：$list"
+          # 批量更新直接提交 main，提交前先做语法自检（与常规模式一致）
+          for f in "${updated[@]}"; do
+            ruby -c "Formula/$f.rb"
+          done
+          # dry_run=true：批量同样只检查不提交（不 commit、不触发制瓶）
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "dry_run=true：公式已就地改写但不提交、不触发制瓶。"
+            exit 0
+          fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Formula/*.rb
@@ -88,6 +109,39 @@ jobs:
           gh workflow run "Build bottle and publish to GHCR" \
             --repo bemly/homebrew-tahoe-intel \
             -f formula="$list"
+
+      - name: 批量模式：上游资源不可用时开 issue 告警
+        if: inputs.batch == true && steps.batch.outputs.missing != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MISSING: ${{ steps.batch.outputs.missing }}
+        run: |
+          set -euo pipefail
+          gh label create "automated-alert" --color "d93f0b" \
+            --description "自动告警" 2>/dev/null || true
+          IFS=',' read -ra ITEMS <<< "$MISSING"
+          for item in "${ITEMS[@]}"; do
+            f="${item%%:*}"
+            ver="${item##*:}"
+            title="[告警] ${f} ${ver} 的上游资源不可下载"
+            if gh issue list --state open --label "automated-alert" \
+                 --json title --jq '.[].title' | grep -qxF "$title"; then
+              echo "告警 issue 已存在，跳过：${title}"
+              continue
+            fi
+            # heredoc 结束符必须顶格（脚本列 0），因此正文比 create 行少一层缩进
+            gh issue create --title "$title" --label "automated-alert" --body "$(cat <<EOF
+          \`watch-updates\`（批量模式）发现 brew 上游已到 \`${ver}\`，但对应的上游预构建包无法下载。
+
+          - 软件：\`${f}\`
+          - 目标版本：\`${ver}\`
+          - 瓶根地址：\`https://ghcr.io/v2/${{ github.repository_owner }}/tahoe-intel\`
+
+          影响：公式无法升级，\`bottle.yml\` 也无法制瓶。
+          请确认上游发布资产是否改名或被删除，或暂时保持当前版本。
+          EOF
+            )"
+          done
 
       # —— 常规模式：只检查单个 formula ——
       - name: 检查 brew 上游版本
@@ -219,5 +273,6 @@ jobs:
             echo "- 状态：\`${{ steps.check.outputs.status || '未产出结果（批量模式或无更新）' }}\`"
             echo "- 本地版本：\`${{ steps.check.outputs.current_version || 'N/A' }}\`"
             echo "- brew 版本：\`${{ steps.check.outputs.new_version || steps.check.outputs.current_version || 'N/A' }}\`"
+            echo "- 批量扫描缺失清单：\`${{ steps.batch.outputs.missing || '—' }}\`"
             echo "- dry_run：\`${{ inputs.dry_run }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
