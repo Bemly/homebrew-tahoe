@@ -51,8 +51,12 @@ jobs:
       - name: 计算待制瓶软件列表
         run: |
           set -euo pipefail
+          # macos runner 的 /bin/bash 是 3.2，没有 mapfile，用 while-read 兼容写法
           if [[ "${{ inputs.formula }}" == "all" ]]; then
-            mapfile -t FORMULAS < <(ls Formula/*.rb | xargs -n1 basename | sed 's/\.rb$//')
+            FORMULAS=()
+            while IFS= read -r line; do
+              [[ -n "$line" ]] && FORMULAS+=("$line")
+            done < <(ls Formula/*.rb | xargs -n1 basename | sed 's/\.rb$//')
           else
             IFS=',' read -ra FORMULAS <<< "${{ inputs.formula }}"
           fi
@@ -86,7 +90,13 @@ jobs:
           HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          mapfile -t FORMULAS < /tmp/formulas.txt
+          # macos runner 的 /bin/bash 是 3.2：没有 mapfile、没有 ${var,,}，都用兼容写法
+          # root_url 归一小写（仓库改名后 owner 可能带大写，与公式里的小写保持一致）
+          ROOT_URL="$(printf '%s' "$ROOT_URL" | tr '[:upper:]' '[:lower:]')"
+          FORMULAS=()
+          while IFS= read -r line; do
+            [[ -n "$line" ]] && FORMULAS+=("$line")
+          done < /tmp/formulas.txt
           for f in "${FORMULAS[@]}"; do
             echo "===== 处理 $f ====="
             # 同名公式跨 tap 不能共存：先卸掉可能预装的 core 版（如 runner 自带 gh）
