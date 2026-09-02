@@ -1,0 +1,343 @@
+// updater/UpdaterCore.swift
+//
+// 批量版本检查的共享核心。各包的 <name>.swift（与 Formula/<name>.rb 一一同名）是
+// 唯一含 @main 入口的文件，只声明自己的上游配置；全部逻辑集中在本文件。
+//
+// 运行方式（CI 与本地一致）：
+//   swiftc updater/UpdaterCore.swift updater/<name>.swift -o /tmp/check-<name> && /tmp/check-<name>
+// 两个实测结论（勿改回）：
+//   1. 解释器模式 `swift Core.swift <name>.swift` 会静默跳过第二个文件的顶层代码
+//      （exit 0 但什么都不做），不能用；
+//   2. swiftc 只允许 main.swift 含裸的顶层代码，所以各包入口用 @main 结构体。
+//
+// 行为契约与旧版 scripts/check-updates.sh 完全一致（GITHUB_OUTPUT 键名不变），
+// 差异仅一处：brew 上没有该软件（API 404）时输出 status=brew-missing 并停，
+// 版本来源的单独适配见下方 TODO(brew-missing)。
+
+#if canImport(Darwin)
+import Darwin
+#else
+import Glibc
+#endif
+import Foundation
+
+struct CheckConfig {
+    /// 对应 Formula/<formula>.rb
+    let formula: String
+    /// formulae.brew.sh 上的公式名
+    let brewName: String
+    /// 版本 -> 上游资产文件名
+    let asset: (String) -> String
+    /// 版本 -> 发布包直链（制瓶原料，公式 url 指向它）
+    let downloadURL: (String) -> String
+    /// 版本 -> checksums 文件地址；上游不提供则置 nil（回退下载发布包本地计算）
+    let checksumsURL: ((String) -> String)?
+}
+
+// MARK: - 输出协议（沿用 check-updates.sh 的 GITHUB_OUTPUT 契约）
+
+private let githubOutput = ProcessInfo.processInfo.environment["GITHUB_OUTPUT"]
+
+func emit(_ line: String) {
+    if let path = githubOutput, let handle = FileHandle(forWritingAtPath: path) {
+        defer { try? handle.close() }
+        _ = try? handle.seekToEnd()
+        handle.write((line + "\n").data(using: .utf8)!)
+    } else {
+        print(line)
+    }
+}
+
+func fail(_ message: String) -> Never {
+    print("::error::\(message)")
+    exit(1)
+}
+
+// MARK: - 外部进程（curl / sha256，两条平台都自带，行为与旧脚本一致）
+
+private func which(_ name: String) -> String? {
+    let searchPath = ProcessInfo.processInfo.environment["PATH"]
+        ?? "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    for dir in searchPath.split(separator: ":") {
+        let candidate = "\(dir)/\(name)"
+        if FileManager.default.isExecutableFile(atPath: candidate) { return candidate }
+    }
+    return nil
+}
+
+private func run(_ launchPath: String, _ arguments: [String]) -> (status: Int32, stdout: String) {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: launchPath)
+    process.arguments = arguments
+    let stdout = Pipe()
+    process.standardOutput = stdout
+    process.standardError = Pipe()  // 丢弃 curl 的进度/错误细节
+    do { try process.run() } catch { return (127, "") }
+    let data = stdout.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    return (process.terminationStatus, String(data: data, encoding: .utf8) ?? "")
+}
+
+/// GET 文本；-f 使 HTTP >= 400 走非零退出
+private func curlText(_ url: String) -> (status: Int32, body: String) {
+    guard let curl = which("curl") else { return (127, "") }
+    let (status, out) = run(curl, ["-fsSL", "--retry", "2", "--retry-delay", "3",
+                                   "--max-time", "30", url])
+    return (status, out)
+}
+
+/// 不带 -f 的 GET，附 HTTP 状态码（最后一行）：用于区分 404 与网络故障
+private func curlHTTP(_ url: String) -> (httpCode: Int?, body: String) {
+    guard let curl = which("curl") else { return (nil, "") }
+    let (status, out) = run(curl, ["-sS", "--retry", "2", "--retry-delay", "3",
+                                   "--max-time", "30", "-w", "\n%{http_code}", url])
+    var lines = out.components(separatedBy: "\n")
+    let code = lines.popLast().flatMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+    guard status == 0 || (code ?? 0) >= 400 else { return (nil, "") }
+    return (code, lines.joined(separator: "\n"))
+}
+
+/// HEAD 探测资源可达性（等价 curl -fsI）
+private func curlHeadOK(_ url: String) -> Bool {
+    guard let curl = which("curl") else { return false }
+    let (status, _) = run(curl, ["-fsI", "--retry", "2", "--retry-delay", "3",
+                                 "--max-time", "30", url])
+    return status == 0
+}
+
+/// 下载到临时文件（发布包可能 15MB，走文件不走管道）
+private func curlDownload(_ url: String) -> String? {
+    guard let curl = which("curl") else { return nil }
+    let dest = FileManager.default.temporaryDirectory
+        .appendingPathComponent("updater-\(UUID().uuidString)").path
+    let (status, _) = run(curl, ["-fsSL", "--retry", "2", "--retry-delay", "3",
+                                 "--max-time", "300", "-o", dest, url])
+    guard status == 0 else { return nil }
+    return dest
+}
+
+private func sha256(ofFile path: String) -> String? {
+    let tool: (path: String, args: [String])?
+    if let sha256sum = which("sha256sum") {          // Linux（coreutils）
+        tool = (sha256sum, [path])
+    } else if let shasum = which("shasum") {         // macOS 回退
+        tool = (shasum, ["-a", "256", path])
+    } else { return nil }
+    let (status, out) = run(tool!.path, tool!.args)
+    guard status == 0 else { return nil }
+    return out.split(separator: "\n").first?.split(separator: " ").first.map(String.init)
+}
+
+// MARK: - 版本解析与比较
+
+private func firstMatch(_ pattern: String, in string: String) -> NSTextCheckingResult? {
+    let regex = try! NSRegularExpression(pattern: pattern)
+    return regex.firstMatch(in: string, range: NSRange(string.startIndex..<string.endIndex, in: string))
+}
+
+/// 公式当前版本：优先 version 行（本 tap 公式不写，保留兼容），
+/// 回退 url 行内第一处 [^0-9]X.Y.Z（与 brew 从 URL 扫描版本对应）
+func currentVersion(in content: String) -> String? {
+    if let m = firstMatch(#"(?m)^[ \t]*version "([^"]+)""#, in: content),
+       let r = Range(m.range(at: 1), in: content) {
+        return String(content[r])
+    }
+    for line in content.components(separatedBy: "\n") {
+        let trimmed = line.drop(while: { $0 == " " || $0 == "\t" })
+        guard trimmed.hasPrefix(#"url ""#) else { continue }
+        let s = String(trimmed)
+        if let m = firstMatch(#"[^0-9]([0-9]+\.[0-9]+\.[0-9]+)"#, in: s),
+           let r = Range(m.range(at: 1), in: s) {
+            return String(s[r])
+        }
+    }
+    return nil
+}
+
+/// 等价 sort -V 的数字分段比较：负数 a<b，0 相等，正数 a>b。
+/// 段数不等时不用 0 补齐——sort -V 里 1.2 < 1.2.0（前缀相等时较短的更小）。
+func compareVersions(_ a: String, _ b: String) -> Int {
+    let sa = a.split(separator: ".").map(String.init)
+    let sb = b.split(separator: ".").map(String.init)
+    for i in 0..<max(sa.count, sb.count) {
+        guard i < sa.count, i < sb.count else {
+            return sa.count < sb.count ? -1 : 1
+        }
+        let av = sa[i]
+        let bv = sb[i]
+        if av == bv { continue }
+        if let ai = Int(av), let bi = Int(bv), ai != bi { return ai < bi ? -1 : 1 }
+        return av < bv ? -1 : 1
+    }
+    return 0
+}
+
+// MARK: - 公式改写
+
+private func fullRange(_ s: String) -> NSRange {
+    NSRange(s.startIndex..<s.endIndex, in: s)
+}
+
+private func isURLDefinitionLine(_ line: String) -> Bool {
+    line.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix(#"url ""#)
+}
+
+/// 改写公式：主 sha256 行替换；url 行内版本替换（带边界防误伤）；
+/// 摘除失效的 bottle do...end 块。返回改写后的内容与 bottleStale。
+func rewriteFormula(_ content: String, current: String, stable: String,
+                    sha: String) -> (content: String, bottleStale: Bool) {
+    let shaLine = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 "[0-9a-f]{64}""#)
+    // 边界保证 2.6.1 不会误伤 12.6.15 / 2.6.10 / 2.6.1.5 这类更长数字的子串
+    let versionInURL = try! NSRegularExpression(
+        pattern: #"(?<![0-9.])"# + NSRegularExpression.escapedPattern(for: current) + #"(?![0-9.])"#)
+    let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
+    let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
+
+    var result: [String] = []
+    var bottleStale = false
+    var skipping = false
+
+    for line in content.components(separatedBy: "\n") {
+        if skipping {
+            // bottle 块内容与 do/end 行都丢掉；遇到块内第一个 end 即结束
+            if blockEnd.firstMatch(in: line, range: fullRange(line)) != nil { skipping = false }
+            continue
+        }
+        if bottleStart.firstMatch(in: line, range: fullRange(line)) != nil {
+            skipping = true
+            bottleStale = true
+            continue
+        }
+
+        var replaced = line
+        // 主 sha256 行（瓶块行是 sha256 cellar: ... 形态，天然不匹配）
+        if let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+            let indent = (replaced as NSString).substring(with: m.range(at: 1))
+            replaced = "\(indent)sha256 \"\(sha)\""
+        }
+        // 版本号只改 url 行（公式不声明 version，brew 从 URL 扫描）
+        if isURLDefinitionLine(replaced) {
+            replaced = versionInURL.stringByReplacingMatches(
+                in: replaced, range: fullRange(replaced), withTemplate: stable)
+        }
+        result.append(replaced)
+    }
+    return (result.joined(separator: "\n"), bottleStale)
+}
+
+// MARK: - 单包检查主流程
+
+func runCheck(_ config: CheckConfig) {
+    let formulaFile = "Formula/\(config.formula).rb"
+    guard let content = try? String(contentsOfFile: formulaFile, encoding: .utf8) else {
+        fail("找不到公式文件：\(formulaFile)（须在仓库根目录运行）")
+    }
+
+    // 1. 本地版本
+    guard let current = currentVersion(in: content) else {
+        fail("无法从 \(formulaFile) 解析当前版本号")
+    }
+    print("本地版本 : \(current)")
+
+    // 2. brew 上游版本（只认 formulae.brew.sh 的 versions.stable，
+    //    这是 brew 上的版本号，不是上游 GitHub 的最新版，正是需要的判据）
+    let apiURL = "https://formulae.brew.sh/api/formula/\(config.brewName).json"
+    let (httpCode, body) = curlHTTP(apiURL)
+    if httpCode == 404 {
+        // TODO(brew-missing)：brew 没有收录该软件，无法用 versions.stable 判新。
+        // 需要单独适配版本来源（例如直接盯上游 GitHub Releases 的最新 tag），
+        // 适配前先明确报告并停在这里（登记于 AGENTS.md 第 12 节待办）。
+        print("brew 上没有 \(config.brewName)（formulae.brew.sh 404），跳过（TODO：单独适配版本来源）")
+        emit("status=brew-missing")
+        emit("current_version=\(current)")
+        return
+    }
+    guard httpCode == 200,
+          let json = (try? JSONSerialization.jsonObject(with: Data(body.utf8))) as? [String: Any],
+          let versions = json["versions"] as? [String: Any],
+          let stable = versions["stable"] as? String, !stable.isEmpty else {
+        fail("无法从 formulae.brew.sh 获取 \(config.brewName) 的 stable 版本（HTTP \(httpCode.map(String.init) ?? "请求失败")）")
+    }
+    print("brew 版本 : \(stable)")
+
+    // 3. 版本比较
+    if current == stable {
+        print("已是最新，无需更新。")
+        emit("status=up-to-date")
+        emit("current_version=\(current)")
+        return
+    }
+    if compareVersions(current, stable) > 0 {
+        print("本地版本(\(current)) 比 brew 版本(\(stable)) 更新，保持不动。")
+        emit("status=newer-than-brew")
+        emit("current_version=\(current)")
+        return
+    }
+    print("发现新版本 : \(current) -> \(stable)")
+
+    // 4. HEAD 探测新版本资源是否可下载（几乎不产生流量）
+    let asset = config.asset(stable)
+    let downloadURL = config.downloadURL(stable)
+    if !curlHeadOK(downloadURL) {
+        print("::warning::新版本资源不可下载：\(downloadURL)")
+        emit("status=upstream-missing")
+        emit("current_version=\(current)")
+        emit("new_version=\(stable)")
+        return
+    }
+
+    // 5. 计算 sha256：优先 checksums.txt（~2KB），失败才回退下载发布包
+    var sha = ""
+    if let checksumsURL = config.checksumsURL?(stable) {
+        let (status, text) = curlText(checksumsURL)
+        if status == 0 {
+            // 等价 awk -v f="$asset" '$2==f {print $1}'
+            for line in text.components(separatedBy: "\n") {
+                let fields = line.split(separator: " ", omittingEmptySubsequences: true)
+                if fields.count >= 2, fields[1] == asset {
+                    sha = String(fields[0])
+                    break
+                }
+            }
+            if !sha.isEmpty { print("sha256（取自 checksums.txt，仅 2KB）：\(sha)") }
+        }
+    }
+    if sha.isEmpty {
+        print("checksums.txt 不可用，回退：下载发布包后本地计算 sha256")
+        guard let tmp = curlDownload(downloadURL), let hash = sha256(ofFile: tmp) else {
+            fail("无法获取 \(asset) 的 sha256")
+        }
+        try? FileManager.default.removeItem(atPath: tmp)
+        sha = hash
+    }
+    guard sha.range(of: #"^[0-9a-f]{64}$"#, options: .regularExpression) != nil else {
+        fail("得到的 sha256 不合法：\(sha)")
+    }
+
+    // 6. 改写公式
+    let (newContent, bottleStale) = rewriteFormula(content, current: current,
+                                                   stable: stable, sha: sha)
+    do {
+        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
+    } catch {
+        fail("写回 \(formulaFile) 失败：\(error)")
+    }
+    if bottleStale {
+        print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
+    }
+
+    // 7. 改后自检（公式不声明 version，版本号体现在 url 里，因此校验 url 而非 version 行）
+    // 注意：原始字符串 #"..."# 里 \(...) 不是插值，这里必须用普通字符串做插值
+    guard newContent.contains("sha256 \"\(sha)\"") else { fail("sha256 未成功更新") }
+    let urlUpdated = newContent.components(separatedBy: "\n").contains {
+        isURLDefinitionLine($0) && $0.contains(stable)
+    }
+    guard urlUpdated else { fail("url 未成功更新到 \(stable)") }
+
+    print("公式已更新：\(current) -> \(stable)")
+    emit("status=updated")
+    emit("current_version=\(current)")
+    emit("new_version=\(stable)")
+    emit("sha256=\(sha)")
+    emit("bottle_stale=\(bottleStale)")
+}

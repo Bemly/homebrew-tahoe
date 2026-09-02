@@ -63,11 +63,12 @@ brew unlink bemly/tahoe-intel/fastfetch && brew link fastfetch
 
 | 场景 | 处理 |
 | --- | --- |
-| 有新版本 / GHCR 里还没瓶 | 手动触发 `bottle.yml`：制瓶并覆盖 GHCR 上的旧瓶 |
+| 软件有新版本 | `watch-updates` 改写公式后自动触发 `bottle.yml`（也可手动触发） |
+| GHCR 里还没有瓶（新收录软件） | 手动触发 `bottle.yml`：制瓶并推 GHCR |
 | 无更新 | 保持从 GHCR 下载 |
 | 上游资源取不到 | `watch-updates.yml` 开 issue 告警 |
 
-刚升级完还没重制瓶时，brew 会回退到上游 `url` 直链，同时仓库里会有一个提醒制瓶的 issue。
+新版本刚推送、新瓶还没上 GHCR 的短暂窗口里，brew 会回退到上游 `url` 直链。
 
 > GHCR 包默认私有，匿名 `brew install` 会 401。若遇到，到
 > 仓库 Settings → Packages 把对应包改成 public。
@@ -89,7 +90,7 @@ workflow 会：信任 tap → 以 `--build-bottle` 安装 → 跑 `brew bottle` 
 
 | Workflow | 作用 | Runner |
 | --- | --- | --- |
-| `watch-updates` | 比对 **homebrew/core 中的版本号** 与本地公式版本，有更新则改写公式并开 PR、开 issue | `ubuntu-latest` |
+| `watch-updates` | 批量扫描全部公式与 **homebrew/core** 版本（Swift 检查器，`updater/` 每包一个文件）；有更新则改写公式、直接提交 `main` 并自动触发一次制瓶 | `ubuntu-latest` |
 | `bottle` | 制瓶并推 GHCR，把瓶块提回公式 | `macos-26-intel` |
 
 开发者约定见 [AGENTS.md](AGENTS.md)。

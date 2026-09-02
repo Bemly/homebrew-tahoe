@@ -70,12 +70,13 @@ The bottle tag is determined by the build machine's architecture and OS; to prod
 
 | Scenario | Action |
 | --- | --- |
-| New version / no bottle in GHCR yet | Manually trigger `bottle.yml`: build the bottle and overwrite the old one in GHCR |
+| New version | `watch-updates` rewrites the formula and auto-triggers `bottle.yml` (manual triggering also works) |
+| No bottle in GHCR yet (newly added package) | Manually trigger `bottle.yml` to build and push |
 | No update | Keep downloading from GHCR |
 | Upstream asset unavailable | `watch-updates.yml` opens an issue alert |
 
-Right after an upgrade, before the bottle is rebuilt, brew falls back to the upstream
-`url` directly, and a reminder issue to rebuild the bottle is opened in the repo.
+In the short window after an upgrade lands but before the new bottle is on GHCR,
+brew falls back to the upstream `url` directly.
 
 > GHCR packages are private by default; anonymous `brew install` returns 401.
 > If you hit this, change the package to public in
@@ -100,7 +101,7 @@ Two workflows, **both manually triggered only** (no scheduled jobs):
 
 | Workflow | Purpose | Runner |
 | --- | --- | --- |
-| `watch-updates` | Compares the version in **homebrew/core** with the local formula; if newer, rewrites the formula and opens a PR / issues | `ubuntu-latest` |
+| `watch-updates` | Batch-scans every formula against **homebrew/core** versions (Swift checkers, one file per package in `updater/`); rewrites formulas, commits to `main`, and automatically triggers one bottling run | `ubuntu-latest` |
 | `bottle` | Builds the bottle, pushes to GHCR, writes the bottle block back | `macos-26-intel` |
 
 Developer conventions: see [AGENTS.md](AGENTS.md).
