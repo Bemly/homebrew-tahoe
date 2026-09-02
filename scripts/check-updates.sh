@@ -29,7 +29,7 @@ info() { echo "$1"; }
 # version 行，读不到再从 url 行里提取版本号。
 current=$(sed -nE 's/^[[:space:]]*version "([^"]+)".*/\1/p' "$FORMULA_FILE" | head -1)
 if [[ -z "$current" ]]; then
-  current=$(sed -nE 's|^[[:space:]]*url ".*[v_]([0-9]+\.[0-9]+\.[0-9]+).*|\1|p' "$FORMULA_FILE" | head -1)
+  current=$(sed -nE 's|^[[:space:]]*url ".*[^0-9]([0-9]+\.[0-9]+\.[0-9]+).*|\1|p' "$FORMULA_FILE" | head -1)
 fi
 [[ -n "$current" ]] || fail "无法从 $FORMULA_FILE 解析当前版本号"
 info "本地版本 : $current"
@@ -70,6 +70,12 @@ case "$FORMULA" in
     asset="gh_${stable}_macOS_amd64.zip"
     download_url="https://github.com/cli/cli/releases/download/v${stable}/${asset}"
     checksums_url="https://github.com/cli/cli/releases/download/v${stable}/gh_${stable}_checksums.txt"
+    ;;
+  fastfetch)
+    # release tag 不带 v 前缀；上游不提供汇总 checksums 文件，留空回退到下载计算
+    asset="fastfetch-macos-amd64.tar.gz"
+    download_url="https://github.com/fastfetch-cli/fastfetch/releases/download/${stable}/${asset}"
+    checksums_url=""
     ;;
   *)
     fail "软件 $FORMULA 尚未在 scripts/check-updates.sh 中登记上游信息"
@@ -123,7 +129,7 @@ fi
 
 # ------------------------------------------------------------ 7. 改后自检
 # 公式不声明显式 version，版本号体现在 url 里，因此校验 url 而非 version 行
-grep -q "v${stable}/${asset}" "$FORMULA_FILE" || fail "url 未成功更新到 ${stable}"
+grep -q "url .*${stable}" "$FORMULA_FILE" || fail "url 未成功更新到 ${stable}"
 grep -q "sha256 \"${sha}\"" "$FORMULA_FILE" || fail "sha256 未成功更新"
 
 info "公式已更新：$current -> $stable"

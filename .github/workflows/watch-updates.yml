@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - gh
+          - fastfetch
       dry_run:
         description: 只检查不提交（不建分支、不开 PR）
         required: false
@@ -35,7 +36,7 @@ jobs:
 
     steps:
       - name: 检出仓库
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 

@@ -14,6 +14,7 @@ on:
         type: choice
         options:
           - gh
+          - fastfetch
 
 permissions:
   contents: write
@@ -38,7 +39,7 @@ jobs:
 
     steps:
       - name: 检出仓库
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -52,6 +53,11 @@ jobs:
           ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe-intel"
           brew tap-info bemly/tahoe-intel
 
+      # 新版本 Homebrew 要求显式信任 tap，否则会忽略公式、制瓶拿不到公式。
+      # 软链进来的 tap 默认不受信任，这里整体信任本 tap。
+      - name: 信任本 tap
+        run: brew trust bemly/tahoe-intel
+
       - name: 安装 skopeo（推 GHCR 的依赖）
         run: brew install skopeo
 
@@ -64,6 +70,23 @@ jobs:
 
       - name: 制瓶
         run: brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe-intel/${{ inputs.formula }}"
+
+      # GHCR 不允许覆盖已存在的 tag（重跑 bottle.yml 必遇 already exists!）。
+      # 推送前先删掉当前版本对应的旧标签，实现“覆盖旧瓶”（见 AGENTS.md 8.4）。
+      - name: 删除已存在的 GHCR 瓶标签（支持重复运行覆盖）
+        env:
+          HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
+          HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "Formula/${{ inputs.formula }}.rb" | head -1)"
+          [[ -n "$version" ]] || { echo "无法从公式解析版本号，跳过删除。"; exit 0; }
+          tag="${{ inputs.formula }}:${version}"
+          echo "若 GHCR 已存在标签 ${tag}，先删除以便覆盖推送。"
+          skopeo delete --creds "${HOMEBREW_GITHUB_PACKAGES_USER}:${HOMEBREW_GITHUB_PACKAGES_TOKEN}" \
+            "docker://ghcr.io/bemly/tahoe-intel/${tag}" \
+            && echo "已删除旧标签。" \
+            || echo "旧标签不存在或删除失败（可能首次推送），继续。"
 
       # pr-upload 读 CWD 下的 *.bottle.json，推 GHCR，并把瓶块写回公式
       - name: 推 GHCR

@@ -124,6 +124,7 @@ end
 | 软件 | 版本 | 来源 | 状态 |
 | --- | --- | --- | --- |
 | `gh` | 2.99.0 | GitHub 官方发布包 `gh_2.99.0_macOS_amd64.zip`（外部链接） | 已收录 |
+| `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -136,6 +137,25 @@ gh_2.99.0_macOS_amd64/
 
 共 231 个文件，zip 约 15MB。
 sha256：`70c05750c75df9465bc73b994e8bc379243bb494271f1b51f54ead2e19e45471`
+
+### fastfetch 发布包结构（已实测）
+
+```
+fastfetch-macos-amd64/
+└── usr/
+    ├── bin/fastfetch              # 主程序，单架构 x86_64（无独立 dylib）
+    ├── bin/flashfetch             # neofetch 风格别名二进制
+    ├── share/fastfetch/presets/   # 内置预设（fastfetch 从 bin 同级 ../share 读取）
+    ├── share/man/man1/fastfetch.1
+    ├── share/bash-completion/completions/fastfetch
+    ├── share/zsh/site-functions/_fastfetch
+    ├── share/fish/vendor_completions.d/fastfetch.fish
+    └── share/licenses/fastfetch/LICENSE
+```
+
+tar.gz 约 2MB。注意 fastfetch 的 macOS 发布**不提供 checksums.txt**，
+watcher 在 `scripts/check-updates.sh` 里会回退到下载 tar.gz 后本地 `shasum` 计算。
+sha256：`1e9a6ba7474a41b3cc2bb1b923afcf40c749c25bd17dc1e62b64464e7445a534`
 
 ## 7. Watcher 工作原理
 

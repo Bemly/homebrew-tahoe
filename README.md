@@ -1,79 +1,106 @@
 # bemly/tahoe-intel
 
-一个 Homebrew 第三方 tap，专为 **Intel（x86_64）Mac 上的 macOS 26（Tahoe）** 提供可直接安装的软件。
+A third-party Homebrew tap that provides directly installable software for
+**Intel (x86_64) Macs running macOS 26 (Tahoe)**.
 
-## 为什么
+## Why
 
-Homebrew 官方从 macOS 26 起不再为 Intel 构建 bottle。实测 core tap 中 `x86_64_tahoe` 瓶的数量为 0，
-`gh`、`node` 等软件在 Intel Mac 上只能从源码编译。
+Starting with macOS 26, Homebrew no longer builds `x86_64` bottles. In practice the
+number of `x86_64_tahoe` bottles in the `homebrew/core` tap is 0, so software like
+`gh` and `node` can only be compiled from source on Intel Macs.
 
-本 tap 取上游官方的 **macOS amd64 预构建包**（不重新编译），打包成 Homebrew 瓶后
-分发到 **GHCR**：`ghcr.io/v2/bemly/tahoe-intel`。
+This tap pulls the upstream **official macOS amd64 prebuilt packages** (no recompilation),
+packages them as Homebrew bottles, and distributes them through **GHCR**:
+`ghcr.io/v2/bemly/tahoe-intel`.
 
-## 安装
+## Requirements
+
+- CPU: **Intel (x86_64)** — do NOT use on Apple Silicon (use `homebrew/core` instead).
+- OS: **macOS 26 (Tahoe)** or later.
+
+Each formula enforces this with `depends_on arch: :x86_64` and
+`depends_on macos: :tahoe`; installation is rejected outright if the requirements
+are not met.
+
+## Installation
 
 ```bash
 brew tap bemly/tahoe-intel
 
-# 若之前装过 homebrew/core 的 gh，必须先卸载：
-# 同名公式跨 tap 不能共存，brew 会直接拒绝安装
+# If you previously installed the homebrew/core build, uninstall it first:
+# formulae with the same name across taps cannot coexist — brew refuses to install.
 brew uninstall gh
+brew uninstall fastfetch
 
 brew install bemly/tahoe-intel/gh
+brew install bemly/tahoe-intel/fastfetch
 ```
 
-## 收录的软件
+## Packages
 
-| 软件 | 说明 |
+| Package | Notes |
 | --- | --- |
-| `gh` | GitHub 官方 CLI，直接取 `gh_<ver>_macOS_amd64.zip` |
+| `gh` | GitHub CLI, taken directly from `gh_<ver>_macOS_amd64.zip` |
+| `fastfetch` | Neofetch-like system info tool, taken from `fastfetch-macos-amd64.tar.gz` (release tag has no `v` prefix) |
 
-## 要求
+## Switching sources (same-name conflict)
 
-- 处理器：**Intel（x86_64）**，Apple Silicon 请勿使用（直接用 `homebrew/core` 即可）
-- 系统：**macOS 26（Tahoe）** 或更高
-
-公式内已用 `depends_on arch: :x86_64` 与 `depends_on macos: :tahoe` 强制校验，条件不满足会直接拒绝安装。
-
-## 注意事项
-
-本 tap 的 `gh` 与 `homebrew/core` 的 `gh` **同名**，二者共用 `$(brew --prefix)/Cellar/gh`，
-不能同时 link。切换来源：
+Our `gh` / `fastfetch` share their Cellar path with `homebrew/core`'s builds, so they
+cannot be linked at the same time. To switch:
 
 ```bash
-# 用本 tap 的版本
+# Use this tap's build
 brew unlink gh && brew link --overwrite bemly/tahoe-intel/gh
+brew unlink fastfetch && brew link --overwrite bemly/tahoe-intel/fastfetch
 
-# 用 core 的版本
+# Use the core build
 brew unlink bemly/tahoe-intel/gh && brew link gh
+brew unlink bemly/tahoe-intel/fastfetch && brew link fastfetch
 ```
 
-## GHCR 瓶
+## GHCR bottles
 
-安装包从 **GHCR** 分发：`ghcr.io/v2/bemly/tahoe-intel`
-（Homebrew 会剥掉仓库名的 `homebrew-` 前缀，与核心的 `ghcr.io/v2/homebrew/core` 同构）。
+Packages are distributed from **GHCR**: `ghcr.io/v2/bemly/tahoe-intel`
+(Homebrew strips the `homebrew-` prefix from the repository name, mirroring the
+structure of `ghcr.io/v2/homebrew/core`).
 
-瓶的内容直接来自上游预构建包，**不重新编译**。瓶标签由构建机的架构与系统决定，
-为了产出 `x86_64_tahoe`，制瓶跑在 `macos-26-intel` runner 上。
+Bottles are built directly from the upstream prebuilt packages — **no recompilation**.
+The bottle tag is determined by the build machine's architecture and OS; to produce
+`x86_64_tahoe` the bottling job runs on a `macos-26-intel` runner.
 
-| 场景 | 处理 |
+| Scenario | Action |
 | --- | --- |
-| 有新版本 / GHCR 里还没瓶 | 手动触发 `bottle.yml`：制瓶并覆盖 GHCR 上的旧瓶 |
-| 无更新 | 保持从 GHCR 下载 |
-| 上游资源取不到 | `watch-updates.yml` 开 issue 告警 |
+| New version / no bottle in GHCR yet | Manually trigger `bottle.yml`: build the bottle and overwrite the old one in GHCR |
+| No update | Keep downloading from GHCR |
+| Upstream asset unavailable | `watch-updates.yml` opens an issue alert |
 
-刚升级完还没重制瓶时，brew 会回退到上游 `url` 直链，同时仓库里会有一个提醒制瓶的 issue。
+Right after an upgrade, before the bottle is rebuilt, brew falls back to the upstream
+`url` directly, and a reminder issue to rebuild the bottle is opened in the repo.
 
-> GHCR 包默认私有，匿名 `brew install` 会 401。若遇到，到
-> 仓库 Settings → Packages 把对应包改成 public。
+> GHCR packages are private by default; anonymous `brew install` returns 401.
+> If you hit this, change the package to public in
+> Repository Settings → Packages.
 
-## 维护
+## Building a bottle locally (e.g. fastfetch)
 
-两个 workflow，**都只支持手动触发**，不设定时任务：
+After adding or updating a formula, push the bottle to GHCR so installs don't fall
+back to the upstream direct link:
 
-| Workflow | 作用 | Runner |
+1. Open **Actions → Build bottle and publish to GHCR** in the GitHub repository.
+2. Click **Run workflow**.
+3. Pick the formula (`gh` or `fastfetch`) and run it.
+
+The workflow will: trust the tap → install with `--build-bottle` → run `brew bottle`
+→ overwrite the existing GHCR tag → `brew pr-upload` pushes to GHCR and writes the
+`bottle do` block back into the formula → commit and push.
+
+## Maintenance
+
+Two workflows, **both manually triggered only** (no scheduled jobs):
+
+| Workflow | Purpose | Runner |
 | --- | --- | --- |
-| `watch-updates` | 比对 **homebrew/core 中的版本号** 与本地公式版本，有更新则改写公式并开 PR、开 issue | `ubuntu-latest` |
-| `bottle` | 制瓶并推 GHCR，把瓶块提回公式 | `macos-26-intel` |
+| `watch-updates` | Compares the version in **homebrew/core** with the local formula; if newer, rewrites the formula and opens a PR / issues | `ubuntu-latest` |
+| `bottle` | Builds the bottle, pushes to GHCR, writes the bottle block back | `macos-26-intel` |
 
-开发者约定见 [AGENTS.md](AGENTS.md)。
+Developer conventions: see [AGENTS.md](AGENTS.md).
