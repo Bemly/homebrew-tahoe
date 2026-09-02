@@ -1,4 +1,19 @@
-.DS_Store
+# 制瓶产物
 *.bottle.tar.gz
 *.bottle.json
-.bundle/
+
+# AI 助手会话 / 计划产物
+.zcode/
+
+# 环境变量与密钥
+.env
+.env.*
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.swp
+
+# macOS 杂物
+.DS_Store
+._*
