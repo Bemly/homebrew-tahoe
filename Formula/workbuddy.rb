@@ -12,10 +12,21 @@ class Workbuddy < Formula
   # 腾讯闭源分发包：不声明 license——闭源无 SPDX 标识可填，audit 对缺省 license 不检查
   # （实测符号 :cannot_redistribute 与字符串 "Proprietary" 均被 audit --strict 拒绝）
 
+  # Mach-O magic 的十六进制（unpack1("H8")）：thin feedface/feedfacf 及各自小端序，
+  # fat cafebabe/bebafeca。用 hex 字符串比较，避开 binary/UTF-8 编码不匹配的坑（实测踩过）
+  MACH_O_MAGICS = %w[
+    feedface feedfacf cefaedfe cffaedfe cafebabe bebafeca
+  ].freeze
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
+
+  # Electron app 全部走 @rpath 自包含加载。不声明的话 --build-bottle 会把 @rpath
+  # install name 改写成更长的通用路径，Electron Framework 的 load command header
+  # 已满装不下，报 "Updated load commands do not fit in the header"（CI 实测）。
+  preserve_rpath
 
   # Electron app：zip 465MB / 解压约 1.07GB（3442 个文件），Cellar 拷贝再加一份，
   # 磁盘峰值约 2.5GB，留足余量
@@ -41,6 +52,37 @@ class Workbuddy < Formula
       (prefix/"WorkBuddy.app").install Dir["*"]
     else
       prefix.install Dir["**/WorkBuddy.app"].fetch(0)
+    end
+
+    # dylib id 治理：app 里有三类「brew 修不动」的 dylib id——
+    #   1. Chromium ANGLE 库的相对路径 id（./libEGL.dylib / ./libGLESv2.dylib）；
+    #   2. @loader_path 形态 id（libffmpeg.dylib）——preserve_rpath 只保 @rpath，
+    #      其余 @ 形态仍会被 brew 改写；
+    #   3. QimeiSDKMac.framework 等绝对路径 id（上游构建产物）。
+    # brew --build-bottle 会把上述 id 统一改写成 ~80 字符的 /usr/local/opt 绝对路径，
+    # header 已满的文件直接崩（CI 实测 "Updated load commands do not fit in the header"）。
+    # 预先把全部非 @rpath 的 dylib id 统一改写为 @rpath/<basename>：dylib id 只是加载
+    # 身份，没有任何 load command 按旧 id 引用，改写无副作用；配合上面的 preserve_rpath
+    # 让链接修复完全无操作。改写过的文件必须 ad-hoc 重签，否则 dyld 会因签名失效拒载。
+    (prefix/"WorkBuddy.app").find do |file|
+      next unless file.file?
+
+      # Mach-O magic 预过滤（十六进制比较，见 MACH_O_MAGICS 注释）
+      next unless MACH_O_MAGICS.include?(file.read(4).to_s.unpack1("H8"))
+
+      begin
+        macho = MachO.open(file.to_s)
+      rescue MachO::MachOError, EOFError
+        next
+      end
+
+      slices = macho.respond_to?(:machos) ? macho.machos.select(&:dylib?) : [macho].select(&:dylib?)
+      next if slices.empty?
+      next unless slices.any? { |s| !s.dylib_id.start_with?("@rpath", "/usr/lib/swift") }
+
+      new_id = "@rpath/#{File.basename(slices.first.dylib_id)}"
+      MachO::Tools.change_dylib_id(file.to_s, new_id)
+      system "/usr/bin/codesign", "--force", "--sign", "-", file
     end
 
     # CLI 启动入口：workbuddy == open -a <Cellar 里的 app>
