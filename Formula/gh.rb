@@ -1,8 +1,8 @@
 class Gh < Formula
   desc "GitHub CLI (Intel x86_64 build for macOS Tahoe)"
   homepage "https://cli.github.com/"
-  version "2.99.0"
-  url "https://github.com/cli/cli/releases/download/v#{version}/gh_#{version}_macOS_amd64.zip"
+  # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）
+  url "https://github.com/cli/cli/releases/download/v2.99.0/gh_2.99.0_macOS_amd64.zip"
   sha256 "70c05750c75df9465bc73b994e8bc379243bb494271f1b51f54ead2e19e45471"
   license "MIT"
 
@@ -16,7 +16,7 @@ class Gh < Formula
   def pre_install
     # 磁盘空间检查：gh 本体 42MB，展开后 man 页等共约 50MB，留足余量
     required_mb = 256
-    df_line = Utils.popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
+    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
     available_mb = df_line.split[3].to_i
 
     if available_mb.positive? && available_mb < required_mb
@@ -25,7 +25,7 @@ class Gh < Formula
       EOS
     end
 
-    ohai "安装 gh #{version}（Intel x86_64 / macOS #{MacOS.version}）"
+    ohai "安装 gh #{version}（Intel x86_64）"
 
     # 若已存在其他来源的 gh，提前告知 link 冲突的处理方式
     other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/gh/*"].map { |keg| File.basename(keg) }
@@ -40,18 +40,21 @@ class Gh < Formula
   end
 
   def install
-    extracted = "gh_#{version}_macOS_amd64"
+    # 实测：brew 解压 zip 后会自动下降进入其中唯一的顶层目录，
+    # 因此 install 的 CWD 已经是 gh_<version>_macOS_amd64/。
+    # 这里用 ** 通配，无论 brew 是否下降都能命中，避免硬编码目录名。
+    bin.install Dir["**/bin/gh"].fetch(0)
+    man1.install Dir["**/share/man/man1/*.1"]
 
-    bin.install "#{extracted}/bin/gh"
-    man1.install Dir["#{extracted}/share/man/man1/*.1"]
-    doc.install "#{extracted}/LICENSE"
+    license = Dir["**/LICENSE"].first
+    doc.install license if license
   end
 
   def post_install
     gh = bin/"gh"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包
-    file_out = Utils.popen_read("/usr/bin/file", "-b", gh.to_s)
+    file_out = Utils.safe_popen_read("/usr/bin/file", "-b", gh.to_s)
     unless file_out.include?("x86_64")
       odie <<~EOS
         架构校验失败：#{gh} 不是 x86_64 二进制。
@@ -59,11 +62,11 @@ class Gh < Formula
       EOS
     end
 
-    # 2) 移除 macOS 隔离属性，避免首次运行弹出"无法验证开发者"
-    system "/usr/bin/xattr", "-dr", "com.apple.quarantine", gh.to_s
+    # 2) 隔离属性无需处理：brew 在下载阶段已清掉 com.apple.quarantine
+    #    （实测装完 xattr -l 为空；且文件是 0555，手动 xattr -d 反而会 EACCES）
 
     # 3) 版本自检（sha256 已校验过压缩包，此处兜底确认公式版本号没写错）
-    version_out = Utils.popen_read(gh.to_s, "--version")
+    version_out = Utils.safe_popen_read(gh.to_s, "--version")
     unless version_out.include?("gh version #{version}")
       opoo "版本自检未通过：期望 #{version}，实际 #{version_out.lines.first.to_s.strip}"
     end

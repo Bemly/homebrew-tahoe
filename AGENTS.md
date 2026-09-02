@@ -68,8 +68,8 @@ homebrew-tahoe-intel/
 class Xxx < Formula
   desc    "..."                        # 一句话，≤80 字符
   homepage "..."
-  version "X.Y.Z"                      # 显式声明，url/sha256 用 #{version} 拼接
-  url     "https://.../xxx_#{version}_macOS_amd64.zip"
+  # 不要写 version 行：brew 会从 URL 扫描出版本，重复声明会被 audit 判为冗余
+  url     "https://.../xxx_X.Y.Z_macOS_amd64.zip"
   sha256  "..."
   license "..."
 
@@ -183,7 +183,71 @@ brew test      bemly/tahoe-intel/gh      # 跑 test do
 ./scripts/check-updates.sh gh
 ```
 
-## 10. 待办 / 后续演进
+## 10. 踩坑记录（本机实测，改代码前务必先看）
+
+### 10.1 解压目录不要加前缀
+
+brew 解压 zip 后**会自动下降进入其中唯一的顶层目录**。实测 `install` 执行时
+CWD 已经是 `gh_<version>_macOS_amd64/`：
+
+```
+DEBUG pwd=/private/tmp/gh-XXXX/gh_2.99.0_macOS_amd64
+DEBUG top=["LICENSE", "bin", ".brew_home", "share"]
+```
+
+所以 `bin.install "gh_2.99.0_macOS_amd64/bin/gh"` 会报
+`Errno::ENOENT: No such file or directory - gh_2.99.0_macOS_amd64/bin/gh`。
+
+**正确写法**：用 `Dir["**/bin/gh"]` 通配，brew 下降与否都能命中。
+
+### 10.2 别手动清隔离属性
+
+brew 在下载阶段已清掉 `com.apple.quarantine`（装完 `xattr -l` 为空）。
+而且 `bin.install` 出来的文件是 `0555`，手动 `xattr -d` 必然
+`xattr: [Errno 13] Permission denied`。这一步是多余的，不要加。
+
+### 10.3 不要显式声明 version
+
+`version "2.99.0"` 与 URL 扫描出的版本相同时，audit 报
+`redundant with version scanned from URL`。让 brew 从 URL 扫描即可；
+watcher 脚本相应地也从 url 行解析版本号（`version` 行读不到就回退）。
+
+### 10.4 同名公式跨 tap 不能共存
+
+brew 会直接拒绝安装：
+
+```
+Error: gh was installed from the homebrew/core tap
+but you are trying to install it from the bemly/tahoe-intel tap.
+Formulae with the same name from different taps cannot be installed at the same time.
+```
+
+用户必须先 `brew uninstall gh`（core 版），才能装本 tap 的版本。
+
+### 10.5 本地开发：tap 目录要用软链接
+
+`brew tap bemly/tahoe-intel <本地路径>` 是 **clone，不是 symlink**，
+改了本地文件 brew 读不到，会一直报旧错误。开发时换成软链接：
+
+```bash
+rm -rf /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe-intel
+ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe-intel
+```
+
+### 10.6 验证结果（2026-09-02，Intel x86_64 / macOS 26.6.2）
+
+| 检查项 | 结果 |
+| --- | --- |
+| `brew style` | 无告警 |
+| `brew audit --strict` | 无问题 |
+| `brew install` | 234 files / 43.0MB，post_install 架构校验通过 |
+| `brew test` | 版本 + x86_64 两条断言均通过 |
+| `gh --version` | 2.99.0 |
+| `file -b $(which gh)` | `Mach-O 64-bit executable x86_64` |
+| watcher（已是最新） | `status=up-to-date` |
+| watcher（模拟 2.98.0→2.99.0） | 正确改写 url 与 sha256，sha 取自 2KB 的 checksums.txt |
+
+## 11. 待办 / 后续演进
 
 - [ ] 需要时补充更多 Intel Tahoe 软件（按第 8 节 SOP 加）。
 - [ ] 若某些软件上游不提供 macOS amd64 包，改为自建 bottle：

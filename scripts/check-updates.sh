@@ -25,8 +25,13 @@ info() { echo "$1"; }
 [[ -f "$FORMULA_FILE" ]] || fail "找不到公式文件：$FORMULA_FILE"
 
 # ---------------------------------------------------------------- 1. 本地版本
+# 公式按 Homebrew 规范不声明显式 version（让 brew 从 URL 扫描），所以优先读
+# version 行，读不到再从 url 行里提取版本号。
 current=$(sed -nE 's/^[[:space:]]*version "([^"]+)".*/\1/p' "$FORMULA_FILE" | head -1)
-[[ -n "$current" ]] || fail "无法从 $FORMULA_FILE 解析当前 version"
+if [[ -z "$current" ]]; then
+  current=$(sed -nE 's|^[[:space:]]*url ".*[v_]([0-9]+\.[0-9]+\.[0-9]+).*|\1|p' "$FORMULA_FILE" | head -1)
+fi
+[[ -n "$current" ]] || fail "无法从 $FORMULA_FILE 解析当前版本号"
 info "本地版本 : $current"
 
 # ------------------------------------------------------- 2. brew 上游版本
@@ -98,8 +103,8 @@ sed -E \
 mv "$tmp" "$FORMULA_FILE"
 
 # ------------------------------------------------------------ 7. 改后自检
-grep -q "version \"${stable}\"" "$FORMULA_FILE" || fail "version 未成功更新"
-grep -q "${asset}" "$FORMULA_FILE" || fail "url/资源名未成功更新"
+# 公式不声明显式 version，版本号体现在 url 里，因此校验 url 而非 version 行
+grep -q "v${stable}/${asset}" "$FORMULA_FILE" || fail "url 未成功更新到 ${stable}"
 grep -q "sha256 \"${sha}\"" "$FORMULA_FILE" || fail "sha256 未成功更新"
 
 info "公式已更新：$current -> $stable"

@@ -13,6 +13,11 @@ Homebrew 官方从 macOS 26 起不再为 Intel 构建 bottle。实测 core tap �
 
 ```bash
 brew tap bemly/tahoe-intel
+
+# 若之前装过 homebrew/core 的 gh，必须先卸载：
+# 同名公式跨 tap 不能共存，brew 会直接拒绝安装
+brew uninstall gh
+
 brew install bemly/tahoe-intel/gh
 ```
 
