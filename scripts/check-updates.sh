@@ -76,6 +76,16 @@ case "$FORMULA" in
     ;;
 esac
 
+# ------------------------------------------ 4.5 确认新版本资源确实可下载
+# HEAD 请求，几乎不产生流量；取不到时告警并把状态交给 workflow 开 issue，而不是硬失败
+if ! curl -fsI --retry 2 --retry-delay 3 --max-time 30 "$download_url" >/dev/null 2>&1; then
+  echo "::warning::新版本资源不可下载：$download_url"
+  emit "status=upstream-missing"
+  emit "current_version=$current"
+  emit "new_version=$stable"
+  exit 0
+fi
+
 # ------------------------------------------------------------ 5. 计算 sha256
 sha=""
 if [[ -n "$checksums_url" ]]; then
@@ -102,6 +112,15 @@ sed -E \
 
 mv "$tmp" "$FORMULA_FILE"
 
+# 版本变了，旧 bottle 块的 sha256 立刻失效，先摘掉；
+# 由 bottle.yml 重新制瓶后写回。重建之前 brew 会回退到 url 直链。
+bottle_stale=false
+if grep -q "^[[:space:]]*bottle do" "$FORMULA_FILE"; then
+  sed '/^[[:space:]]*bottle do$/,/^[[:space:]]*end$/d' "$FORMULA_FILE" > "$tmp" && mv "$tmp" "$FORMULA_FILE"
+  bottle_stale=true
+  info "已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶"
+fi
+
 # ------------------------------------------------------------ 7. 改后自检
 # 公式不声明显式 version，版本号体现在 url 里，因此校验 url 而非 version 行
 grep -q "v${stable}/${asset}" "$FORMULA_FILE" || fail "url 未成功更新到 ${stable}"
@@ -113,3 +132,4 @@ emit "status=updated"
 emit "current_version=$current"
 emit "new_version=$stable"
 emit "sha256=$sha"
+emit "bottle_stale=$bottle_stale"

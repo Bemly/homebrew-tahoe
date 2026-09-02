@@ -7,7 +7,8 @@
 Homebrew 官方从 macOS 26 起不再为 Intel 构建 bottle。实测 core tap 中 `x86_64_tahoe` 瓶的数量为 0，
 `gh`、`node` 等软件在 Intel Mac 上只能从源码编译。
 
-本 tap 直接引用上游官方的 **macOS amd64 发布包**（外部链接），绕开这个限制。
+本 tap 取上游官方的 **macOS amd64 预构建包**（不重新编译），打包成 Homebrew 瓶后
+分发到 **GHCR**：`ghcr.io/v2/bemly/tahoe-intel`。
 
 ## 安装
 
@@ -47,9 +48,32 @@ brew unlink gh && brew link --overwrite bemly/tahoe-intel/gh
 brew unlink bemly/tahoe-intel/gh && brew link gh
 ```
 
+## GHCR 瓶
+
+安装包从 **GHCR** 分发：`ghcr.io/v2/bemly/tahoe-intel`
+（Homebrew 会剥掉仓库名的 `homebrew-` 前缀，与核心的 `ghcr.io/v2/homebrew/core` 同构）。
+
+瓶的内容直接来自上游预构建包，**不重新编译**。瓶标签由构建机的架构与系统决定，
+为了产出 `x86_64_tahoe`，制瓶跑在 `macos-26-intel` runner 上。
+
+| 场景 | 处理 |
+| --- | --- |
+| 有新版本 / GHCR 里还没瓶 | 手动触发 `bottle.yml`：制瓶并覆盖 GHCR 上的旧瓶 |
+| 无更新 | 保持从 GHCR 下载 |
+| 上游资源取不到 | `watch-updates.yml` 开 issue 告警 |
+
+刚升级完还没重制瓶时，brew 会回退到上游 `url` 直链，同时仓库里会有一个提醒制瓶的 issue。
+
+> GHCR 包默认私有，匿名 `brew install` 会 401。若遇到，到
+> 仓库 Settings → Packages 把对应包改成 public。
+
 ## 维护
 
-版本更新由 `watch-updates` workflow 检查 —— 它比对 **homebrew/core 中的版本号** 与本地公式版本，
-有更新则自动改写公式并发起 PR。该 workflow 只支持手动触发，不设定时任务。
+两个 workflow，**都只支持手动触发**，不设定时任务：
+
+| Workflow | 作用 | Runner |
+| --- | --- | --- |
+| `watch-updates` | 比对 **homebrew/core 中的版本号** 与本地公式版本，有更新则改写公式并开 PR、开 issue | `ubuntu-latest` |
+| `bottle` | 制瓶并推 GHCR，把瓶块提回公式 | `macos-26-intel` |
 
 开发者约定见 [AGENTS.md](AGENTS.md)。

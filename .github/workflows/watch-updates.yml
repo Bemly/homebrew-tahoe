@@ -45,6 +45,34 @@ jobs:
           chmod +x scripts/check-updates.sh
           ./scripts/check-updates.sh "${{ inputs.formula }}"
 
+      - name: 上游资源不可用时开 issue 告警
+        if: steps.check.outputs.status == 'upstream-missing'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORMULA: ${{ inputs.formula }}
+          NEW_VERSION: ${{ steps.check.outputs.new_version }}
+        run: |
+          set -euo pipefail
+          gh label create "automated-alert" --color "d93f0b" \
+            --description "自动告警" 2>/dev/null || true
+          title="[告警] ${FORMULA} ${NEW_VERSION} 的上游资源不可下载"
+          if gh issue list --state open --label "automated-alert" \
+               --json title --jq '.[].title' | grep -qxF "$title"; then
+            echo "告警 issue 已存在，跳过。"
+            exit 0
+          fi
+          gh issue create --title "$title" --label "automated-alert" --body "$(cat <<EOF
+          \`watch-updates\` 发现 brew 上游已到 \`${NEW_VERSION}\`，但对应的上游预构建包无法下载。
+
+          - 软件：\`${FORMULA}\`
+          - 目标版本：\`${NEW_VERSION}\`
+          - 瓶根地址：\`https://ghcr.io/v2/${{ github.repository_owner }}/tahoe-intel\`
+
+          影响：公式无法升级，\`bottle.yml\` 也无法制瓶。
+          请确认上游发布资产是否改名或被删除，或暂时保持当前版本。
+          EOF
+          )"
+
       - name: 语法自检
         if: steps.check.outputs.status == 'updated'
         run: ruby -c "Formula/${{ inputs.formula }}.rb"
@@ -100,6 +128,33 @@ jobs:
           EOF
           )"
           fi
+
+      - name: GHCR 瓶需要重建时开 issue 告警
+        if: steps.check.outputs.bottle_stale == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORMULA: ${{ inputs.formula }}
+          NEW_VERSION: ${{ steps.check.outputs.new_version }}
+        run: |
+          set -euo pipefail
+          gh label create "bottle" --color "0e8a16" \
+            --description "GHCR 瓶相关" 2>/dev/null || true
+          title="[制瓶] ${FORMULA} ${NEW_VERSION} 需要重建 GHCR 瓶"
+          if gh issue list --state open --label "bottle" \
+               --json title --jq '.[].title' | grep -qxF "$title"; then
+            echo "制瓶 issue 已存在，跳过。"
+            exit 0
+          fi
+          gh issue create --title "$title" --label "bottle" --body "$(cat <<EOF
+          \`watch-updates\` 已把 \`${FORMULA}\` 升到 \`${NEW_VERSION}\`，
+          并摘除了失效的 bottle 块（其 sha256 属于旧版本）。
+
+          重新制瓶之前，安装会回退到上游 \`url\` 直链，而不是走 GHCR。
+
+          处理：手动触发 **Build bottle and publish to GHCR**（\`bottle.yml\`），
+          它会在 \`macos-26-intel\` 上重新制瓶、覆盖 GHCR 上的旧瓶，并把瓶块提交回来。
+          EOF
+          )"
 
       - name: 输出结论
         if: always()

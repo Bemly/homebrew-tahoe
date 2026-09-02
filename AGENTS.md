@@ -57,7 +57,8 @@ homebrew-tahoe-intel/
 │   └── check-updates.sh               # 版本检查逻辑（可被 workflow 或手动调用）
 └── .github/
     └── workflows/
-        └── watch-updates.yml          # 手动触发的版本 watcher
+        ├── watch-updates.yml          # 手动触发的版本 watcher（ubuntu）
+        └── bottle.yml                 # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
 ```
 
 ## 4. 公式编写规范
@@ -91,10 +92,11 @@ end
   `x86_64_tahoe` 也是合法 bottle 标签。）
 - Intel 的 bottle 标签写作**纯系统名**（`tahoe` 而非 `x86_64_tahoe`）——
   这是 Homebrew 约定，可从 core 里 `node@24` 的 `sha256 sonoma:` 印证。
-- 优先使用**上游官方发布包的直链**（外部链接），不重复托管二进制，
-  既省 GitHub 存储/带宽，也避免和上游校验和不一致。
-- `pre_install` 做环境与资源检查；`post_install` 做架构/版本校验并清理
-  `com.apple.quarantine` 隔离属性。
+- 上游官方发布包的直链（`url`）是**制瓶的原料**；分发走 GHCR 瓶（见第 8 节）。
+- `pre_install` 做环境与资源检查；`post_install` 做架构校验与版本自检。
+  **不要手动清 `com.apple.quarantine`**（原因见 11.2）。
+- `bottle do ... end` 块**不要手填 sha256**：瓶块由 `bottle.yml` 制瓶后自动写回，
+  手填的值与 GHCR 里的实际产物必然不一致。瓶块里的标签写纯系统名 `tahoe`。
 
 ## 5. Workflow 约定
 
@@ -110,7 +112,8 @@ end
 | 措施 | 说明 |
 | --- | --- |
 | 只用 `workflow_dispatch` | 不跑定时任务，Actions 分钟数趋近于 0 |
-| runner 用 `ubuntu-latest` | macOS runner 按 10 倍分钟数计费，检查任务不需要 macOS |
+| 检查类任务用 `ubuntu-latest` | macOS runner 按 10 倍分钟数计费，查版本不需要 macOS |
+| 制瓶任务用 `macos-26-intel` | 瓶标签由**构建机**的架构+系统决定，必须 Intel + macOS 26 才是 `x86_64_tahoe`；该 job 只在手动制瓶时跑 |
 | `fetch-depth: 1` | 只拉最新提交，不全量 clone |
 | 版本查询走 formulae.brew.sh | Homebrew 官方站点，**不消耗 GitHub API 限额** |
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
@@ -138,30 +141,96 @@ sha256：`70c05750c75df9465bc73b994e8bc379243bb494271f1b51f54ead2e19e45471`
 
 `watch-updates.yml` → `scripts/check-updates.sh`：
 
-1. 从 `Formula/gh.rb` 读出本地 `version`；
+1. 从 `Formula/gh.rb` 读出本地版本号（优先 `version` 行，没有则从 `url` 行解析）；
 2. `GET https://formulae.brew.sh/api/formula/gh.json` 取 `.versions.stable`
    —— **这是 brew 上的版本号，不是上游 GitHub 的最新版**，正是需要的判据；
 3. 用 `sort -V` 比较：本地 == brew → 结束；本地 > brew → 结束；brew 更新 → 继续；
-4. 取新版本的 sha256：优先 `GET gh_<ver>_checksums.txt`（2KB），失败才回退下载 15MB zip；
-5. 用 `sed` 改写 `Formula/gh.rb` 的 `version` / `url` / `sha256`，并做改后自检；
-6. workflow 建分支 `bump/gh-<ver>` 提交并开 PR（PR 已存在则复用分支）。
+4. **HEAD 探测新版本资源是否可下载**；不可下载则发 `status=upstream-missing`
+   并开 issue 告警，不再往下走；
+5. 取新版本的 sha256：优先 `GET gh_<ver>_checksums.txt`（2KB），失败才回退下载 15MB zip；
+6. 用 `sed` 改写 `Formula/gh.rb` 的 `url` / `sha256`，并做改后自检；
+7. **摘除失效的 `bottle do` 块**（其 sha256 属于旧版本），并发 `bottle_stale=true`；
+8. workflow 建分支 `bump/gh-<ver>` 提交并开 PR（PR 已存在则复用分支），
+   同时按状态开 issue 告警。
 
 支持输入参数：
 
 - `formula`：要检查的软件（目前只有 `gh`）
 - `dry_run`：`true` 时只检查不提交，先看结果再决定
 
-## 8. 新增软件的 SOP
+## 8. GHCR 瓶策略
+
+### 8.1 定位
+
+`url`（上游预构建包直链）只是**制瓶的原料**，分发走 GHCR 瓶：
+
+- 安装走 Homebrew 原生瓶机制，不依赖 GitHub Releases；
+- 上游万一改名/删档，GHCR 里还留着一份；
+- **不重新编译** —— 瓶的内容就是把上游预构建包拆进 Cellar 再打包。
+
+### 8.2 地址
+
+```ruby
+bottle do
+  root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+  sha256 cellar: :any_skip_relocation, tahoe: "<由 bottle.yml 生成>"
+end
+```
+
+依据（源码 `Homebrew::GitHubPackages.root_url`）：
+
+```ruby
+root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-")}"
+```
+
+所以 `bemly/homebrew-tahoe-intel` → **去掉 `homebrew-` 前缀** → `ghcr.io/v2/bemly/tahoe-intel`
+（与核心的 `ghcr.io/v2/homebrew/core` 同构）。
+
+### 8.3 构建环境：必须是 macos-26-intel
+
+瓶标签由**构建机**的架构与系统决定，写不进公式。要产出 `x86_64_tahoe`
+就必须 Intel + macOS 26；GitHub 托管 runner 里对应 **`macos-26-intel`**
+（该镜像确为 Intel：Java 路径带 `_X64`、Homebrew 前缀是 `/usr/local`、
+驱动是 `chromedriver-mac-x64`）。
+
+常见误区：`macos-14/15/26` 默认是 arm64，制出来是 `arm64_*`；
+`macos-13` 虽是 Intel 但系统是 Ventura，制出来是 `ventura` 而非 `tahoe`。
+
+### 8.4 生命周期
+
+| 场景 | 处理 |
+| --- | --- |
+| 包有新版本，或 GHCR 里还没有瓶 | 手动触发 `bottle.yml`：制瓶 → 覆盖 GHCR 上的旧瓶 → 瓶块提交回公式 |
+| 下次 gh 又更新 | `watch-updates.yml` 先摘掉失效瓶块并开 issue；再跑一次 `bottle.yml` 覆盖 GHCR |
+| 无更新 | 保持走 GHCR 瓶下载 |
+| 上游资源取不到 | `watch-updates.yml` 开 issue 告警，不动公式 |
+
+### 8.5 关键实现细节
+
+- **Taps 目录必须软链**。`brew tap` 默认是 clone，`brew bottle --merge --write`
+  会改到克隆副本上导致提交丢失。`bottle.yml` 里用
+  `ln -sfn "$GITHUB_WORKSPACE" <Taps>/bemly/homebrew-tahoe-intel`。
+- **推 GHCR 用 `brew pr-upload`**：读 CWD 下的 `*.bottle.json`，跑
+  `brew bottle --merge --write`（把瓶块写回公式）再上传。需要
+  `HOMEBREW_GITHUB_PACKAGES_USER` / `HOMEBREW_GITHUB_PACKAGES_TOKEN` 与 `skopeo`；
+  workflow 里用 `secrets.GITHUB_TOKEN` + `permissions: packages: write`。
+- **GHCR 包默认私有**，匿名 `brew install` 会 401。`bottle.yml` 里尝试用 API 改成公开，
+  失败不阻断；兜底是仓库 Settings → Packages 手动改公开。
+- 制瓶产物（`*.bottle.json` / `*.bottle.tar.gz`）已进 `.gitignore`，不要提交。
+
+## 9. 新增软件的 SOP
 
 1. 确认上游有 **macOS amd64** 预编译产物，且支持 macOS 26。
 2. 下载该产物，记录 **sha256**，确认解压后的目录结构。
 3. 照第 4 节模板写 `Formula/<name>.rb`，类名用 CamelCase。
 4. 在 `scripts/check-updates.sh` 的 `case "$FORMULA"` 里登记该软件的
    `asset` / `download_url` / `checksums_url`（无 checksums 文件则留空，自动回退下载计算）。
-5. 在 `.github/workflows/watch-updates.yml` 的 `options:` 里加上该软件名。
-6. 本地验证（见第 9 节）通过后再合并。
+5. 在两个 workflow 的 `options:` 里都加上该软件名：
+   `watch-updates.yml` 和 `bottle.yml`。
+6. 本地验证（见第 10 节）通过后再合并。
+7. 手动跑一次 `bottle.yml`，让 GHCR 上有瓶、公式里生成瓶块。
 
-## 9. 本地验证
+## 10. 本地验证
 
 本机（Intel x86_64 + macOS 26.6.2）就是最合适的验证环境：
 
@@ -183,9 +252,9 @@ brew test      bemly/tahoe-intel/gh      # 跑 test do
 ./scripts/check-updates.sh gh
 ```
 
-## 10. 踩坑记录（本机实测，改代码前务必先看）
+## 11. 踩坑记录（本机实测，改代码前务必先看）
 
-### 10.1 解压目录不要加前缀
+### 11.1 解压目录不要加前缀
 
 brew 解压 zip 后**会自动下降进入其中唯一的顶层目录**。实测 `install` 执行时
 CWD 已经是 `gh_<version>_macOS_amd64/`：
@@ -200,19 +269,19 @@ DEBUG top=["LICENSE", "bin", ".brew_home", "share"]
 
 **正确写法**：用 `Dir["**/bin/gh"]` 通配，brew 下降与否都能命中。
 
-### 10.2 别手动清隔离属性
+### 11.2 别手动清隔离属性
 
 brew 在下载阶段已清掉 `com.apple.quarantine`（装完 `xattr -l` 为空）。
 而且 `bin.install` 出来的文件是 `0555`，手动 `xattr -d` 必然
 `xattr: [Errno 13] Permission denied`。这一步是多余的，不要加。
 
-### 10.3 不要显式声明 version
+### 11.3 不要显式声明 version
 
 `version "2.99.0"` 与 URL 扫描出的版本相同时，audit 报
 `redundant with version scanned from URL`。让 brew 从 URL 扫描即可；
 watcher 脚本相应地也从 url 行解析版本号（`version` 行读不到就回退）。
 
-### 10.4 同名公式跨 tap 不能共存
+### 11.4 同名公式跨 tap 不能共存
 
 brew 会直接拒绝安装：
 
@@ -224,7 +293,7 @@ Formulae with the same name from different taps cannot be installed at the same 
 
 用户必须先 `brew uninstall gh`（core 版），才能装本 tap 的版本。
 
-### 10.5 本地开发：tap 目录要用软链接
+### 11.5 本地开发：tap 目录要用软链接
 
 `brew tap bemly/tahoe-intel <本地路径>` 是 **clone，不是 symlink**，
 改了本地文件 brew 读不到，会一直报旧错误。开发时换成软链接：
@@ -234,7 +303,7 @@ rm -rf /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe-intel
 ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe-intel
 ```
 
-### 10.6 验证结果（2026-09-02，Intel x86_64 / macOS 26.6.2）
+### 11.6 验证结果（2026-09-02，Intel x86_64 / macOS 26.6.2）
 
 | 检查项 | 结果 |
 | --- | --- |
@@ -247,7 +316,7 @@ ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/h
 | watcher（已是最新） | `status=up-to-date` |
 | watcher（模拟 2.98.0→2.99.0） | 正确改写 url 与 sha256，sha 取自 2KB 的 checksums.txt |
 
-## 11. 待办 / 后续演进
+## 12. 待办 / 后续演进
 
 - [ ] 需要时补充更多 Intel Tahoe 软件（按第 8 节 SOP 加）。
 - [ ] 若某些软件上游不提供 macOS amd64 包，改为自建 bottle：
