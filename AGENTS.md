@@ -238,17 +238,87 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
   失败不阻断；兜底是仓库 Settings → Packages 手动改公开。
 - 制瓶产物（`*.bottle.json` / `*.bottle.tar.gz`）已进 `.gitignore`，不要提交。
 
-## 9. 新增软件的 SOP
+## 9. 新增软件的 SOP（端到端 Runbook）
 
-1. 确认上游有 **macOS amd64** 预编译产物，且支持 macOS 26。
-2. 下载该产物，记录 **sha256**，确认解压后的目录结构。
-3. 照第 4 节模板写 `Formula/<name>.rb`，类名用 CamelCase。
-4. 在 `scripts/check-updates.sh` 的 `case "$FORMULA"` 里登记该软件的
+目标：把一个新软件做成「用户 `brew install bemly/tahoe-intel/<name>` 时直接命中 GHCR 瓶」的状态。
+下面每一步都是必做项，**顺序不能跳**——之后每个软件都按这套走。
+
+### 9.1 调研上游（确定原料）
+
+1. 确认上游有 **macOS amd64** 预编译产物，且能在 macOS 26 跑。
+   优先找 GitHub Releases 的 `*-macOS-amd64*` / `*-macos-amd64*` 资产。
+2. 确定版本号来源：
+   - 在 core 里的软件，看 `https://formulae.brew.sh/api/formula/<name>.json` 的 `.versions.stable`；
+   - 不在 core 的软件（如 `fastfetch`）直接盯上游 release 页，release tag 可能无 `v` 前缀。
+3. 下载该产物，**本地实测**算出 sha256，并 `tar -tzf` / `unzip -l` 看解压后目录结构
+   （顶层目录名、bin 位置、是否需要拆层级，见 11.1）。
+
+### 9.2 写公式
+
+4. 照第 4 节模板写 `Formula/<name>.rb`，类名 CamelCase。
+   `url` 用上游直链（制瓶原料）；`sha256` 用 9.1 实测值；
+   必须带 `depends_on arch: :x86_64` + `depends_on macos: :tahoe`。
+   **不要手填 `bottle do` 块**（由 bottle.yml 制瓶后自动写回，见 8.5）。
+
+### 9.3 登记到 watcher 与 workflow
+
+5. 在 `scripts/check-updates.sh` 的 `case "$FORMULA"` 里登记
    `asset` / `download_url` / `checksums_url`（无 checksums 文件则留空，自动回退下载计算）。
-5. 在两个 workflow 的 `options:` 里都加上该软件名：
+6. 在两个 workflow 的 `options:` 里都加上该软件名：
    `watch-updates.yml` 和 `bottle.yml`。
-6. 本地验证（见第 10 节）通过后再合并。
-7. 手动跑一次 `bottle.yml`，让 GHCR 上有瓶、公式里生成瓶块。
+   ⚠️ **这一步没有 push 进远端之前，bottle.yml 不会认这个新名字**（见 11.7）。
+
+### 9.4 本地验证
+
+7. 本地验证（见第 10 节）：`brew style` / `audit --strict` / `fetch` / `install` / `test` 全过。
+   此时装的是上游直链版（还没有 GHCR 瓶），属正常现象。
+
+### 9.5 提交并推到远端
+
+8. 把 9.2–9.3 的全部改动 `git add` + `commit` + `git push origin main`。
+   **不提交就无法在下一步用 `gh` 触发带新软件名的制瓶**（选项只认远端版本）。
+
+### 9.6 手动制瓶（触发 bottle.yml）
+
+9. 用本机已登录的 `gh`（需 `workflow` 权限）触发：
+
+   ```bash
+   gh workflow run "Build bottle and publish to GHCR" \
+     --repo bemly/homebrew-tahoe-intel \
+     -f formula=<name>
+   ```
+
+10. **阻塞等到跑完**（必须看到 `✓ Complete job` 再继续）：
+
+    ```bash
+    RUN_ID=$(gh run list --repo bemly/homebrew-tahoe-intel --limit 1 \
+              --json databaseId --jq '.[0].databaseId')
+    gh run watch "$RUN_ID" --repo bemly/homebrew-tahoe-intel
+    ```
+
+    注意：
+
+    - repository 名是 `bemly/homebrew-tahoe-intel`（带 `homebrew-` 前缀），不是 tap 名 `bemly/tahoe-intel`；
+    - 若报 `Provided value '<name>' for input 'formula' not in the list of allowed values`，
+      说明第 6 步的选项还没推上去（回 9.5）；
+    - 该 workflow 会依次：软链并信任 tap → build-bottle 安装 → 制瓶 → 删旧 GHCR 标签（支持重复运行覆盖）
+      → 推 GHCR → 尝试设公开 → **把瓶块 commit 回公式**。
+
+### 9.7 让本机也换成 GHCR 瓶版（而不是直链）
+
+11. 制瓶完成后，远端公式已带 `bottle do` 块。本机先把这次提交拉下来，再重装，让它走 GHCR 瓶：
+
+    ```bash
+    git pull --ff-only origin main
+    brew reinstall bemly/tahoe-intel/<name>
+    ```
+
+    成功标志：日志出现
+    `Downloading https://ghcr.io/v2/bemly/tahoe-intel/<name>/manifests/<ver>`
+    与 `Pouring <name>--<ver>.tahoe.bottle.tar.gz`。
+
+12. 校验：`brew info bemly/tahoe-intel/<name>` 显示 `stable <ver> (bottled)`，
+    且 `<name> --version` 版本正确、`file -b $(which <name>)` 为 `Mach-O 64-bit executable x86_64`。
 
 ## 10. 本地验证
 
@@ -335,6 +405,21 @@ ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/h
 | `file -b $(which gh)` | `Mach-O 64-bit executable x86_64` |
 | watcher（已是最新） | `status=up-to-date` |
 | watcher（模拟 2.98.0→2.99.0） | 正确改写 url 与 sha256，sha 取自 2KB 的 checksums.txt |
+
+### 11.7 制瓶的两道必经关（每加一个软件都会踩）
+
+1. **必须先 `git push` 再触发 `bottle.yml`。**
+   `bottle.yml` 的 `formula` 选项是 workflow 文件里的 `options:`，它只认**已推到远端**的版本。
+   只改本地、没 push，触发时会报：
+   `Provided value '<name>' for input 'formula' not in the list of allowed values`。
+   → SOP 9.5（提交并推送）必须在 9.6（触发制瓶）之前完成。
+2. **制瓶后本机要 `git pull` + `brew reinstall` 才换上 GHCR 瓶。**
+   `bottle.yml` 在 CI 里把瓶块 commit 回公式并 push；本机不 pull 就读不到瓶块，
+   重装时仍会回退到上游直链。`git pull --ff-only` 后 `brew reinstall` 的日志
+   必须出现 `ghcr.io/v2/bemly/tahoe-intel/<name>/manifests/...`
+   与 `Pouring <name>--<ver>.tahoe.bottle.tar.gz` 才算真正换瓶成功。
+3. 触发用 `gh workflow run ... --repo bemly/homebrew-tahoe-intel`
+   （带 `homebrew-` 前缀的**仓库名**），不是 tap 名 `bemly/tahoe-intel`。
 
 ## 12. 待办 / 后续演进
 
