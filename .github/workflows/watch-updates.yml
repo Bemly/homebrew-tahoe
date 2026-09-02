@@ -2,11 +2,17 @@ name: Watch upstream versions
 
 # 只允许手动点击运行（Actions → 本 workflow → Run workflow）。
 # 不设 schedule / push 触发，把 GitHub Actions 用量压到最低。
+#
+# 两种用法（见 AGENTS.md 7 / 9）：
+#   - 常规：formula 选单个软件 → 更新则开 PR（改 url）+ [制瓶] 提醒 issue，不自动制瓶。
+#   - 批量：batch=true → 扫描 Formula/*.rb 全部软件，有更新的直接提交到 main，
+#           并触发「一次」Build bottle and publish to GHCR（formula 传逗号列表），
+#           由它在单个 macos-26-intel 任务里顺序出瓶，避免每个软件各占一次 runner。
 on:
   workflow_dispatch:
     inputs:
       formula:
-        description: 要检查的软件
+        description: 要检查的软件（batch 模式忽略此项）
         required: true
         default: gh
         type: choice
@@ -18,10 +24,16 @@ on:
         required: false
         default: false
         type: boolean
+      batch:
+        description: 扫描 Formula/*.rb 全部软件，更新后自动触发单次批量制瓶
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write   # 批量模式下用 gh workflow run 触发 bottle.yml
 
 # 同一时间只允许一个检查任务，避免重复消耗
 concurrency:
@@ -40,14 +52,54 @@ jobs:
         with:
           fetch-depth: 1
 
+      # —— 批量模式：扫描全部公式，更新后直接提交 main 并触发单次制瓶 ——
+      - name: 批量扫描并更新
+        if: inputs.batch == true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/check-updates.sh
+          updated=()
+          for rb in Formula/*.rb; do
+            f="$(basename "$rb" .rb)"
+            out="$(mktemp)"
+            # 让脚本把状态写进临时文件（避免循环里反复覆盖 GITHUB_OUTPUT）
+            GITHUB_OUTPUT="$out" ./scripts/check-updates.sh "$f" || true
+            status="$(grep '^status=' "$out" | cut -d= -f2 || true)"
+            rm -f "$out"
+            if [[ "$status" == "updated" ]]; then
+              updated+=("$f")
+              echo "  -> $f 需要更新"
+            fi
+          done
+          if [[ ${#updated[@]} -eq 0 ]]; then
+            echo "没有软件需要更新。"
+            exit 0
+          fi
+          list="$(IFS=,; echo "${updated[*]}")"
+          echo "需要更新的软件：$list"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/*.rb
+          git commit -m "watcher: batch bump ${list}"
+          git push origin HEAD:main
+          echo "已提交更新，触发单次批量制瓶（formula=${list}）"
+          gh workflow run "Build bottle and publish to GHCR" \
+            --repo bemly/homebrew-tahoe-intel \
+            -f formula="$list"
+
+      # —— 常规模式：只检查单个 formula ——
       - name: 检查 brew 上游版本
+        if: inputs.batch != true
         id: check
         run: |
+          set -euo pipefail
           chmod +x scripts/check-updates.sh
           ./scripts/check-updates.sh "${{ inputs.formula }}"
 
       - name: 上游资源不可用时开 issue 告警
-        if: steps.check.outputs.status == 'upstream-missing'
+        if: inputs.batch != true && steps.check.outputs.status == 'upstream-missing'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORMULA: ${{ inputs.formula }}
@@ -75,11 +127,11 @@ jobs:
           )"
 
       - name: 语法自检
-        if: steps.check.outputs.status == 'updated'
+        if: inputs.batch != true && steps.check.outputs.status == 'updated'
         run: ruby -c "Formula/${{ inputs.formula }}.rb"
 
       - name: 提交并发起 PR
-        if: steps.check.outputs.status == 'updated' && inputs.dry_run != true
+        if: inputs.batch != true && steps.check.outputs.status == 'updated' && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORMULA: ${{ inputs.formula }}
@@ -131,7 +183,7 @@ jobs:
           fi
 
       - name: GHCR 瓶需要重建时开 issue 告警
-        if: steps.check.outputs.bottle_stale == 'true'
+        if: inputs.batch != true && steps.check.outputs.bottle_stale == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORMULA: ${{ inputs.formula }}
@@ -163,8 +215,8 @@ jobs:
           {
             echo "## 上游版本检查结果"
             echo ""
-            echo "- 软件：\`${{ inputs.formula }}\`"
-            echo "- 状态：\`${{ steps.check.outputs.status || '未产出结果' }}\`"
+            echo "- 模式：\`${{ inputs.batch == true && '批量扫描 Formula/*.rb' || inputs.formula }}\`"
+            echo "- 状态：\`${{ steps.check.outputs.status || '未产出结果（批量模式或无更新）' }}\`"
             echo "- 本地版本：\`${{ steps.check.outputs.current_version || 'N/A' }}\`"
             echo "- brew 版本：\`${{ steps.check.outputs.new_version || steps.check.outputs.current_version || 'N/A' }}\`"
             echo "- dry_run：\`${{ inputs.dry_run }}\`"

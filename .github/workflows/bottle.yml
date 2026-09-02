@@ -4,17 +4,20 @@ name: Build bottle and publish to GHCR
 #
 # 仅手动触发。构建环境必须是 Intel + macOS 26 才能产出 x86_64_tahoe 标签的瓶，
 # GitHub 托管 runner 对应的 label 是 macos-26-intel。
+#
+# formula 入参支持三种写法（见 AGENTS.md 9.6 / 9.8）：
+#   - 单个：  gh
+#   - 多个：  gh,fastfetch   （逗号分隔，只针对这批软件出瓶，最省 runner）
+#   - 全部：  all            （遍历 Formula/*.rb）
+# 无论几个软件，都只在「一次」macos-26-intel 任务里顺序完成，避免多次占用 runner。
 on:
   workflow_dispatch:
     inputs:
       formula:
-        description: 要制瓶的软件
+        description: 要制瓶的软件（单个名 / 逗号分隔多个 / all 表示全部）
         required: true
         default: gh
-        type: choice
-        options:
-          - gh
-          - fastfetch
+        type: string
 
 permissions:
   contents: write
@@ -35,13 +38,25 @@ env:
 jobs:
   bottle:
     runs-on: macos-26-intel
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: 检出仓库
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+
+      - name: 计算待制瓶软件列表
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.formula }}" == "all" ]]; then
+            mapfile -t FORMULAS < <(ls Formula/*.rb | xargs -n1 basename | sed 's/\.rb$//')
+          else
+            IFS=',' read -ra FORMULAS <<< "${{ inputs.formula }}"
+          fi
+          # 去空、去重、排序，落到 /tmp/formulas.txt 供后续步骤复用
+          printf '%s\n' "${FORMULAS[@]}" | sed '/^$/d' | sort -u > /tmp/formulas.txt
+          echo "本次制瓶软件：$(paste -sd, /tmp/formulas.txt)"
 
       # brew tap 默认是 clone，改动会落在克隆副本上导致提交丢失。
       # 用软链接指回工作区，brew bottle --merge --write 才能改到待提交的文件。
@@ -61,41 +76,35 @@ jobs:
       - name: 安装 skopeo（推 GHCR 的依赖）
         run: brew install skopeo
 
-      - name: 以 build-bottle 模式安装
-        run: |
-          set -euo pipefail
-          # runner 镜像里 gh 来自 homebrew/core，与本 tap 同名，必须先卸掉 core 版
-          brew uninstall --force gh || true
-          brew install --build-bottle "bemly/tahoe-intel/${{ inputs.formula }}"
-
-      - name: 制瓶
-        run: brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe-intel/${{ inputs.formula }}"
-
-      # GHCR 不允许覆盖已存在的 tag（重跑 bottle.yml 必遇 already exists!）。
-      # 推送前先删掉当前版本对应的旧标签，实现“覆盖旧瓶”（见 AGENTS.md 8.4）。
-      - name: 删除已存在的 GHCR 瓶标签（支持重复运行覆盖）
+      # 一次任务内顺序处理所有软件：build-bottle 安装 → 制瓶 → 删旧标签 → 推 GHCR。
+      # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md 5）。
+      - name: 循环制瓶并推 GHCR
         env:
           HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
           HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          version="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "Formula/${{ inputs.formula }}.rb" | head -1)"
-          [[ -n "$version" ]] || { echo "无法从公式解析版本号，跳过删除。"; exit 0; }
-          tag="${{ inputs.formula }}:${version}"
-          echo "若 GHCR 已存在标签 ${tag}，先删除以便覆盖推送。"
-          skopeo delete --creds "${HOMEBREW_GITHUB_PACKAGES_USER}:${HOMEBREW_GITHUB_PACKAGES_TOKEN}" \
-            "docker://ghcr.io/bemly/tahoe-intel/${tag}" \
-            && echo "已删除旧标签。" \
-            || echo "旧标签不存在或删除失败（可能首次推送），继续。"
+          mapfile -t FORMULAS < /tmp/formulas.txt
+          for f in "${FORMULAS[@]}"; do
+            echo "===== 处理 $f ====="
+            # 同名公式跨 tap 不能共存：先卸掉可能预装的 core 版（如 runner 自带 gh）
+            brew uninstall --force "$f" || true
+            brew install --build-bottle "bemly/tahoe-intel/$f"
+            brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe-intel/$f"
+            version="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "Formula/$f.rb" | head -1)"
+            if [[ -n "$version" ]]; then
+              tag="$f:$version"
+              echo "若 GHCR 已存在标签 ${tag}，先删除以便覆盖推送。"
+              skopeo delete --creds "${HOMEBREW_GITHUB_PACKAGES_USER}:${HOMEBREW_GITHUB_PACKAGES_TOKEN}" \
+                "docker://ghcr.io/bemly/tahoe-intel/${tag}" \
+                && echo "已删除旧标签 ${tag}。" \
+                || echo "旧标签 ${tag} 不存在或删除失败（可能首次推送），继续。"
+            fi
+            brew pr-upload --root-url="$ROOT_URL" --no-commit
+            rm -f *.bottle.json
+          done
 
-      # pr-upload 读 CWD 下的 *.bottle.json，推 GHCR，并把瓶块写回公式
-      - name: 推 GHCR
-        env:
-          HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
-          HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: brew pr-upload --root-url="$ROOT_URL" --no-commit
-
-      # GHCR 包默认私有，匿名 brew install 会 401，尽量改公开；失败不阻断，
+      # GHCR 包默认私有，匿名 brew install 会 401，逐个改公开；失败不阻断，
       # 可在仓库 Settings → Packages 手动改。
       - name: 尝试将 GHCR 包设为公开
         continue-on-error: true
@@ -105,18 +114,16 @@ jobs:
           set -euo pipefail
           # REST 没有改可见性的端点，用 GraphQL updatePackageVisibility。
           # 不依赖 gh CLI（前面卸载了 core gh）；GITHUB_TOKEN 带 packages:write。
-          QUERY='mutation {
-            updatePackageVisibility(input: {
-              packageName: "tahoe-intel/${{ inputs.formula }}",
-              packageType: CONTAINER,
-              visibility: PUBLIC
-            }) { package { name visibility } }
-          }'
-          curl -fsSL -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data "$(jq -n --arg q "$QUERY" '{query: $q}')" \
-            "https://api.github.com/graphql" || true
+          QUERY_TMPL='mutation { updatePackageVisibility(input: { packageName: "tahoe-intel/%s", packageType: CONTAINER, visibility: PUBLIC }) { package { name visibility } } }'
+          while IFS= read -r f; do
+            [[ -n "$f" ]] || continue
+            QUERY="$(printf "$QUERY_TMPL" "$f")"
+            curl -fsSL -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data "$(jq -n --arg q "$QUERY" '{query: $q}')" \
+              "https://api.github.com/graphql" || true
+          done < /tmp/formulas.txt
 
       - name: 提交瓶块
         id: commit
@@ -124,13 +131,13 @@ jobs:
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- "Formula/${{ inputs.formula }}.rb"; then
+          if git diff --quiet -- Formula/*.rb; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "瓶块无变化，跳过提交。"
             exit 0
           fi
-          git add "Formula/${{ inputs.formula }}.rb"
-          git commit -m "${{ inputs.formula }}: 更新 GHCR 瓶块"
+          git add Formula/*.rb
+          git commit -m "bottle: 更新 GHCR 瓶块（$(paste -sd, /tmp/formulas.txt)）"
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
@@ -140,7 +147,7 @@ jobs:
           {
             echo "## GHCR 制瓶结果"
             echo ""
-            echo "- 软件：\`${{ inputs.formula }}\`"
+            echo "- 软件：\`$(paste -sd, /tmp/formulas.txt)\`"
             echo "- runner：\`macos-26-intel\`（Intel + macOS 26）"
             echo "- 瓶根地址：\`$ROOT_URL\`"
             echo "- 瓶块已提交：\`${{ steps.commit.outputs.changed || 'false' }}\`"

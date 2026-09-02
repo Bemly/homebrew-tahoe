@@ -118,6 +118,15 @@ end
 | 版本查询走 formulae.brew.sh | Homebrew 官方站点，**不消耗 GitHub API 限额** |
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
 | `concurrency` + `timeout-minutes` | 防重复跑、防挂死 |
+| 批量制瓶只占一次 runner | `watch-updates.yml` 开 `batch=true` 扫全部，只触发**一次** `bottle.yml`（逗号列表传参）；`bottle.yml` 在单个 `macos-26-intel` 任务里顺序出瓶，绝不逐个触发 |
+
+### 5.1 批量模式的核心约束：一次 runner 出多个瓶
+
+watcher 扫到 N 个软件更新时，**绝不让 watcher 逐个 `gh workflow run` 触发 N 次 `bottle.yml`**——
+那会变成 N 次 macOS runner 占用（macOS 按 10 倍分钟计费，最贵）。正确做法：
+watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f formula="a,b,c"`
+触发 `bottle.yml`，由它在**单个** `macos-26-intel` 任务内循环为 a/b/c 出瓶。
+`bottle.yml` 的 `formula` 入参支持：`gh`（单）、`gh,fastfetch`（逗号多）、`all`（遍历 `Formula/*.rb`）。
 
 ## 6. 当前收录
 
@@ -175,8 +184,23 @@ sha256：`1e9a6ba7474a41b3cc2bb1b923afcf40c749c25bd17dc1e62b64464e7445a534`
 
 支持输入参数：
 
-- `formula`：要检查的软件（目前只有 `gh`）
+- `formula`：要检查的软件（目前有 `gh` / `fastfetch`）
 - `dry_run`：`true` 时只检查不提交，先看结果再决定
+- `batch`：`true` 时扫描 `Formula/*.rb` 全部软件做批量更新（见下）
+
+### 7.1 批量模式（batch=true）
+
+常规模式（单 `formula`）只开 PR + [制瓶] issue，不自动制瓶（见 9.6/9.7）。
+`batch=true` 则全自动：
+
+1. 遍历 `Formula/*.rb`，对每个软件跑 `check-updates.sh`；
+2. 把检测到更新的软件，其 `url`+`sha256` 改写、旧 `bottle do` 块摘除（同常规）；
+3. 把所有更新**一次性提交到 `main`**（不开 PR）；
+4. 用**一次** `gh workflow run "Build bottle and publish to GHCR" -f formula="a,b,c"`
+   触发 `bottle.yml`，由它在单个 `macos-26-intel` 任务里顺序为这批软件出瓶（见 9.8）。
+
+即 N 个软件更新 = **1 次 watcher（ubuntu）+ 1 次 bottle（macos）**，共 2 次 workflow 运行，
+与更新数量无关。常规模式的「开 PR + 手动合并 + 逐个制瓶」链路仍保留，按需选用。
 
 ## 8. GHCR 瓶策略
 
@@ -288,6 +312,9 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
      -f formula=<name>
    ```
 
+   `formula` 入参支持：`gh`（单）、`gh,fastfetch`（逗号多，一次出多个瓶）、`all`（遍历全部）。
+   多软件场景优先用逗号列表或 `all`，只占一次 macOS runner（见 5.1）。
+
 10. **阻塞等到跑完**（必须看到 `✓ Complete job` 再继续）：
 
     ```bash
@@ -319,6 +346,21 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 12. 校验：`brew info bemly/tahoe-intel/<name>` 显示 `stable <ver> (bottled)`，
     且 `<name> --version` 版本正确、`file -b $(which <name>)` 为 `Mach-O 64-bit executable x86_64`。
+
+### 9.8 批量更新（一次扫全部 + 单次制瓶）
+
+适合「多个软件同时发版」或「想一键把整个 tap 的瓶刷新一遍」：
+
+1. 手动跑 `watch-updates.yml`，勾选 **`batch=true`**（此时 `formula` 忽略）。
+2. watcher 在 `ubuntu-latest` 上遍历 `Formula/*.rb`，对每个软件查上游版本；
+   有更新的就地改写 `url`+`sha256`、摘除旧 `bottle do` 块，然后**一次性提交到 `main`**。
+3. watcher 紧接着触发**一次** `bottle.yml`，`formula` 传逗号列表（如 `gh,fastfetch`）；
+   `bottle.yml` 在**单个** `macos-26-intel` 任务里顺序为这批软件出瓶、覆盖 GHCR、写回瓶块。
+4. 校验同 9.7 第 12 步（逐个 `brew info` 看 `(bottled)`）。
+
+等价地，也可以手动分步：先 `watch-updates.yml`（`batch=true`）只提交 url 更新，
+再自己跑一次 `bottle.yml -f all`（或 `-f "gh,fastfetch"`）出瓶。
+**关键点**：无论几个软件，制瓶只发生在一个 `macos-26-intel` 任务内，不会变成 N 次 runner。
 
 ## 10. 本地验证
 
@@ -423,7 +465,8 @@ ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/h
 
 ## 12. 待办 / 后续演进
 
-- [ ] 需要时补充更多 Intel Tahoe 软件（按第 8 节 SOP 加）。
+- [x] 批量更新已支持：`watch-updates.yml` 的 `batch=true` 扫全部 + 单次 `bottle.yml` 出多瓶（见 5.1 / 7.1 / 9.8）。新增软件仍按第 9 节 SOP 加。
+- [ ] 实测验证 batch 链路（watcher batch → 单次 bottle）在真实多软件更新下的表现。
 - [ ] 若某些软件上游不提供 macOS amd64 包，改为自建 bottle：
       新增一个 `workflow_dispatch` 的 `bottle.yml`，构建后传到 GitHub Releases，
       公式里加 `bottle do ... sha256 tahoe: "..." end`，root_url 指向本仓 Releases。
