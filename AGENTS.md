@@ -531,6 +531,17 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
    `audit_exceptions/mismatched_binary_allowlist.json` 里豁免
    `WorkBuddy.app/Contents/Resources/**/*`。注意 Ruby fnmatch 的 `**` 不跨目录，
    结尾必须是 `/**/*` 而不是 `/**`（FNM_PATHNAME 下实测）。
+5. **build-bottle 的链接修复对 Electron 是致命的**。`brew install --build-bottle`
+   会把所有非 @rpath 的 dylib id 改写成 ~80 字符的 `/usr/local/opt` 绝对路径，
+   load command header 已满的二进制直接崩（`Updated load commands do not fit in
+   the header`，本地普通 install 却能过——坑只在制瓶时爆发）。解法三层：
+   公式声明 `preserve_rpath`（公开 DSL，@rpath 形态不再被改写）；
+   install 里用 brew 自带的 ruby-macho（`MachO::Tools.change_dylib_id`）把其余
+   非 @rpath 的 id（ANGLE 的 `./libEGL.dylib`、libffmpeg 的 `@loader_path`、
+   QimeiSDKMac 的绝对路径）统一改写为 `@rpath/<basename>` 并 ad-hoc 重签——
+   dylib id 只是加载身份，没有任何 load command 按旧 id 引用，改写安全；
+   ruby 细节两坑：`%w[]` 是单引号语义不解析 `\x` 字节转义，binary 串与 UTF-8
+   字面量 `include?` 恒 false——magic 判断用 `unpack1("H8")` 的 hex 字符串比较。
 
 ## 12. 待办 / 后续演进
 
