@@ -98,6 +98,10 @@ end
   **不要手动清 `com.apple.quarantine`**（原因见 11.2）。
 - `bottle do ... end` 块**不要手填 sha256**：瓶块由 `bottle.yml` 制瓶后自动写回，
   手填的值与 GHCR 里的实际产物必然不一致。瓶块里的标签写纯系统名 `tahoe`。
+- **桌面 app（.app 包）**：brew 公式没有 `app` DSL（那是 cask 的），用
+  `prefix.install Dir["**/Foo.app"].fetch(0)` 装进 Cellar（参照 macvim），配一个
+  `bin` 启动脚本；闭源软件**不声明 license**（`:cannot_redistribute` / `"Proprietary"`
+  都会被 audit --strict 拒，缺省则不检查）。细节见 11.9。
 
 ## 5. Workflow 约定
 
@@ -136,6 +140,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | --- | --- | --- | --- |
 | `gh` | 2.99.0 | GitHub 官方发布包 `gh_2.99.0_macOS_amd64.zip`（外部链接） | 已收录 |
 | `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
+| `workbuddy` | 5.4.7.37521366 | WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取，外部链接） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -167,6 +172,28 @@ fastfetch-macos-amd64/
 tar.gz 约 2MB。注意 fastfetch 的 macOS 发布**不提供 checksums.txt**，
 watcher 检查器（`updater/fastfetch.swift` 的 `checksumsURL: nil`）会回退到下载 tar.gz 后本地计算。
 sha256：`1e9a6ba7474a41b3cc2bb1b923afcf40c749c25bd17dc1e62b64464e7445a534`
+
+### workbuddy 发布包结构（已实测）
+
+```
+WorkBuddy.app/                        # Electron 桌面 app，1.07GB / 3442 文件
+└── Contents/
+    ├── Info.plist                    # CFBundleShortVersionString 只有三段（如 5.4.7），
+    │                                 #   公式版本是四段（含构建号 .37521366）
+    ├── MacOS/Electron                # 主二进制（未改名），x86_64 thin，已签名
+    └── ...
+```
+
+zip 约 465MB。WorkBuddy **不在 brew core**，版本来源用它的 Electron 自动更新接口
+`https://www.workbuddy.cn/v2/update?platform=workbuddy-darwin-x64`（返回 version / url / sha256hash），
+由 `updater/workbuddy.swift` 走 `customRelease` 自定义流接入。三个关键实测结论：
+
+- 接口的 `sha256hash` 是 **dmg** 的 sha，与 zip 实算**不符** → 公式原料用 zip、sha 由
+  检查器在有更新时下载 zip 本地实算（约 465MB，仅更新时发生）；
+- 不用 dmg 做原料：brew 6.0.21 的 `DmgUnpackStrategy` 遇到 dmg 里指向 /Applications
+  的符号链接会调不存在的 `MacOS.system_dir?` 直接崩（上游 bug，见 11.8），zip 无此问题；
+- 产物文件名带版本 + 构建哈希（`-b148bd1d`），每次部署都变 → URL 必须整条动态获取、
+  公式改写整条替换（`rewriteFormula` 的 newURL 模式）。
 
 ## 7. Watcher 工作原理
 
@@ -278,9 +305,10 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 1. 确认上游有 **macOS amd64** 预编译产物，且能在 macOS 26 跑。
    优先找 GitHub Releases 的 `*-macOS-amd64*` / `*-macos-amd64*` 资产。
-2. 确定版本号来源：
-   - 在 core 里的软件，看 `https://formulae.brew.sh/api/formula/<name>.json` 的 `.versions.stable`；
-   - 不在 core 的软件（如 `fastfetch`）直接盯上游 release 页，release tag 可能无 `v` 前缀。
+2. 确定版本号来源（二选一）：
+   - **brew 流**：在 core 里的软件，看 `https://formulae.brew.sh/api/formula/<name>.json` 的 `.versions.stable`；
+   - **自定义流**：brew 未收录的软件（如 workbuddy），若上游有自有更新接口（Electron app
+     的自动更新接口最稳），返回值里的 version/直链/sha 可一次拿全——接入方式见 9.3。
 3. 下载该产物，**本地实测**算出 sha256，并 `tar -tzf` / `unzip -l` 看解压后目录结构
    （顶层目录名、bin 位置、是否需要拆层级，见 11.1）。
 
@@ -293,9 +321,13 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 ### 9.3 登记到 watcher（updater/）
 
-5. 新建 `updater/<name>.swift`（与 `Formula/<name>.rb` 同名，一一对应）：照抄 `gh.swift`
-   的 `@main` 结构，改 4 处配置——`formula` / `brewName`、`asset`、`downloadURL`、
-   `checksumsURL`（上游无 checksums 文件则置 `nil`，核心自动回退下载计算）。
+5. 新建 `updater/<name>.swift`（与 `Formula/<name>.rb` 同名，一一对应），两种写法：
+   - **brew 流**（软件在 homebrew/core）：照抄 `gh.swift` 的 `@main` 结构，改 4 处配置——
+     `formula` / `brewName`、`asset`、`downloadURL`、`checksumsURL`
+     （上游无 checksums 文件则置 `nil`，核心自动回退下载计算）；
+   - **自定义流**（brew 未收录）：照抄 `workbuddy.swift`，实现 `customRelease` 闭包调
+     上游自有更新接口，返回 `UpstreamRelease(version:downloadURL:sha256:)`
+     （sha 仅在实测确认归属时才给，否则置 nil 由核心下载实算）。
    ⚠️ **公式与 swift 文件没有 push 进远端之前，CI checkout 拿不到它们**（见 11.7）。
 
 ### 9.4 本地验证
@@ -467,11 +499,48 @@ ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/h
 3. 触发用 `gh workflow run ... --repo bemly/homebrew-tahoe-intel`
    （带 `homebrew-` 前缀的**仓库名**），不是 tap 名 `bemly/tahoe-intel`。
 
+### 11.8 WorkBuddy：dmg 做原料会撞 brew 上游 bug，用 zip
+
+（2026-09-03 实测，Homebrew 6.0.21）Electron app 的官方 dmg 里通常有指向
+`/Applications` 的符号链接，`brew install` 解包时走 `DmgUnpackStrategy`，
+它会调 `MacOS.system_dir?` —— **这个方法在该版本根本不存在**，直接
+`NoMethodError` 崩掉（上游 bug，本机与 CI 只要 brew 版本相同都会踩）。
+
+结论：凡是「zip/dmg 双格式」的上游，公式一律取 **zip**（zip 解包不经过该路径）。
+WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符），所以检查器
+把 `UpstreamRelease.sha256` 置 nil，有更新时下载 zip 本地实算。若上游只有 dmg，
+得等 brew 修复后再收，或考虑 cask。
+
+### 11.9 桌面 app 公式的三个坑（以 WorkBuddy 为例）
+
+1. **zip 顶层垃圾被过滤后仍会下降**。zip 里有 `WorkBuddy.app/` + `__MACOSX/` 两个顶层
+   目录，看似不会触发 11.1 的「自动下降」，但 brew 解包时先把 `__MACOSX` 当垃圾过滤掉，
+   只剩唯一顶层目录 → **照样下降进 app 内部**，CWD 就是 app 根，`Dir["**/WorkBuddy.app"]`
+   扑空报 `IndexError`。install 要写双分支：`Contents/Info.plist` 存在说明已下降，
+   用 `(prefix/"Foo.app").install Dir["*"]`；否则 `prefix.install Dir["**/Foo.app"].fetch(0)`。
+2. **闭源软件不声明 license**。`license :cannot_redistribute` 与 `license "Proprietary"`
+   都会被 `audit --strict` 判 `non-standard SPDX licenses` 拒掉；**不写 license 行**
+   则 audit 直接跳过 license 检查（源码 `formula_auditor.rb`：`license.present?` 才审）。
+3. **plist 版本可能比公式版本少段**。WorkBuddy 的 `CFBundleShortVersionString` 是三段
+   （5.4.7），公式版本是四段（含构建号），post_install/test 做前缀比对而非全等
+   （`version.start_with?("#{plist_version}.")`）。
+4. **安装后 audit 会扫 app 内置的异架构模块**。Electron x64 包里附带 darwin-arm64 的
+   node 原生模块（node-pty/koffi 等预编译件，运行时用不到），装完再跑
+   `audit --strict` 会报 `Binaries built for a non-native architecture`。
+   不能删（会破坏代码签名触发 Gatekeeper），解法是在 tap 的
+   `audit_exceptions/mismatched_binary_allowlist.json` 里豁免
+   `WorkBuddy.app/Contents/Resources/**/*`。注意 Ruby fnmatch 的 `**` 不跨目录，
+   结尾必须是 `/**/*` 而不是 `/**`（FNM_PATHNAME 下实测）。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
-- [ ] 实测验证 watcher → 单次 bottle 全自动链路在真实多软件更新下的表现（含 Swift 检查器在 ubuntu runner 上的首次运行）。
-- [ ] **brew 上没有收录的软件**：检查器目前发 `status=brew-missing` 并跳过（对应 `updater/UpdaterCore.swift` 内 TODO(brew-missing)），需要单独适配版本来源（例如直接盯上游 GitHub Releases 的最新 tag）。
+- [x] **brew 未收录软件的版本来源**：`CheckConfig.customRelease` 自定义流已支持
+      （WorkBuddy 走其 Electron 自动更新接口，见 `updater/workbuddy.swift` 与 9.3）；
+      仍未适配的软件会发 `status=brew-missing` 并跳过（`UpdaterCore` 内 TODO）。
+- [ ] 实测验证 watcher → 单次 bottle 全自动链路在真实多软件更新下的表现（含 Swift 检查器
+      在 ubuntu runner 上的首次运行，以及 workbuddy 这种 ~465MB 大包在 macos-26-intel
+      上的制瓶耗时与 GHCR 推送）。
 - [ ] 若某些软件上游不提供 macOS amd64 包，改为自建 bottle：
       新增一个 `workflow_dispatch` 的 `bottle.yml`，构建后传到 GitHub Releases，
       公式里加 `bottle do ... sha256 tahoe: "..." end`，root_url 指向本仓 Releases。
