@@ -1,0 +1,115 @@
+name: Watch upstream versions
+
+# 只允许手动点击运行（Actions → 本 workflow → Run workflow）。
+# 不设 schedule / push 触发，把 GitHub Actions 用量压到最低。
+on:
+  workflow_dispatch:
+    inputs:
+      formula:
+        description: 要检查的软件
+        required: true
+        default: gh
+        type: choice
+        options:
+          - gh
+      dry_run:
+        description: 只检查不提交（不建分支、不开 PR）
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# 同一时间只允许一个检查任务，避免重复消耗
+concurrency:
+  group: watch-updates
+  cancel-in-progress: false
+
+jobs:
+  check:
+    # 用 ubuntu-latest：macOS runner 的分钟数按 10 倍计费，这里完全不需要 macOS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 检查 brew 上游版本
+        id: check
+        run: |
+          chmod +x scripts/check-updates.sh
+          ./scripts/check-updates.sh "${{ inputs.formula }}"
+
+      - name: 语法自检
+        if: steps.check.outputs.status == 'updated'
+        run: ruby -c "Formula/${{ inputs.formula }}.rb"
+
+      - name: 提交并发起 PR
+        if: steps.check.outputs.status == 'updated' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORMULA: ${{ inputs.formula }}
+          NEW_VERSION: ${{ steps.check.outputs.new_version }}
+          OLD_VERSION: ${{ steps.check.outputs.current_version }}
+          SHA256: ${{ steps.check.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          branch="bump/${FORMULA}-${NEW_VERSION}"
+
+          # 分支已存在则复用，避免重复开 PR
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch"
+            git checkout "$branch"
+          else
+            git checkout -b "$branch"
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "Formula/${FORMULA}.rb"
+          git commit -m "${FORMULA}: bump to ${NEW_VERSION}"
+          git push origin "$branch"
+
+          if gh pr view "$branch" --json number >/dev/null 2>&1; then
+            echo "PR 已存在，已推送新提交。"
+          else
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "${FORMULA}: bump to ${NEW_VERSION}" \
+              --body "$(cat <<EOF
+          由 \`watch-updates\` 手动触发自动生成。
+
+          - 软件：\`${FORMULA}\`
+          - 版本：\`${OLD_VERSION}\` → \`${NEW_VERSION}\`
+          - sha256：\`${SHA256}\`
+
+          依据：homebrew/core 中 \`${FORMULA}\` 的 stable 版本已更新。
+
+          合并前建议在 Intel + macOS 26 机器上验证：
+          \`\`\`
+          brew update && brew upgrade bemly/tahoe-intel/${FORMULA}
+          brew audit --strict bemly/tahoe-intel/${FORMULA}
+          \`\`\`
+          EOF
+          )"
+          fi
+
+      - name: 输出结论
+        if: always()
+        run: |
+          {
+            echo "## 上游版本检查结果"
+            echo ""
+            echo "- 软件：\`${{ inputs.formula }}\`"
+            echo "- 状态：\`${{ steps.check.outputs.status || '未产出结果' }}\`"
+            echo "- 本地版本：\`${{ steps.check.outputs.current_version || 'N/A' }}\`"
+            echo "- brew 版本：\`${{ steps.check.outputs.new_version || steps.check.outputs.current_version || 'N/A' }}\`"
+            echo "- dry_run：\`${{ inputs.dry_run }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
