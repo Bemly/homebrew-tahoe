@@ -58,7 +58,8 @@ jobs:
       - name: 以 build-bottle 模式安装
         run: |
           set -euo pipefail
-          brew uninstall --ignore-dependencies --force "bemly/tahoe-intel/${{ inputs.formula }}" || true
+          # runner 镜像里 gh 来自 homebrew/core，与本 tap 同名，必须先卸掉 core 版
+          brew uninstall --force gh || true
           brew install --build-bottle "bemly/tahoe-intel/${{ inputs.formula }}"
 
       - name: 制瓶
@@ -77,11 +78,14 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_PKG: tahoe-intel/${{ inputs.formula }}
         run: |
-          gh api -X PATCH \
+          # 用 curl 直连 API，不依赖 gh CLI（卸载 core gh 后可能不可用）
+          curl -fsSL -X PATCH \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "/user/packages/container/tahoe-intel%2F${{ inputs.formula }}/visibility" \
-            -f visibility=public
+            "https://api.github.com/user/packages/container/${GHCR_PKG//\//%2F}/visibility" \
+            -d '{"visibility":"public"}' || true
 
       - name: 提交瓶块
         id: commit
