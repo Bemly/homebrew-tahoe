@@ -212,8 +212,14 @@ private func githubLatestTag(repo: String) -> String? {
         baseArgs += ["-H", "Authorization: Bearer \(token)"]
     }
     baseArgs.append("https://github.com/\(repo)/releases/latest")
+    // 诊断用：最终失败时把最后一次 curl 退出码与输出规模打出来，
+    // 否则 runner 上永远不知道是 DNS/限流/无 Location（2026-09-04 brewui 三连败）。
+    var lastStatus: Int32 = -1
+    var lastBytes = 0
     for attempt in 1...3 {
         let (status, out) = run(curl, baseArgs)
+        lastStatus = status
+        lastBytes = out.utf8.count
         if status == 0 {
             for line in out.components(separatedBy: "\n") {
                 guard line.lowercased().hasPrefix("location:") else { continue }
@@ -226,6 +232,7 @@ private func githubLatestTag(repo: String) -> String? {
         }
         if attempt < 3 { _ = sleep(5) }
     }
+    print("::warning::githubLatestTag(\(repo)) 3 次均失败（curl exit=\(lastStatus)，末次输出 \(lastBytes)B）")
     return nil
 }
 
