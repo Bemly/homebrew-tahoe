@@ -35,8 +35,12 @@ struct UpstreamRelease {
 }
 
 struct CheckConfig {
-    /// 对应 Formula/<formula>.rb
+    /// 对应 Formula/<formula>.rb 或 Casks/<formula>.rb
     let formula: String
+    /// 公式所在目录："Formula"（默认）或 "Casks"
+    let formulaPath: String
+    /// 是否为 cask（决定改写规则与是否上传 Release）
+    let isCask: Bool
     /// brew 流：formulae.brew.sh 上的公式名
     let brewName: String?
     /// brew 流：版本 -> 资产文件名
@@ -49,12 +53,16 @@ struct CheckConfig {
     let customRelease: (() -> UpstreamRelease?)?
 
     init(formula: String,
+         formulaPath: String = "Formula",
+         isCask: Bool = false,
          brewName: String? = nil,
          asset: ((String) -> String)? = nil,
          downloadURL: ((String) -> String)? = nil,
          checksumsURL: ((String) -> String)? = nil,
          customRelease: (() -> UpstreamRelease?)? = nil) {
         self.formula = formula
+        self.formulaPath = formulaPath
+        self.isCask = isCask
         self.brewName = brewName
         self.asset = asset
         self.downloadURL = downloadURL
@@ -222,13 +230,16 @@ private func isURLDefinitionLine(_ line: String) -> Bool {
     line.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix(#"url ""#)
 }
 
-/// 改写公式：第一条 url 行整条替换为 newURL、主 sha256 行替换、摘除失效的
-/// bottle do...end 块。url 必须整条替换而非替换版本号子串——部分上游产物
-/// 文件名带构建哈希（如 WorkBuddy-darwin-x64-<ver>-<hash>.dmg），哈希每次部署都变。
-/// 返回改写后的内容与 bottleStale。
-func rewriteFormula(_ content: String, newURL: String,
+/// 改写公式：第一条 url 行整条替换为 newURL、version 行（如有）同步为新版本、
+/// 主 sha256 行替换、摘除失效的 bottle do...end 块。
+/// url 必须整条替换而非替换版本号子串——部分上游产物文件名带构建哈希
+/// （如 WorkBuddy-darwin-x64-<ver>-<hash>.dmg），哈希每次部署都变。
+/// version 行只有部分公式需要显式声明（brew 从 URL 扫不出正确版本时，如 node 的
+/// darwin-x64.tar.gz 会扫出 "64"），有则必须同步，否则 url 与 version 脱节。
+func rewriteFormula(_ content: String, newURL: String, newVersion: String,
                     sha: String) -> (content: String, bottleStale: Bool) {
     let shaLine = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 "[0-9a-f]{64}""#)
+    let versionLine = try! NSRegularExpression(pattern: #"^([ \t]*)version "[^"]+""#)
     let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
     let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
 
@@ -236,6 +247,7 @@ func rewriteFormula(_ content: String, newURL: String,
     var bottleStale = false
     var skipping = false
     var urlReplaced = false
+    var versionReplaced = false
 
     for line in content.components(separatedBy: "\n") {
         if skipping {
@@ -261,6 +273,14 @@ func rewriteFormula(_ content: String, newURL: String,
             replaced = "\(indent)url \"\(newURL)\""
             urlReplaced = true
         }
+        // 顶层 version 行同步（公式级唯一 version；resource 块内 version 行不会被
+        // 该正则命中，因为 resource 的 version 缩进在块内但正则只认行首空白+version，
+        // 块内的同样匹配——因此用只换第一次的方式保护）
+        if !versionReplaced, let m = versionLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+            let indent = (replaced as NSString).substring(with: m.range(at: 1))
+            replaced = "\(indent)version \"\(newVersion)\""
+            versionReplaced = true
+        }
         result.append(replaced)
     }
     return (result.joined(separator: "\n"), bottleStale)
@@ -269,9 +289,9 @@ func rewriteFormula(_ content: String, newURL: String,
 // MARK: - 单包检查主流程
 
 func runCheck(_ config: CheckConfig) {
-    let formulaFile = "Formula/\(config.formula).rb"
+    let formulaFile = "\(config.formulaPath)/\(config.formula).rb"
     guard let content = try? String(contentsOfFile: formulaFile, encoding: .utf8) else {
-        fail("找不到公式文件：\(formulaFile)（须在仓库根目录运行）")
+        fail("找不到文件：\(formulaFile)（须在仓库根目录运行）")
     }
 
     // 1. 本地版本
@@ -376,8 +396,44 @@ func runCheck(_ config: CheckConfig) {
         fail("得到的 sha256 不合法：\(sha)")
     }
 
-    // 6. 改写公式
-    let (newContent, bottleStale) = rewriteFormula(content, newURL: downloadURL, sha: sha)
+    // cask：把安装包上传到本仓 Release，url 取 Release 资产地址（而非上游 COS 直链）
+    var finalURL = downloadURL
+    if config.isCask {
+        let tagName = "\(config.formula)-\(stable)"
+        let assetName = URL(fileURLWithPath: downloadURL).lastPathComponent
+        let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe-intel"
+        guard let zipPath = curlDownload(downloadURL) else {
+            fail("下载 \(config.formula) 发布包失败，无法上传 Release")
+        }
+        // 校验已算好的 sha 与文件一致（防御性）
+        if let fileHash = sha256(ofFile: zipPath), fileHash != sha {
+            fail("文件 sha256 不一致：期望 \(sha)，实算 \(fileHash)")
+        }
+        let gh = which("gh")
+        if let gh {
+            let repoFlag = "--repo"
+            let createArgs = ["release", "create", tagName, zipPath,
+                              repoFlag, repo, "--generate-notes", "--title", "\(config.formula) \(stable)"]
+            let (cStatus, cOut) = run(gh, createArgs)
+            if cStatus != 0 {
+                // 同名 tag 已存在（重复运行）→ 改为覆盖上传资产
+                let uploadArgs = ["release", "upload", tagName, zipPath, repoFlag, repo, "--clobber"]
+                let (uStatus, uOut) = run(gh, uploadArgs)
+                if uStatus != 0 {
+                    fail("上传 Release 失败：\(cOut)\n\(uOut)")
+                }
+            }
+            finalURL = "https://github.com/\(repo)/releases/download/\(tagName)/\(assetName)"
+            print("已上传 Release 资产：\(finalURL)")
+        } else {
+            print("::warning::未找到 gh CLI，跳过 Release 上传（本地测试时正常）；url 回退为上游直链")
+        }
+        try? FileManager.default.removeItem(atPath: zipPath)
+    }
+
+    // 6. 改写公式/cask
+    let (newContent, bottleStale) = rewriteFormula(content, newURL: finalURL,
+                                                   newVersion: stable, sha: sha)
     do {
         try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
     } catch {
@@ -388,7 +444,7 @@ func runCheck(_ config: CheckConfig) {
     }
 
     // 7. 改后自检（注意：原始字符串 #"..."# 里 \(...) 不是插值，这里必须用普通字符串）
-    guard newContent.contains("url \"\(downloadURL)\"") else { fail("url 未成功更新到 \(downloadURL)") }
+    guard newContent.contains("url \"\(finalURL)\"") else { fail("url 未成功更新到 \(finalURL)") }
     guard newContent.contains("sha256 \"\(sha)\"") else { fail("sha256 未成功更新") }
 
     print("公式已更新：\(current) -> \(stable)")

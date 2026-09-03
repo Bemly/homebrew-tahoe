@@ -29,6 +29,9 @@ brew uninstall fastfetch
 
 brew install bemly/tahoe-intel/gh
 brew install bemly/tahoe-intel/fastfetch
+
+# workbuddy 是桌面 app，走 cask（装进 /Applications，Launchpad/Spotlight 可见）
+brew install --cask bemly/tahoe-intel/workbuddy
 ```
 
 ## 收录的软件
@@ -37,7 +40,7 @@ brew install bemly/tahoe-intel/fastfetch
 | --- | --- |
 | `gh` | GitHub 官方 CLI，直接取 `gh_<ver>_macOS_amd64.zip` |
 | `fastfetch` | 类 neofetch 的系统信息工具，直接取 `fastfetch-macos-amd64.tar.gz`（release tag 无 `v` 前缀） |
-| `workbuddy` | 腾讯 WorkBuddy AI 办公工作台（Electron 桌面 app），直接取官方 zip；不在 brew core，版本由其自动更新接口动态获取 |
+| `workbuddy` | 腾讯 WorkBuddy AI 办公工作台（Electron 桌面 app），cask，装进 `/Applications`；不在 brew core，版本由其自动更新接口动态获取 |
 | `node` | Node.js 运行时，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |

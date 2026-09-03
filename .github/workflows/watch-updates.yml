@@ -3,11 +3,12 @@ name: Watch upstream versions
 # 只允许手动点击运行（Actions → 本 workflow → Run workflow）。
 # 不设 schedule / push 触发，把 GitHub Actions 用量压到最低。
 #
-# 只有批量模式：遍历 Formula/*.rb，对每个存在同名 updater/<name>.swift 的软件
-# 检查 brew 上游版本（fastfetch.rb ↔ fastfetch.swift，一一对应）。有更新的就地
-# 改写 url+sha256、摘除失效 bottle 块，一次性提交 main，并触发「一次」
-# Build bottle and publish to GHCR（formula 传逗号列表），由它在单个
-# macos-26-intel 任务里顺序出瓶，避免每个软件各占一次 runner。
+# 只有批量模式：遍历 Formula/*.rb 与 Casks/*.rb，对每个存在同名 updater/<name>.swift
+# 的软件检查上游版本（fastfetch.rb ↔ fastfetch.swift，一一对应）。
+# - 公式（Formula/）：有更新则就地改写 url+sha256、摘除失效 bottle 块，提交后触发
+#   bottle.yml 出 GHCR 瓶。
+# - cask（Casks/）：有更新则下载发布包、上传本仓 GitHub Release、改写 cask 文件；
+#   cask 无 bottle 机制（文档核实：bottle 是公式专属），故不触发 bottle.yml。
 #
 # 检查器是 Swift（runner 镜像自带工具链）：共享逻辑在 updater/UpdaterCore.swift，
 # 每包一个入口文件；用 swiftc 编译后运行（解释器模式会静默跳过顶层代码，不能用）。
@@ -51,9 +52,11 @@ jobs:
         run: |
           set -euo pipefail
           updated=()
+          updated_formulae=()
           missing=()
-          for rb in Formula/*.rb; do
+          for rb in Formula/*.rb Casks/*.rb; do
             f="$(basename "$rb" .rb)"
+            dir="$(dirname "$rb")"
             if [[ ! -f "updater/$f.swift" ]]; then
               echo "::warning::$f 没有对应的 updater/$f.swift（新增软件须按 AGENTS.md 9.3 登记），跳过"
               continue
@@ -69,6 +72,7 @@ jobs:
               echo "  -> $f 上游资源不可下载（${ver}），跳过更新"
             elif [[ "$status" == "updated" ]]; then
               updated+=("$f")
+              [[ "$dir" == "Formula" ]] && updated_formulae+=("$f")
               echo "  -> $f 需要更新"
             else
               echo "  -> $f 无需更新（${status:-无输出}）"
@@ -77,6 +81,10 @@ jobs:
           done
           if [[ ${#updated[@]} -gt 0 ]]; then
             echo "updated=$(IFS=,; echo "${updated[*]}")" >> "$GITHUB_OUTPUT"
+          fi
+          # 只有公式才走 bottle；cask 无 bottle 机制
+          if [[ ${#updated_formulae[@]} -gt 0 ]]; then
+            echo "updated_formulae=$(IFS=,; echo "${updated_formulae[*]}")" >> "$GITHUB_OUTPUT"
           fi
           # 上游缺失清单交给后续步骤逐个开告警 issue
           if [[ ${#missing[@]} -gt 0 ]]; then
@@ -90,22 +98,29 @@ jobs:
           echo "需要更新的软件：$list"
           # 批量更新直接提交 main，提交前先做语法自检
           for f in "${updated[@]}"; do
-            ruby -c "Formula/$f.rb"
+            # 公式与 cask 都可能被更新，按实际存在的文件自检
+            if [[ -f "Formula/$f.rb" ]]; then ruby -c "Formula/$f.rb"; fi
+            if [[ -f "Casks/$f.rb" ]]; then ruby -c "Casks/$f.rb"; fi
           done
           # dry_run=true：只检查不提交（不 commit、不触发制瓶）
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "dry_run=true：公式已就地改写但不提交、不触发制瓶。"
+            echo "dry_run=true：文件已就地改写但不提交、不触发制瓶。"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/*.rb
+          git add Formula/*.rb Casks/*.rb
           git commit -m "watcher: batch bump ${list}"
           git push origin HEAD:main
-          echo "已提交更新，触发单次批量制瓶（formula=${list}）"
-          gh workflow run "Build bottle and publish to GHCR" \
-            --repo bemly/homebrew-tahoe-intel \
-            -f formula="$list"
+          # 只有公式更新才触发制瓶；cask 无 bottle 机制，无需触发
+          if [[ ${#updated_formulae[@]} -gt 0 ]]; then
+            echo "已提交更新，触发单次批量制瓶（formula=${list}）"
+            gh workflow run "Build bottle and publish to GHCR" \
+              --repo bemly/homebrew-tahoe-intel \
+              -f formula="$list"
+          else
+            echo "已提交更新（仅 cask，无需制瓶）"
+          fi
 
       - name: 上游资源不可用时开 issue 告警
         if: steps.batch.outputs.missing != ''

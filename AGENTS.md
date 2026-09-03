@@ -94,6 +94,10 @@ end
 - Intel 的 bottle 标签写作**纯系统名**（`tahoe` 而非 `x86_64_tahoe`）——
   这是 Homebrew 约定，可从 core 里 `node@24` 的 `sha256 sonoma:` 印证。
 - 上游官方发布包的直链（`url`）是**制瓶的原料**；分发走 GHCR 瓶（见第 8 节）。
+  **例外：Electron 桌面 app（workbuddy）**——dmg 解包撞 brew 上游 bug，且 app
+  应装进 `/Applications`（Launchpad/Spotlight 才可见），故走 **cask** 而非公式。cask
+  无 bottle 机制（文档核实：bottle 是公式专属，见 11.8），watcher 检测到新版本后
+  把发布包上传到本仓 GitHub Release、改写 `Casks/<name>.rb`，不触发 `bottle.yml`。
 - `pre_install` 做环境与资源检查；`post_install` 做架构校验与版本自检。
   **不要手动清 `com.apple.quarantine`**（原因见 11.2）。
 - `bottle do ... end` 块**不要手填 sha256**：瓶块由 `bottle.yml` 制瓶后自动写回，
@@ -140,7 +144,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | --- | --- | --- | --- |
 | `gh` | 2.99.0 | GitHub 官方发布包 `gh_2.99.0_macOS_amd64.zip`（外部链接） | 已收录 |
 | `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
-| `workbuddy` | 5.4.7.37521366 | WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取，外部链接） | 已收录 |
+| `workbuddy` | 5.4.7.37521366 | cask——WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取），镜像到本仓 GitHub Release | 已收录 |
 | `node` | 26.8.1 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `node@24` | 24.20.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
 | `node@22` | 22.23.2 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
