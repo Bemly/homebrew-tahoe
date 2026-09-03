@@ -4,6 +4,11 @@ class Qemu < Formula
   url "https://download.qemu.org/qemu-11.1.1.tar.xz"
   sha256 "079ffbff8a7111bbc89022107cbabf3bbfd614d5fc9d7cc675991196aca12482"
   license "GPL-2.0-only"
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 tahoe: "bf5277fca805b5c9711decb01e25968ace6e6bf1e963f46c6b91e573a96762cb"
+  end
   depends_on arch: :x86_64
   depends_on macos: :tahoe
   compatibility_version 1
