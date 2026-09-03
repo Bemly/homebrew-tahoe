@@ -196,20 +196,26 @@ private func curlHeadOK(_ url: String) -> Bool {
 
 /// 取 GitHub 仓库最新 release 的 tag：HEAD 请求 releases/latest，
 /// 只读跳转目标的 Location（形如 .../releases/tag/v0.2.1），不跟随跳转、
-/// 不调 GitHub API（不消耗 API 限额）。失败（无 release / 网络故障）返回 nil。
+/// 不调 GitHub API（不消耗 API 限额）。
+/// GitHub 会对共享出口 IP 做瞬时限流（429），故失败重试 3 次；仍失败返回 nil
+///（由调用方发 status=check-failed 明示，而不是静默跳过——见 runCheck）。
 private func githubLatestTag(repo: String) -> String? {
     guard let curl = which("curl") else { return nil }
-    let (status, out) = run(curl, ["-fsSI", "--retry", "2", "--retry-delay", "3",
-                                   "--max-time", "30",
-                                   "https://github.com/\(repo)/releases/latest"])
-    guard status == 0 else { return nil }
-    for line in out.components(separatedBy: "\n") {
-        guard line.lowercased().hasPrefix("location:") else { continue }
-        let loc = line.dropFirst("location:".count)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if let tag = loc.split(separator: "/").last, !tag.isEmpty {
-            return String(tag)
+    for attempt in 1...3 {
+        let (status, out) = run(curl, ["-fsSI", "--retry", "2", "--retry-delay", "3",
+                                       "--max-time", "30",
+                                       "https://github.com/\(repo)/releases/latest"])
+        if status == 0 {
+            for line in out.components(separatedBy: "\n") {
+                guard line.lowercased().hasPrefix("location:") else { continue }
+                let loc = line.dropFirst("location:".count)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if let tag = loc.split(separator: "/").last, !tag.isEmpty {
+                    return String(tag)
+                }
+            }
         }
+        if attempt < 3 { _ = sleep(5) }
     }
     return nil
 }
@@ -412,8 +418,13 @@ func runCheck(_ config: CheckConfig) {
     } else if let repo = config.githubRepo {
         // github 流：releases/latest 跳转目标 tag 判新（不消耗 GitHub API 限额）。
         // tag 前缀（默认 "v"）剥离后即版本号，downloadURL 模板收版本号。
+        // tag 取不到（限流/断网）时发 check-failed 明示——绝不能静默跳过，
+        // 否则 workflow 会把它当"无需更新"吃掉（2026-09-04 brewui 实测）。
         guard let tag = githubLatestTag(repo: repo), !tag.isEmpty else {
-            fail("无法获取 \(repo) 的最新 release tag")
+            print("::warning::无法获取 \(repo) 的最新 release tag（限流或网络故障），跳过")
+            emit("status=check-failed")
+            emit("current_version=\(current)")
+            return
         }
         var tagVersion = tag
         if let prefix = config.githubTagPrefix, !prefix.isEmpty,

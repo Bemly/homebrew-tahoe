@@ -54,6 +54,7 @@ jobs:
           updated=()
           updated_formulae=()
           missing=()
+          failed=()
           for rb in Formula/*.rb Casks/*.rb; do
             f="$(basename "$rb" .rb)"
             dir="$(dirname "$rb")"
@@ -70,6 +71,9 @@ jobs:
               ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
               missing+=("${f}:${ver}")
               echo "  -> $f 上游资源不可下载（${ver}），跳过更新"
+            elif [[ "$status" == "check-failed" ]]; then
+              failed+=("$f")
+              echo "::warning::$f 检查失败（限流或网络故障），跳过（绝不当成无需更新）"
             elif [[ "$status" == "updated" ]]; then
               updated+=("$f")
               [[ "$dir" == "Formula" ]] && updated_formulae+=("$f")
@@ -89,6 +93,10 @@ jobs:
           # 上游缺失清单交给后续步骤逐个开告警 issue
           if [[ ${#missing[@]} -gt 0 ]]; then
             echo "missing=$(IFS=,; echo "${missing[*]}")" >> "$GITHUB_OUTPUT"
+          fi
+          # 检查失败清单只公示（下次跑自动恢复，不开 issue）
+          if [[ ${#failed[@]} -gt 0 ]]; then
+            echo "failed=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_OUTPUT"
           fi
           if [[ ${#updated[@]} -eq 0 ]]; then
             echo "没有软件需要更新。"
@@ -163,5 +171,6 @@ jobs:
             echo ""
             echo "- 需要更新：\`${{ steps.batch.outputs.updated || '无' }}\`"
             echo "- 上游资源不可下载：\`${{ steps.batch.outputs.missing || '无' }}\`"
+            echo "- 检查失败（下次自动恢复）：\`${{ steps.batch.outputs.failed || '无' }}\`"
             echo "- dry_run：\`${{ inputs.dry_run }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
