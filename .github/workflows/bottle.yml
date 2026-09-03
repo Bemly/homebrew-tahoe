@@ -99,7 +99,13 @@ jobs:
           done < /tmp/formulas.txt
           for f in "${FORMULAS[@]}"; do
             echo "===== 处理 $f ====="
-            # 同名公式跨 tap 不能共存：先卸掉可能预装的 core 版（如 runner 自带 gh）
+            # node 家族（node / node@24 / node@22）共用 bin/node、bin/npm 等符号链接，
+            # 跨 tap 与跨版本都会撞 link：先解除所有 node 变体的符号链接再装，
+            # 否则 brew install 的 link 步骤会因 "symlink belonging to node@24" 失败
+            for variant in node node@24 node@22; do
+              brew unlink "$variant" 2>/dev/null || true
+            done
+            # 同名公式跨 tap 不能共存：再卸掉可能预装的 core 版（如 runner 自带 gh）
             brew uninstall --force "$f" || true
             brew install --build-bottle "bemly/tahoe-intel/$f"
             brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe-intel/$f"
@@ -118,6 +124,28 @@ jobs:
             fi
             brew pr-upload --root-url="$ROOT_URL" --no-commit
             rm -f *.bottle.json
+
+            # 清理老版本标签：只保留本次推送的版本，其余删除，避免旧瓶在 GHCR 越积越多。
+            # 列标签用匿名 pull token（包已是公开，只读即可）；删除用 skopeo + 写凭证。
+            # 删除单个标签失败只告警不阻断（老标签残留只占空间，不影响安装走新瓶）。
+            if [[ -n "$version" ]]; then
+              anon_token="$(curl -fsSL --max-time 30 \
+                "https://ghcr.io/token?scope=repository:bemly/tahoe-intel/${f}:pull" | jq -r '.token')"
+              old_tags="$(curl -fsSL --max-time 30 -H "Authorization: Bearer ${anon_token}" \
+                "https://ghcr.io/v2/bemly/tahoe-intel/${f}/tags/list" \
+                | jq -r '.tags[]?' | grep -vxF "$version" || true)"
+              if [[ -n "$old_tags" ]]; then
+                for t in $old_tags; do
+                  echo "清理 ${f} 的老版本标签：${t}"
+                  skopeo delete --creds "${HOMEBREW_GITHUB_PACKAGES_USER}:${HOMEBREW_GITHUB_PACKAGES_TOKEN}" \
+                    "docker://ghcr.io/bemly/tahoe-intel/${f}:${t}" \
+                    && echo "已删除 ${f}:${t}。" \
+                    || echo "::warning::删除 ${f}:${t} 失败，跳过。"
+                done
+              else
+                echo "${f} 无老版本标签需要清理（仅保留 ${version}）。"
+              fi
+            fi
           done
 
       # GHCR 包默认私有，匿名 brew install 会 401，逐个改公开；失败不阻断，
