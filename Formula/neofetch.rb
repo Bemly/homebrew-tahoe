@@ -8,6 +8,11 @@ class Neofetch < Formula
   sha256 "58a95e6b714e41efc804eca389a223309169b2def35e57fa934482a6b47c27e7"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "9349dbdf49f3be597e427c0e1374d2f7b7db93881dbd24a344f770e940a0fe6e"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游发布包。
   # neofetch 是纯 bash 脚本（无编译、无架构限制），但仍按 tap 约定强制 Intel + Tahoe 门槛。
