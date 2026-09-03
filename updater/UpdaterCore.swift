@@ -10,7 +10,7 @@
 //      （exit 0 但什么都不做），不能用；
 //   2. swiftc 只允许 main.swift 含裸的顶层代码，所以各包入口用 @main 结构体。
 //
-// 版本来源三种（CheckConfig 三选一，优先级 customRelease > raw > brew）：
+// 版本来源四种（CheckConfig 四选一，优先级 customRelease > raw > github > brew）：
 //   - brew 流：formulae.brew.sh 的 versions.stable 判新。url/sha 两种给法：
 //       a) 模板式：downloadURL/asset/checksumsURL 指向上游产物与汇总清单
 //          （gh / fastfetch / node 家族，sha 走 checksums.txt）；
@@ -22,6 +22,10 @@
 //     <name>.rb），核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256
 //     （opencode / sst / torpedo，2026-09-04 起）。不消耗 GitHub API 限额
 //     （走 raw.githubusercontent.com），sha 直接取自源文件，无需下载。
+//   - github 流：直接跟踪 GitHub release（不在 brew core、又无自有更新接口的
+//     软件，如 BrewUI）。版本判据是 releases/latest 的跳转目标 tag（HEAD 取
+//     Location，不跟随、不消耗 GitHub API 限额）；剥离 tag 前缀（默认 "v"，
+//     见 githubTagPrefix）即版本号，downloadURL 模板收版本号（与 brew 流一致）。
 //   - 自定义流 customRelease：brew 未收录软件的上游自有更新接口（WorkBuddy），
 //     接口直接给版本号、下载直链、sha256。
 //
@@ -73,6 +77,12 @@ struct CheckConfig {
     /// 直引上游 CDN 且链接稳定的 cask（如 zcode）置 false；链接带构建哈希、
     /// 每次部署都变的（workbuddy / doubao-ime）置 true 走镜像。
     let uploadRelease: Bool
+    /// github 流：跟踪的仓库（"Owner/Repo"，如 "Homebrew/BrewUI"）。
+    /// 版本判据是 releases/latest 的跳转目标 tag，不消耗 GitHub API 限额。
+    let githubRepo: String?
+    /// github 流：tag 前缀（默认 "v"：tag v0.2.1 → 版本 0.2.1）。
+    /// 剥离后即版本号（downloadURL 模板收版本号）；tag 无此前缀则原样作版本。
+    let githubTagPrefix: String?
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -84,7 +94,9 @@ struct CheckConfig {
          customRelease: (() -> UpstreamRelease?)? = nil,
          rawFormulaURL: String? = nil,
          brewCask: Bool = false,
-         uploadRelease: Bool = false) {
+         uploadRelease: Bool = false,
+         githubRepo: String? = nil,
+         githubTagPrefix: String? = "v") {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -96,6 +108,8 @@ struct CheckConfig {
         self.rawFormulaURL = rawFormulaURL
         self.brewCask = brewCask
         self.uploadRelease = uploadRelease
+        self.githubRepo = githubRepo
+        self.githubTagPrefix = githubTagPrefix
     }
 }
 
@@ -178,6 +192,26 @@ private func curlHeadOK(_ url: String) -> Bool {
     let (status, _) = run(curl, ["-fsI", "--retry", "2", "--retry-delay", "3",
                                  "--max-time", "30", url])
     return status == 0
+}
+
+/// 取 GitHub 仓库最新 release 的 tag：HEAD 请求 releases/latest，
+/// 只读跳转目标的 Location（形如 .../releases/tag/v0.2.1），不跟随跳转、
+/// 不调 GitHub API（不消耗 API 限额）。失败（无 release / 网络故障）返回 nil。
+private func githubLatestTag(repo: String) -> String? {
+    guard let curl = which("curl") else { return nil }
+    let (status, out) = run(curl, ["-fsSI", "--retry", "2", "--retry-delay", "3",
+                                   "--max-time", "30",
+                                   "https://github.com/\(repo)/releases/latest"])
+    guard status == 0 else { return nil }
+    for line in out.components(separatedBy: "\n") {
+        guard line.lowercased().hasPrefix("location:") else { continue }
+        let loc = line.dropFirst("location:".count)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if let tag = loc.split(separator: "/").last, !tag.isEmpty {
+            return String(tag)
+        }
+    }
+    return nil
 }
 
 /// 下载到临时文件（发布包可能几百 MB，走文件不走管道）
@@ -359,7 +393,7 @@ func runCheck(_ config: CheckConfig) {
     }
     print("本地版本 : \(current)")
 
-    // 2. 上游版本与下载直链（优先级：自定义接口 > 源仓库 raw > brew）
+    // 2. 上游版本与下载直链（优先级：自定义接口 > 源仓库 raw > github > brew）
     let upstream: UpstreamRelease
     if let custom = config.customRelease {
         guard let release = custom() else {
@@ -375,9 +409,27 @@ func runCheck(_ config: CheckConfig) {
         }
         upstream = release
         print("上游版本 : \(upstream.version)（源仓库 raw）")
+    } else if let repo = config.githubRepo {
+        // github 流：releases/latest 跳转目标 tag 判新（不消耗 GitHub API 限额）。
+        // tag 前缀（默认 "v"）剥离后即版本号，downloadURL 模板收版本号。
+        guard let tag = githubLatestTag(repo: repo), !tag.isEmpty else {
+            fail("无法获取 \(repo) 的最新 release tag")
+        }
+        var tagVersion = tag
+        if let prefix = config.githubTagPrefix, !prefix.isEmpty,
+           tagVersion.hasPrefix(prefix) {
+            tagVersion = String(tagVersion.dropFirst(prefix.count))
+        }
+        guard let template = config.downloadURL else {
+            fail("github 流（\(repo)）必须提供 downloadURL 模板")
+        }
+        upstream = UpstreamRelease(version: tagVersion,
+                                   downloadURL: template(tagVersion),
+                                   sha256: nil)
+        print("上游版本 : \(upstream.version)（github release tag \(tag)）")
     } else {
         guard let brewName = config.brewName else {
-            fail("CheckConfig 配置不完整：需要 customRelease 或 brew 流（至少提供 brewName）")
+            fail("CheckConfig 配置不完整：需要 customRelease、rawFormulaURL、githubRepo 或 brew 流（至少提供 brewName）")
         }
         // 变量名避开外层的 stable / downloadURL（第 4 步之后还要用）
         let resolvedVersion: String

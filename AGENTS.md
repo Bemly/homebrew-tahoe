@@ -178,6 +178,9 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `checkra1n` | 0.12.4 | cask——上游 dmg 直引（URL 路径即文件 sha256；core 同名 cask 因过不了 Gatekeeper 已被 disable，本 tap 提供可用安装路径）；附 `binary` 垫片出 `checkra1n` 命令；**不检查更新**（无 updater/checkra1n.swift） | 已收录 |
 | `palera1n` | 3.0.0-beta.2 | cask——上游 universal dmg 直引（x86_64+arm64 双切片，单包覆盖双架构，无需 arch 分包；直引不镜像 Release）；**不检查更新**（无 updater/palera1n.swift） | 已收录 |
 | `macos-tskmgr` | 1.1.1 | cask——上游按架构分包（`arch` 插值各取各的，`sha256 arm:/intel:` 直给；直引不镜像 Release）；**不检查更新**（无 updater/macos-tskmgr.swift） | 已收录 |
+| `brewui` | 0.2.1 | cask——上游 GitHub release 的 universal zip 直引（单包双架构；直引不镜像 Release）；检查器走 UpdaterCore 新增的 `github` 流（releases/latest 跳转判新，不耗 API 限额，见 11.21） | 已收录 |
+| `winstart` | 0.13.6 | cask——本地包一次性镜像到本仓 Release（`winstart-<ver>` tag，上游无公开链接，人工 `gh release create` 发版）；universal 双切片；**不检查更新**（无 updater/winstart.swift）；cask homepage 必填，取开发者 B 站主页 | 已收录 |
+| `docker-compose` | 5.5.1 | 官方裸二进制 `docker-compose-darwin-x86_64`（文件名无版本、路径段可扫，无需 version 行，见 11.21）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 文件名带 `*` 前缀、核心精确匹配对不上） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -895,6 +898,27 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    cask 安装会报 `already an App` 中断——属保护机制非 bug；要迁入 brew 管理需先
    备份移走旧 app，验证完本轮已原样恢复（checkra1n 顺带验证了 `binary` 垫片，
    `checkra1n --version` 出 `beta 0.12.4`）。
+
+### 11.21 github 直跟流 + compose 两则 + cask 收编（2026-09-04 实测）
+
+1. **UpdaterCore 新增 `github` 流**（brewui 首例）：不在 core、又无自有更新接口的
+   软件，直接跟 GitHub release——`HEAD releases/latest` 取 `Location` 跳转目标
+   的 tag（不跟随、不调 API、不耗限额），剥 `githubTagPrefix`（默认 `"v"`）得版本，
+   `downloadURL` 模板收版本号（与 brew 流一致）。cask 照常用 `version` 行，
+   `rewriteFormula` 同步。brewui 实测 `tag v0.2.1 → 0.2.1 → up-to-date` 全通。
+2. **compose 文件名无版本也能扫**：`docker-compose-darwin-x86_64` 文件名无版本、
+   版本只在路径 `v5.5.1` 段——显式 `version` 行被 audit 判冗余，说明 brew 连路径段
+   一起扫。结论并入 11.19 第 2 条：是否显式声明一律以 `audit --strict` 为准。
+3. **checksums 的 `*` 前缀坑**：docker/compose 的 checksums.txt 有 darwin 行，
+   但文件名带 `*`（binary 模式），核心按 `awk '$2==f'` 精确匹配对不上——置 nil
+   回退下载实算（~65MB，仅新版本时），不要为省流量把 `*` 写进 asset 耍小聪明。
+4. **新公式写完 grep 自查跨包残留**：docker-compose.rb 首版 install 行复制了
+   buildx 的文件名（`buildx-v…darwin-amd64`），装之前 `grep buildx` 即现形——
+   同系列公式连写时必须过一遍异名残留。
+5. **`brew install --cask --adopt` 收编已装 app**：本机 Homebrew.app/WinStart.app
+   皆手装在先，cask 报 `already an App`；`--adopt` 直接纳入管理（winstart 一次成）。
+   root 属主的 app（Homebrew.app）收编要 sudo，非交互跑不通——需用户手动
+   `sudo chown` 或删掉重装（反例：同机 winstart 属主为 bemly，收编零密码一次成）。
 
 ## 12. 待办 / 后续演进
 

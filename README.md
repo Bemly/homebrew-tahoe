@@ -73,6 +73,9 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `checkra1n` | checkm8 jailbreak app, Intel x86_64 build (core's cask is disabled over Gatekeeper); pinned, no update checks |
 | `palera1n` | checkm8 jailbreak app, universal dmg covering Intel and Apple Silicon with a single download; pinned, no update checks |
 | `macos-tskmgr` | Task manager app, per-arch downloads via the `arch` stanza; pinned, no update checks |
+| `brewui` | Official Homebrew graphical interface, cask from its GitHub release (`Homebrew-<ver>.zip`); version tracked via the release redirect |
+| `winstart` | Metro-style app launcher, cask mirrored to this repo's releases (no public upstream link); pinned, no update checks |
+| `docker-compose` | Docker Compose plugin, official `docker-compose-darwin-x86_64` bare binary; version follows homebrew/core's docker-compose |
 
 ## Switching sources (same-name conflict)
 

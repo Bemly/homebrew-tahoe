@@ -66,6 +66,9 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `checkra1n` | checkm8 越狱工具，Intel x86_64 版（core 同名 cask 因 Gatekeeper 已被 disable）；锁定版本不检查更新 |
 | `palera1n` | checkm8 越狱工具，universal 包单下载同时覆盖 Intel 与 Apple Silicon；锁定版本不检查更新 |
 | `macos-tskmgr` | 任务管理器，按架构分包（`arch` 插值）；锁定版本不检查更新 |
+| `brewui` | Homebrew 官方图形界面，cask 取其 GitHub release（`Homebrew-<ver>.zip`）；版本经 release 跳转跟踪 |
+| `winstart` | Metro 风应用启动器，cask 镜像到本仓 Release（无公开上游链接）；锁定版本不检查更新 |
+| `docker-compose` | Docker Compose 插件，官方 `docker-compose-darwin-x86_64` 裸二进制；版本跟随 core 的 docker-compose |
 
 ## 注意事项（同名冲突）
 
