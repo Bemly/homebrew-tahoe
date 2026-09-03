@@ -52,10 +52,14 @@ class Fish < Formula
   def install
     # 实测：brew 解压后会下降进 zip 内唯一的顶层目录（fish-4.9.0.app/），
     # 故用 ** 通配定位 base/，无论是否下降都能命中（见 11.1）。
-    # base/ 即官方 install.sh 要 ditto 的 unix 树，原样装进 prefix。
+    # base/ 即官方 install.sh 要 ditto 的 unix 树，原样装进 prefix；
+    # 例外：etc/fish 下 completions/functions/conf.d 三个子目录上游就是
+    # 空占位（无文件），整树装会触发 brew 空数组告警——只装 config.fish，
+    # 空目录用 mkpath 原样建出（与上游 ditto 落盘布局一致）。
     base = Dir["**/base"].fetch(0)
     bin.install Dir["#{base}/usr/local/bin/*"]
-    etc.install Dir["#{base}/usr/local/etc/*"]
+    (etc/"fish").install "#{base}/usr/local/etc/fish/config.fish"
+    %w[functions completions conf.d].each { |d| (etc/"fish"/d).mkpath }
     share.install Dir["#{base}/usr/local/share/*"]
   end
 
