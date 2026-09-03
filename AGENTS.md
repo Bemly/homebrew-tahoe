@@ -200,7 +200,12 @@ zip 约 465MB。WorkBuddy **不在 brew core**，版本来源用它的 Electron 
 - 不用 dmg 做原料：brew 6.0.21 的 `DmgUnpackStrategy` 遇到 dmg 里指向 /Applications
   的符号链接会调不存在的 `MacOS.system_dir?` 直接崩（上游 bug，见 11.8），zip 无此问题；
 - 产物文件名带版本 + 构建哈希（`-b148bd1d`），每次部署都变 → URL 必须整条动态获取、
-  公式改写整条替换（`rewriteFormula` 的 newURL 模式）。
+  公式改写整条替换（`rewriteFormula` 的 newURL 模式）；
+- 发版走本仓 GitHub Release（`gh release create workbuddy-<ver> <zip>`，同名 tag 已存在则
+  `gh release upload --clobber` 覆盖资产）。每次发新版后，检查器会用 `gh release list`
+  列出该 cask 的全部 release，**除本次版本外，其余 `workbuddy-*` 旧 release 全删**——
+  只保留最新版一个，避免旧资产在 Release 堆积。单个旧 release 删除失败只告警不阻断，
+  不影响发版结果。
 
 ### node / node@24 / node@22 发布包结构（已实测，三版本同构）
 

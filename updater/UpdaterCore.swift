@@ -429,6 +429,10 @@ func runCheck(_ config: CheckConfig) {
             print("::warning::未找到 gh CLI，跳过 Release 上传（本地测试时正常）；url 回退为上游直链")
         }
         try? FileManager.default.removeItem(atPath: zipPath)
+
+        // 清理该 cask 的旧版 Release：只保留本次发布的 tagName，其余 <formula>-* 全删。
+        // 删除单个失败只警告不阻断（旧 release 残留只占空间，不影响安装走新版）。
+        deleteOldCaskReleases(repo: repo, formula: config.formula, keepTag: tagName)
     }
 
     // 6. 改写公式/cask
@@ -453,4 +457,35 @@ func runCheck(_ config: CheckConfig) {
     emit("new_version=\(stable)")
     emit("sha256=\(sha)")
     emit("bottle_stale=\(bottleStale)")
+}
+
+/// 清理某 cask 的旧版 GitHub Release：只保留 keepTag，其余 tagName 形如 "<formula>-*" 的旧 release 全删。
+/// 用于 workbuddy 等走 Release 分发的 cask——每次发新版后把旧 release 清掉，避免旧资产堆积。
+private func deleteOldCaskReleases(repo: String, formula: String, keepTag: String) {
+    guard let gh = which("gh") else { return }
+
+    // gh release list 默认只回前 30 个，给足上限；--json 拿 tagName 列表
+    let (listStatus, listOut) = run(gh, ["release", "list", "--repo", repo,
+                                         "--exclude-drafts", "--limit", "100", "--json", "tagName"])
+    guard listStatus == 0 else {
+        print("::warning::列出 Release 失败，跳过旧版清理")
+        return
+    }
+    guard let data = listOut.data(using: .utf8),
+          let tags = (try? JSONSerialization.jsonObject(with: data)) as? [String] else {
+        print("::warning::解析 Release 列表失败，跳过旧版清理")
+        return
+    }
+
+    let prefix = "\(formula)-"
+    for tag in tags {
+        guard tag != keepTag, tag.hasPrefix(prefix) else { continue }
+        print("清理旧版 Release：\(tag)")
+        let (delStatus, _) = run(gh, ["release", "delete", tag, "--repo", repo, "--yes"])
+        if delStatus == 0 {
+            print("已删除旧版 Release：\(tag)")
+        } else {
+            print("::warning::删除旧版 Release \(tag) 失败，跳过（不影响发版结果）。")
+        }
+    }
 }
