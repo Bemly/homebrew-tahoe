@@ -9,6 +9,11 @@ class Ffplay < Formula
   sha256 "1557feb3e93d6b9e66d3a0556aefe8f081e554ea271930582d734d0ed6aefc98"
   license "GPL-3.0-or-later"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "63e45995db926f1a662a033f39561d65770e2b36ea07a788ee426d4cff62a3b2"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe

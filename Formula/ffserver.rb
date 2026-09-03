@@ -9,6 +9,11 @@ class Ffserver < Formula
   sha256 "52f2e7045a84dfd34af08319459cdfd17e682b9909cfe9f2178414c1cbc02a12"
   license "GPL-3.0-or-later"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "6ea178216cf84bd7910a2bab049a88d60832048cb91546fefbf6f87a8bcd166a"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
