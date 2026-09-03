@@ -25,15 +25,10 @@ class Neofetch < Formula
     system "make", "install", "PREFIX=#{prefix}"
   end
 
-  def post_install
-    # neofetch 是 Bourne-Again shell script，file(1) 不会报 x86_64，
-    # 故不做二进制架构校验（与 gh/node 等编译型二进制不同），仅做版本自检。
-    out = Utils.safe_popen_read("#{bin}/neofetch", "--version").strip
-    unless out.include?(version.to_s)
-      opoo "版本自检未通过：期望 #{version}，实际 #{out}"
-    end
-    ohai "neofetch #{version} 安装完成（纯 bash 脚本）"
-  end
+  # neofetch 是纯 bash 脚本（无编译、无架构限制），Intel + Tahoe 门槛由公式顶部的
+  # 硬性约束保证，安装后无需再做二进制架构校验或版本自检。
+  # 注：neofetch --version 退出码恒为 1（上游已知 bug），若用 Utils.safe_popen_read
+  # 调它会抛 ErrorDuringExecution 导致 post_install 报错，故此处不写 post_install。
 
   def caveats
     <<~EOS
@@ -46,6 +41,8 @@ class Neofetch < Formula
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/neofetch --version")
+    assert_predicate bin/"neofetch", :executable?
+    # neofetch --version 退出码恒为 1（上游 bug），shell_output 第二个参数指定预期退出码
+    assert_match version.to_s, shell_output("#{bin}/neofetch --version 2>&1", 1)
   end
 end
