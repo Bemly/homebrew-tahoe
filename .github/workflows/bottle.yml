@@ -116,17 +116,22 @@ jobs:
             version="$(brew list --versions "$f" | awk 'NR==1{print $2}')"
             if [[ -n "$version" ]]; then
               # GHCR 不支持 skopeo 按标签删 manifest list（报 "unsupported"），
-              # 改用 GitHub API 按标签删旧版本，保证重复运行可覆盖推送
+              # 改用 GitHub API 按标签删旧版本，保证重复运行可覆盖推送。
+              # 包从未上传过时 404 是预期的，|| true 保非致命。
               pkg_encoded="${ghcr_name//\/%2F}"
               echo "清理 ${ghcr_name} 的旧版本（保留当前 ${version}），保证可覆盖推送。"
-              gh api "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions" \
-                --paginate --jq ".[] | select(.metadata.container.tags[]? == \"${version}\") | .id" 2>/dev/null \
-                | while read -r vid; do
-                    [[ -n "$vid" ]] && gh api -X DELETE \
-                      "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions/${vid}" \
-                      2>/dev/null && echo "已删除旧版本 ${vid}。" \
-                      || echo "::warning::删除旧版本 ${vid} 失败，跳过。"
-                  done
+              old_vids="$(gh api "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions" \
+                --paginate --jq ".[] | select(.metadata.container.tags[]? == \"${version}\") | .id" 2>/dev/null || true)"
+              if [[ -n "$old_vids" ]]; then
+                while read -r vid; do
+                  [[ -n "$vid" ]] && gh api -X DELETE \
+                    "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions/${vid}" \
+                    2>/dev/null && echo "已删除旧版本 ${vid}。" \
+                    || echo "::warning::删除旧版本 ${vid} 失败，跳过。"
+                done <<< "$old_vids"
+              else
+                echo "${ghcr_name} 无旧版本需要清理（首次推送或已是最新）。"
+              fi
             else
               echo "::warning::无法确定 $f 的安装版本号，跳过清理旧版本（pr-upload 仍会覆盖推送）。"
             fi
