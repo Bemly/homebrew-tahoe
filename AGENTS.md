@@ -33,6 +33,12 @@ Homebrew 官方已不再为 macOS 26 构建 x86_64 的 bottle。
 
 不收录：仅 arm64 的软件、需要本地编译的软件、只支持 Linux/macOS 25 及以下的软件。
 
+**例外——代编译模式（2026-09-03 起，qemu 为首例）**：上游**不提供** macOS 预编译
+（只发源码），但软件有价值、值得收录时，可改由 **CI 在 macos-26-intel 上一次性代编译成瓶**，
+用户仍走瓶安装。这类软件往往**带整棵依赖树**——**绝不能把依赖也照搬进本 tap**（同名公式
+跨 tap 是 Homebrew 硬限制，对依赖同样生效），枢纽依赖留给 core、只有"卸载得掉"的叶子才自瓶。
+完整规则见 6 节「qemu 代编译模式」。
+
 ## 2. 命名约定
 
 | 项 | 值 | 说明 |
@@ -149,6 +155,11 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `node` | 26.8.1 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `node@24` | 24.20.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
 | `node@22` | 22.23.2 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
+| `qemu` | 11.1.1 | **代编译模式**：上游源码 `qemu-<ver>.tar.xz` 为原料，CI 在 macos-26-intel 编译全量 68 个目标出瓶；core 无任何 Intel 瓶（模式规则见下） | 已收录 |
+| `capstone` | 5.0.9 | 代编译模式：qemu 专属依赖（生态扇入 8），同批代编译 | 已收录 |
+| `dtc` | 1.8.1 | 代编译模式：qemu 专属依赖（扇入 1） | 已收录 |
+| `libslirp` | 4.9.4 | 代编译模式：qemu 专属依赖（扇入 4） | 已收录 |
+| `vde` | 2.3.3 | 代编译模式：qemu 专属依赖（扇入 2）；2016 年旧代码需 `-std=gnu17` 编译开关（见 11.13） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -231,6 +242,60 @@ sha 取自同目录的 `SHASUMS256.txt`（官方发布清单，约 2KB）。
 brew 的 `Version.parse` 只抓到 `"64"`（实测 `brew info` 显示 `stable 64`），与真实版本不符。
 解法：公式**显式声明 `version` 行**（audit 仅在声明值与扫描值相同时才判冗余，不同则允许）。
 由此引出 `rewriteFormula` 必须同步替换 version 行，否则 url 与 version 脱节。
+
+### qemu 代编译模式（无上游预编译 + 带依赖树软件的处理方式）
+
+**适用条件**：上游只发源码、无任何 macOS 预编译（qemu 官方下载页 macOS 段只有
+`brew install qemu`），软件有价值且构建可复现（qemu 本体编译能全绿）。
+
+**一句话模式**：上游源码 tar.xz 做公式原料 → bottle.yml 在 macos-26-intel 现编译
+（core 侧依赖 + 本体）→ GHCR 出 tahoe 瓶；**只瓶「卸载得掉」的叶子依赖**，枢纽依赖
+留给 core。用户端：qemu 与叶子依赖永远走本 tap 的瓶（更新秒装）；枢纽依赖首次安装
+仍由 core 源码构建（1–2 小时量级，第三方 tap 无法绕开，见下）。
+
+**为什么不能把依赖树照搬进 tap**（qemu 初版方案的教训）：
+同名公式跨 tap 是**无条件 odie**（`install/check.rb`，无 --force 可绕），且两个 tap 的
+同名包**共用同一个 Cellar 目录**（`/usr/local/Cellar/<name>/`）——只要用户装过 core 的
+同名包，本 tap 的包就永远判定「已装自别的 tap」。这条对**依赖**同样生效。官方 core 能把
+整棵依赖树都瓶起来，只因为它是 default tap、没有第二家抢名字；第三方 tap 复制依赖树
+与 core 生态**天然互斥**。
+
+**hub/叶子分流策略**：
+1. 判据用**生态扇入**（全 Homebrew 有多少公式依赖它）：`brew uses --eval-all <f>` 或
+   反查 formulae.brew.sh 全量 `formula.json` 的 dependencies。**不要用本机
+   `brew uses --installed`**——开发机装了一堆软件时几乎全判成 hub（本机实测 30/30）。
+2. **走 core（公式写裸名依赖）**：生态枢纽包（openssl@3 519 / gettext 399 / glib 333 /
+   zstd 206 / libpng 214 / gnutls 56…）。特征：多数机器已装、brew 拒绝卸载（被其它包
+   依赖）、用户端无需重编。
+3. **自瓶（公式写全名 `bemly/tahoe-intel/<name>`）**：主软件 qemu + qemu 专属叶子
+   （capstone/dtc/libslirp/vde，扇入 1–8，除 qemu 外无人依赖）——core qemu 卸掉后
+   它们就「卸载得掉」。
+4. **Group A（走 core）必须在依赖上闭合**：若某包是 core 包的依赖（gnutls→nettle/
+   libtasn1/p11-kit/libunistring/libidn2，glib→json-c），core 安装时必然把它拉进来，
+   再瓶一份同名必撞 odie——所以判据不能只看扇入，还要看它的依赖方归属哪组。
+5. **裸名 `depends_on` 永远解析到 core**：brew 6 的 `FromNameLoader` 规定「存在于
+   default tap 时永不与其它 tap 视为歧义」（`formulary.rb`）——想靠「同名优先本 tap」
+   是错的。凡指向本 tap 公式的依赖必须写全名，指向 core 的写裸名。
+
+**公式落地四步（一律从拷 core 原文起步）**：上游在 homebrew/core 里的，直接拷 core 公式
+原文（编译行为与官方一致，杜绝手写 install 出错）→ 摘掉 core 的 `bottle do` 块（root_url
+指向 core GHCR 且无 x86_64_tahoe 标签）→ 加 `depends_on arch: :x86_64` + `macos: :tahoe`
+门禁 → 依赖按上面分流改写全名/裸名。core 源码按 `ruby_source_path`（API JSON 字段）取，
+**lib 前缀公式在 `Formula/lib/` 二级目录**，别猜路径。
+
+**检查器 = brew JSON 全量流（三行配置）**：这类软件的 url 模板不好推（glib 的 `/2.88/`
+目录、上游换镜像等），`UpdaterCore` 的 brew 流因此新增**全量式**：
+`CheckConfig(formula: X, brewName: X)` 即可——url 与 sha256 直取 formulae.brew.sh JSON
+的 `urls.stable.url` / `urls.stable.checksum`（即 core 公式 url 行指向的真实上游与
+Homebrew 维护的校验和，上游换镜像自动跟随）。模板式（downloadURL 闭包）仍优先、兼容旧包。
+
+**版本扫描的坑**：URL 带**版本目录**（glib `/glib/2.88/glib-2.88.3.tar.xz`、gnutls
+`/v3.8/`、libssh `/0.12/`）时，URL 版本扫描先命中目录段（2.88 < 2.88.3）→ 恒误判
+「有更新」，每次 watcher 扫描都空转触发制瓶；`.pem`（ca-certificates）这类 URL 扫不出
+版本号。两者都要**显式 `version` 行**（node 家族的 x64 尾缀是同类问题，见上）。
+
+**CI 侧注意**：单 job 平台上限 6 小时 → timeout 设 360；制瓶循环中途失败时「提交瓶块」步
+仍要跑（`if: always()`，见 11.12），否则瓶已推 GHCR 但公式没 sha，后续包被判「无瓶」。
 
 ## 7. Watcher 工作原理
 
@@ -353,6 +418,8 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 1. 确认上游有 **macOS amd64** 预编译产物，且能在 macOS 26 跑。
    优先找 GitHub Releases 的 `*-macOS-amd64*` / `*-macos-amd64*` 资产。
+   **若上游没有 macOS 预编译（只发源码）** → 改走 6 节「qemu 代编译模式」：
+   判断、hub/叶子分流、检查器写法（JSON 全量流）、CI 超时都与本节直引预编译包的流程不同。
 2. 确定版本号来源（二选一）：
    - **brew 流**：在 core 里的软件，看 `https://formulae.brew.sh/api/formula/<name>.json` 的 `.versions.stable`；
    - **自定义流**：brew 未收录的软件（如 workbuddy），若上游有自有更新接口（Electron app
@@ -373,6 +440,10 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
    - **brew 流**（软件在 homebrew/core）：照抄 `gh.swift` 的 `@main` 结构，改 4 处配置——
      `formula` / `brewName`、`asset`、`downloadURL`、`checksumsURL`
      （上游无 checksums 文件则置 `nil`，核心自动回退下载计算）；
+   - **brew 流-全量式**（qemu 类：core 公式 url 模板不好推、上游换镜像自动跟随）：
+     只给 `CheckConfig(formula: "<name>", brewName: "<name>")` 即可，url 与 sha256 由核心
+     直取 JSON 的 `urls.stable.url` / `.checksum`，无需 asset/downloadURL/checksumsURL
+     （见 6 节「qemu 代编译模式」；`UpdaterCore` 内已实现，模板式仍优先）；
    - **自定义流**（brew 未收录）：照抄 `workbuddy.swift`，实现 `customRelease` 闭包调
      上游自有更新接口，返回 `UpstreamRelease(version:downloadURL:sha256:)`
      （sha 仅在实测确认归属时才给，否则置 nil 由核心下载实算）。
@@ -497,6 +568,9 @@ brew 在下载阶段已清掉 `com.apple.quarantine`（装完 `xattr -l` 为空�
 `version "2.99.0"` 与 URL 扫描出的版本相同时，audit 报
 `redundant with version scanned from URL`。让 brew 从 URL 扫描即可；
 watcher 脚本相应地也从 url 行解析版本号（`version` 行读不到就回退）。
+**例外（URL 扫不出或扫错版本才显式声明）**：node 家族的 `darwin-x64.tar.gz` 尾缀会扫成
+`"64"`；URL 带版本目录（glib `/glib/2.88/`、gnutls `/v3.8/`、libssh `/0.12/`）会扫成
+目录段；`.pem`（ca-certificates）扫不出——详见 6 节对应段落。
 
 ### 11.4 同名公式跨 tap 不能共存
 
@@ -650,6 +724,42 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
   拉取即可恢复；`brew fetch --bottle-tag=tahoe` 也是排查瓶是否可拉的最快手段
   （成功标志：`✔︎ Bottle Manifest` + `✔︎ Bottle` 两行）。
 
+### 11.11 依赖树照搬进 tap 不可行：同名跨 tap 对依赖同样无条件 odie
+
+qemu 初版方案把 30 个依赖全复制进本 tap（依赖全名化 + 全量流检查器都做好了），
+首轮制瓶 29 秒即失败、方案被推翻。完整推导见 6 节「qemu 代编译模式」；要点：
+两个 tap 的同名包**共用同一 Cellar 目录** + `install/check.rb` 无条件 odie，
+所以「只要用户装过 core 的 X，本 tap 的 X 就永远装不上」，对依赖亦然。
+第三方 tap 想给用户"零编译"，只能在**自己的叶子**上实现；枢纽包要么用户已有、
+要么用户端源码构建——这是 tap 定位的固有边界，别拿 core 的做法硬套。
+
+### 11.12 pr-upload 写的瓶块会因 job 中途死亡而丢失
+
+`brew pr-upload --no-commit` 会把瓶块**写进 Formula/*.rb**（--no-commit 只是不
+git commit），最终靠 workflow 的「提交瓶块」步骤入库。若制瓶循环里后面的公式失败，
+job 直接死 → 提交步骤被跳过 → 已写好的瓶块随 runner 蒸发（GHCR 有瓶、公式没 sha，
+后续包判「无瓶」走源码编译而失败；capstone/dtc/libslirp 实测中招）。
+修法（bottle.yml 已落地）：循环步骤加 `id` → 「提交瓶块」加 `if: always()` →
+追加「失败门槛」步骤（`steps.<id>.outcome == 'failure'` 时 exit 1）——失败仍红，
+但成功部分的瓶块先入库。
+
+### 11.13 旧 C 代码撞 C23：`int f();` 从「未原型」变「零参」
+
+C23 起空参括号 `()` 等价 `(void)`。2016 年前后的代码（vde 2.3.3 实测）在 Xcode 26
+runner（clang 默认 gnu23）下报 20 个 `too many arguments to function call,
+expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
+`clang -fsyntax-only -std=gnu23 file.c` 强制即可复现，`-std=gnu17` 验证修复。
+落地：公式 install 里 `ENV.append "CFLAGS", "-std=gnu17"`（gnu17 是 clang 15–19
+的默认标准，恢复旧语义）。
+
+### 11.14 关于 core 瓶与 GHCR 可见性的两个实测事实
+
+- core **部分**包其实有 Intel tahoe 瓶（automake/autoconf/libtool/m4/texinfo/
+  pkgconf/xz/zstd 带 `tahoe` 标签），但 qemu 那 26 个依赖**一个都没有**（只有
+  arm64_* 和更老的 sonoma）→ 代编译前提成立，别拿「core 有 tahoe 瓶」否定整套方案。
+- Actions 的 `GITHUB_TOKEN` 在 **public 仓库**建的 GHCR 包**默认即公开**（匿名
+  curl 可直接拉 tags），「首推后需手动改 Public」不成立；删包重建也继承公开状态。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
@@ -659,8 +769,12 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
 - [ ] 实测验证 watcher → 单次 bottle 全自动链路在真实多软件更新下的表现（含 Swift 检查器
       在 ubuntu runner 上的首次运行，以及 workbuddy 这种 ~465MB 大包在 macos-26-intel
       上的制瓶耗时与 GHCR 推送）。
-- [ ] 若某些软件上游不提供 macOS amd64 包，改为自建 bottle：
-      新增一个 `workflow_dispatch` 的 `bottle.yml`，构建后传到 GitHub Releases，
-      公式里加 `bottle do ... sha256 tahoe: "..." end`，root_url 指向本仓 Releases。
+- [x] **上游不提供 macOS amd64 包的软件 → 代编译模式已落地（qemu 首例，2026-09-03）**：
+      上游源码做原料，`bottle.yml` 在 macos-26-intel 现编译出 GHCR 瓶（root_url 指向
+      `ghcr.io/v2/bemly/tahoe-intel`，不是 GitHub Releases——早期设想已废弃，见 6 节
+      「qemu 代编译模式」）。qemu + capstone/dtc/libslirp/vde 已收录并本机验收。
+- [ ] anomalyco 分支（feat/anomalyco-3：opencode/sst/torpedo/ripgrep/doubao-ime 等）
+      合并回 main 后，按第 9 节 SOP 为其公式逐个制瓶（复用已验证的代编译/直引流程）；
+      注意 main 与 anomalyco 是同一仓库的两个 worktree，tap 软链只指向其一。
 - [ ] watcher 目前只比对 `versions.stable`；如某软件需要跟踪 `versions.head` 再扩展。
 - [ ] 接入 `brew livecheck` 作为可选的辅助检查手段。
