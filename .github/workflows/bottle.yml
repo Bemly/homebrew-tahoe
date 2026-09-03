@@ -40,7 +40,11 @@ env:
 jobs:
   bottle:
     runs-on: macos-26-intel
-    timeout-minutes: 60
+    # qemu 及其依赖树是代编译模式：单个批次最多要源码编译二十多个公式，
+    # qemu 自身全量 68 个目标约 2–3 小时。GitHub 单 job 上限 6 小时（360），
+    # 这里留 300 的余量；批次按依赖拓扑划分，后一批可直接 pour 前一批的瓶。
+    # 注：本仓是 public 仓库，标准 runner（含 macOS）不消耗付费额度。
+    timeout-minutes: 300
 
     steps:
       - name: 检出仓库
@@ -78,6 +82,12 @@ jobs:
       # 软链进来的 tap 默认不受信任，这里整体信任本 tap。
       - name: 信任本 tap
         run: brew trust bemly/tahoe-intel
+
+      # 秒级体检：开编之前先把 tap 内所有公式过一遍 brew readall。
+      # 代编译模式一次构建可达数小时，公式若有语法/引用/门禁问题，
+      # 必须在这里就红掉，而不是编译几小时后才发现（见 AGENTS.md 11.10）。
+      - name: 公式体检（防白跑）
+        run: brew readall bemly/tahoe-intel
 
       - name: 安装 skopeo（推 GHCR 的依赖）
         run: brew install skopeo
