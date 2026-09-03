@@ -38,7 +38,6 @@ struct WorkbuddyCheck {
             formula: "workbuddy",
             formulaPath: "Casks",
             isCask: true,
-            uploadRelease: true,
             customRelease: {
                 guard let json = fetchJSON(
                     "https://www.workbuddy.cn/v2/update?platform=workbuddy-darwin-x64"),
@@ -48,7 +47,10 @@ struct WorkbuddyCheck {
                 }
                 // sha256hash 是 dmg 的、对 zip 无效 → 置 nil，核心回退下载实算
                 return UpstreamRelease(version: version, downloadURL: zipURL, sha256: nil)
-            }
+            },
+            // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致，
+            // customRelease 必须在 uploadRelease 之前（zcode.swift 同例）。
+            uploadRelease: true
         )
         runCheck(config)
     }

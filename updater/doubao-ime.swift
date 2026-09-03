@@ -34,7 +34,6 @@ struct DoubaoImeCheck {
             formula: "doubao-ime",
             formulaPath: "Casks",
             isCask: true,
-            uploadRelease: true,
             customRelease: {
                 guard let json = fetchJSON(
                     "https://shurufa.doubao.com/api/v1/app/download_url?platform=macos"),
@@ -51,7 +50,10 @@ struct DoubaoImeCheck {
                 }
                 // 接口不给可用 sha → 置 nil，核心回退下载实算
                 return UpstreamRelease(version: version, downloadURL: zipURL, sha256: nil)
-            }
+            },
+            // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致，
+            // customRelease 必须在 uploadRelease 之前（zcode.swift 同例）。
+            uploadRelease: true
         )
         runCheck(config)
     }
