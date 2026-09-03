@@ -10,7 +10,7 @@
 //      （exit 0 但什么都不做），不能用；
 //   2. swiftc 只允许 main.swift 含裸的顶层代码，所以各包入口用 @main 结构体。
 //
-// 版本来源两种（CheckConfig 二选一）：
+// 版本来源三种（CheckConfig 三选一，优先级 customRelease > raw > brew）：
 //   - brew 流：formulae.brew.sh 的 versions.stable 判新。url/sha 两种给法：
 //       a) 模板式：downloadURL/asset/checksumsURL 指向上游产物与汇总清单
 //          （gh / fastfetch / node 家族，sha 走 checksums.txt）；
@@ -18,6 +18,10 @@
 //          / .checksum——这两个值就是 core 公式 url 行指向的真实上游直链与
 //          其 sha256（Homebrew 维护），随上游换镜像自动跟随，免维护模板
 //          （qemu 及其依赖树，2026-09-03 起）。
+//   - raw 流：源 tap 仓库的公式 raw 文本（如 anomalyco/homebrew-tap 的
+//     <name>.rb），核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256
+//     （opencode / sst / torpedo，2026-09-04 起）。不消耗 GitHub API 限额
+//     （走 raw.githubusercontent.com），sha 直接取自源文件，无需下载。
 //   - 自定义流 customRelease：brew 未收录软件的上游自有更新接口（WorkBuddy），
 //     接口直接给版本号、下载直链、sha256。
 //
@@ -57,6 +61,10 @@ struct CheckConfig {
     let checksumsURL: ((String) -> String)?
     /// 自定义流：上游自有更新接口（brew 未收录软件的版本来源）
     let customRelease: (() -> UpstreamRelease?)?
+    /// raw 流：源 tap 仓库公式的 raw 地址（如
+    /// https://raw.githubusercontent.com/anomalyco/homebrew-tap/master/opencode.rb），
+    /// 核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256。
+    let rawFormulaURL: String?
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -65,7 +73,8 @@ struct CheckConfig {
          asset: ((String) -> String)? = nil,
          downloadURL: ((String) -> String)? = nil,
          checksumsURL: ((String) -> String)? = nil,
-         customRelease: (() -> UpstreamRelease?)? = nil) {
+         customRelease: (() -> UpstreamRelease?)? = nil,
+         rawFormulaURL: String? = nil) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -74,6 +83,7 @@ struct CheckConfig {
         self.downloadURL = downloadURL
         self.checksumsURL = checksumsURL
         self.customRelease = customRelease
+        self.rawFormulaURL = rawFormulaURL
     }
 }
 
@@ -226,6 +236,37 @@ func compareVersions(_ a: String, _ b: String) -> Int {
     return 0
 }
 
+// MARK: - raw 流解析（GoReleaser 结构，如 anomalyco/homebrew-tap）
+
+/// 从源 tap 仓库的公式 raw 文本解析发布信息：`version "..."` +
+/// `on_macos` 段内 `Hardware::CPU.intel?` 块后的第一组 url/sha256。
+/// 三个约束（缺一返回 nil）：
+///   1. 先截断 `on_linux` 段——linux 资产名也带 x64（如 opencode-linux-x64），
+///      不截断会误取；
+///   2. 只认 `Hardware::CPU.intel?` 标记后的 url（torpedo 的 arm 块在前，
+///      intel 块在后，直接取第一个 url 会拿到 arm64 包）；
+///   3. sha256 必须是 64 位 hex（源文件里只有一处，防御性校验）。
+func parseGoReleaserRaw(_ text: String) -> UpstreamRelease? {
+    guard let vm = firstMatch(#"(?m)^[ \t]*version\s+"([^"]+)""#, in: text),
+          let vr = Range(vm.range(at: 1), in: text) else {
+        return nil
+    }
+    let version = String(text[vr])
+    // 只看 on_linux 之前的部分（即 on_macos 段）
+    let macScope = text.components(separatedBy: "on_linux").first ?? text
+    let pattern = #"Hardware::CPU\.intel\?.*?url\s+"([^"]+)".*?sha256\s+"([0-9a-fA-F]{64})""#
+    guard let regex = try? NSRegularExpression(pattern: pattern,
+                                               options: [.dotMatchesLineSeparators]),
+          let m = regex.firstMatch(in: macScope, range: fullRange(macScope)),
+          let ur = Range(m.range(at: 1), in: macScope),
+          let sr = Range(m.range(at: 2), in: macScope) else {
+        return nil
+    }
+    return UpstreamRelease(version: version,
+                           downloadURL: String(macScope[ur]),
+                           sha256: String(macScope[sr]).lowercased())
+}
+
 // MARK: - 公式改写
 
 private func fullRange(_ s: String) -> NSRange {
@@ -306,7 +347,7 @@ func runCheck(_ config: CheckConfig) {
     }
     print("本地版本 : \(current)")
 
-    // 2. 上游版本与下载直链（自定义来源优先，否则走 brew）
+    // 2. 上游版本与下载直链（优先级：自定义接口 > 源仓库 raw > brew）
     let upstream: UpstreamRelease
     if let custom = config.customRelease {
         guard let release = custom() else {
@@ -314,6 +355,14 @@ func runCheck(_ config: CheckConfig) {
         }
         upstream = release
         print("上游版本 : \(upstream.version)（自定义更新接口）")
+    } else if let rawURL = config.rawFormulaURL {
+        let (status, body) = curlText(rawURL)
+        guard status == 0, !body.isEmpty,
+              let release = parseGoReleaserRaw(body) else {
+            fail("无法从源仓库 raw 获取 \(config.formula) 的版本信息：\(rawURL)")
+        }
+        upstream = release
+        print("上游版本 : \(upstream.version)（源仓库 raw）")
     } else {
         guard let brewName = config.brewName else {
             fail("CheckConfig 配置不完整：需要 customRelease 或 brew 流（至少提供 brewName）")
@@ -322,8 +371,9 @@ func runCheck(_ config: CheckConfig) {
         let apiURL = "https://formulae.brew.sh/api/formula/\(brewName).json"
         let (httpCode, body) = curlHTTP(apiURL)
         if httpCode == 404 {
-            // TODO(brew-missing)：brew 没有收录且未接 customRelease 的软件，无法判新。
-            // 需要为该软件适配版本来源（照抄 workbuddy.swift 接上游自有接口），
+            // TODO(brew-missing)：brew 没有收录且未接 customRelease/raw 流的软件，无法判新。
+            // 需要为该软件适配版本来源（源 tap 仓库 raw 接 rawFormulaURL，见
+            // opencode.swift；或照抄 workbuddy.swift 接上游自有接口），
             // 适配前先明确报告并停在这里（登记于 AGENTS.md 第 12 节待办）。
             print("brew 上没有 \(brewName)（formulae.brew.sh 404），跳过（TODO：适配版本来源）")
             emit("status=brew-missing")

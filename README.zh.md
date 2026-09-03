@@ -22,13 +22,15 @@ Homebrew 官方从 macOS 26 起不再为 Intel 构建 bottle。实测 core tap �
 ```bash
 brew tap bemly/tahoe-intel
 
-# 若之前装过 homebrew/core 的 gh / fastfetch，必须先卸载：
+# 若之前装过 homebrew/core 的 gh / fastfetch / opencode，必须先卸载：
 # 同名公式跨 tap 不能共存，brew 会直接拒绝安装
 brew uninstall gh
 brew uninstall fastfetch
+brew uninstall opencode # core 的 opencode 是 npm 版，同名
 
 brew install bemly/tahoe-intel/gh
 brew install bemly/tahoe-intel/fastfetch
+brew install bemly/tahoe-intel/opencode # 会连带装上本 tap 的 ripgrep 依赖
 
 # workbuddy 是桌面 app，走 cask（装进 /Applications，Launchpad/Spotlight 可见）
 brew install --cask bemly/tahoe-intel/workbuddy
@@ -44,6 +46,10 @@ brew install --cask bemly/tahoe-intel/workbuddy
 | `node` | Node.js 运行时，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
+| `opencode` | AI 编程 agent，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`opencode-darwin-x64.zip`）；与 core 的 npm 版同名，装前须先卸载另一方 |
+| `sst` | SST 开发框架，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`sst-mac-x86_64.tar.gz`） |
+| `torpedo` | sst/torpedo VPC 数据库访问工具，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`torpedo-mac-x86_64.tar.gz`） |
+| `ripgrep` | grep 类搜索工具，`opencode` 的依赖（随本 tap 出瓶） |
 
 ## 注意事项（同名冲突）
 
