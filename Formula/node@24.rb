@@ -10,7 +10,7 @@ class NodeAT24 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe-intel"
-    sha256 cellar: :any_skip_relocation, tahoe: "94c4d96205160b3b51896bc7345745231f411931527fcd80c2256531c34823c7"
+    sha256 cellar: :any_skip_relocation, tahoe: "422c30c2cf78bd24c30550fc8a3ab9d7985eefa57fd66f4e04c6244d1bafe8d6"
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
