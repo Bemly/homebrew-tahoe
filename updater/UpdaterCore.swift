@@ -11,7 +11,13 @@
 //   2. swiftc 只允许 main.swift 含裸的顶层代码，所以各包入口用 @main 结构体。
 //
 // 版本来源两种（CheckConfig 二选一）：
-//   - brew 流：formulae.brew.sh 的 versions.stable 判新（gh / fastfetch）；
+//   - brew 流：formulae.brew.sh 的 versions.stable 判新。url/sha 两种给法：
+//       a) 模板式：downloadURL/asset/checksumsURL 指向上游产物与汇总清单
+//          （gh / fastfetch / node 家族，sha 走 checksums.txt）；
+//       b) 全量式：只给 brewName，url 与 sha256 直取 JSON 的 urls.stable.url
+//          / .checksum——这两个值就是 core 公式 url 行指向的真实上游直链与
+//          其 sha256（Homebrew 维护），随上游换镜像自动跟随，免维护模板
+//          （qemu 及其依赖树，2026-09-03 起）。
 //   - 自定义流 customRelease：brew 未收录软件的上游自有更新接口（WorkBuddy），
 //     接口直接给版本号、下载直链、sha256。
 //
@@ -309,10 +315,8 @@ func runCheck(_ config: CheckConfig) {
         upstream = release
         print("上游版本 : \(upstream.version)（自定义更新接口）")
     } else {
-        guard let brewName = config.brewName,
-              config.asset != nil,
-              let urlTemplate = config.downloadURL else {
-            fail("CheckConfig 配置不完整：需要 customRelease 或 brew 三件套（brewName/asset/downloadURL）")
+        guard let brewName = config.brewName else {
+            fail("CheckConfig 配置不完整：需要 customRelease 或 brew 流（至少提供 brewName）")
         }
         // brew 的 versions.stable 是判据：这是 brew 上的版本号，不是上游 GitHub 的最新版
         let apiURL = "https://formulae.brew.sh/api/formula/\(brewName).json"
@@ -333,7 +337,20 @@ func runCheck(_ config: CheckConfig) {
             fail("无法从 formulae.brew.sh 获取 \(brewName) 的 stable 版本（HTTP \(httpCode.map(String.init) ?? "请求失败")）")
         }
         print("brew 版本 : \(stable)")
-        upstream = UpstreamRelease(version: stable, downloadURL: urlTemplate(stable), sha256: nil)
+        // 全量式：JSON 的 urls.stable.url / .checksum 就是 core 公式 url 行指向的
+        // 真实上游直链与其 sha256；模板式（downloadURL 闭包）仍优先，兼容老用法。
+        let stableEntry = (json["urls"] as? [String: Any])?["stable"] as? [String: Any]
+        let downloadURL: String
+        if let template = config.downloadURL {
+            downloadURL = template(stable)
+        } else if let jsonURL = stableEntry?["url"] as? String, !jsonURL.isEmpty {
+            downloadURL = jsonURL
+        } else {
+            fail("无法确定 \(brewName) 的上游下载直链（JSON 缺 urls.stable.url 且未提供 downloadURL 模板）")
+        }
+        upstream = UpstreamRelease(version: stable,
+                                   downloadURL: downloadURL,
+                                   sha256: stableEntry?["checksum"] as? String)
     }
     let stable = upstream.version
 
