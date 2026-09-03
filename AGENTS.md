@@ -920,6 +920,24 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    root 属主的 app（Homebrew.app）收编要 sudo，非交互跑不通——需用户手动
    `sudo chown` 或删掉重装（反例：同机 winstart 属主为 bemly，收编零密码一次成）。
 
+### 11.22 cask 的 quarantine brew 不清；破签名 + 隔离 = "已损坏"（2026-09-04 实测）
+
+1. **11.2（别手动清隔离属性）只适用于公式**：cask 产物实测残留
+   `com.apple.quarantine`（brew 不清）——palera1n/TSKMGR 装完 `xattr` 皆在。
+2. 两种 Gatekeeper 死法要区分：**无签名但包完整**（palera1n）→ 提示"来自身份不明
+   的开发者"，右键打开可绕过；**adhoc 签名已破**（TSKMGR 改包后未重签，
+   `codesign -v` 报 `invalid Info.plist`、`spctl` 报 `invalid resource directory`）
+   → 直接判"已损坏"，右键也绕不过，必须清隔离属性才跑得起来。
+3. 修法（macos-tskmgr 已落地）：cask `postflight` 里
+   `system_command "/usr/bin/xattr", args: ["-d", "-r", "com.apple.quarantine", app]`
+   ——只清 quarantine 不碰其他属性；完整性锚点是公式/cask 的 sha256 pin，
+   不依赖 Gatekeeper。路径用 `Dir["#{appdir}/MacOSTSKMGR-*.app"].fetch(0)`
+   而非 `#{arch}` 插值（postflight 上下文里 arch 不可用，写死更稳）。
+   修完重装验证：`xattr -p` 报 No such xattr 且全包 `find -xattrname` 计数为 0。
+4. fish `Couldn't find manifest matching bottle checksum` 是 11.10 已知问题
+   （删包重建后本机缓存旧 manifest）：`brew fetch --force --bottle-tag=tahoe`
+   刷新即恢复——用户侧遇到先走这条，不用动公式。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。

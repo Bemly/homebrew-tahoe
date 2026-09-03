@@ -20,10 +20,21 @@ cask "macos-tskmgr" do
 
   app "MacOSTSKMGR-#{arch}.app"
 
+  # 上游 adhoc 签名已破（改包后未重签，codesign 报 invalid Info.plist），
+  # 残留 quarantine 会被 Gatekeeper 判"已损坏"且右键也绕不过；
+  # brew 不清 cask 产物的隔离属性，此处手动清除（包体 sha256 已校验过，
+  # 完整性不依赖 Gatekeeper）。只清 quarantine，不碰其他属性。
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args:         ["-d", "-r", "com.apple.quarantine",
+                                  Dir["#{appdir}/MacOSTSKMGR-*.app"].fetch(0)],
+                   print_stderr: false
+  end
+
   uninstall quit: "com.linqin.MacOSTSKMGR"
 
   caveats <<~EOS
-    应用为 ad-hoc 签名，首次启动可能被 Gatekeeper 拦截：
-      在 /Applications 里右键打开一次 → 仍要打开，之后即可正常启动。
+    安装时已自动清除隔离属性（上游 adhoc 签名已破，不清会被判"已损坏"），
+    双击即可启动；如仍被拦截，在 /Applications 里右键打开一次即可。
   EOS
 end
