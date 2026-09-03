@@ -152,7 +152,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `neofetch` | 7.1.0 | GitHub 归档发布包 `neofetch-7.1.0.tar.gz`（外部链接，纯 bash 脚本、已归档为最后一版）；**不走 updater 检查器**（无更新），`install` 用 `make install PREFIX`，`post_install` 不做 x86_64 文件校验 | 已收录 |
 | `workbuddy` | 5.4.7.37521366 | cask——WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取），镜像到本仓 GitHub Release | 已收录 |
-| `doubao-ime` | 0.9.7 | cask——豆包输入法安装器（官方下载接口 `/api/v1/app/download_url?platform=macos` 动态获取，去 V 取版本），镜像到本仓 GitHub Release；cask 经 installer script 自动跑官方 install.sh 装进 `/Library/Input Methods`（需 sudo） | 已收录 |
+| `doubao-ime` | 0.9.7 | cask——豆包输入法安装器（官方下载接口 `/api/v1/app/download_url?platform=macos` 动态获取，去 V 取版本），镜像到本仓 GitHub Release；preflight 从安装器解出真身 app，装进用户级 `~/Library/Input Methods`（免 sudo，官方 install.sh 硬编码 /Library 且嵌套 sudo 故弃用），postflight 自动写入系统输入源启用（免手动添加，见 11.17） | 已收录 |
 | `node` | 26.8.1 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `node@24` | 24.20.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
 | `node@22` | 22.23.2 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
@@ -165,6 +165,9 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `sst` | 4.17.1 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`sst-mac-x86_64.tar.gz`）；`sst version` 子命令取版本（不支持 `--version`） | 已收录 |
 | `torpedo` | 0.0.13 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`torpedo-mac-x86_64.tar.gz`，上游 `sst/torpedo`）；无任何版本命令，不做版本自检 | 已收录 |
 | `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
+| `mufetch` | 0.1.1 | GitHub release 的 `mufetch_darwin_x86_64.tar.gz`（外部直链，tar 无顶层目录，文件直接在 CWD）；brew 流模板式检查器，sha 取自 release 的 `checksums.txt`（约 2KB） | 已收录 |
+| `cmd` | 1.45.0 | npm 包 `command-code` 的 tarball 直引（`npm install` 到 libexec，四入口只暴露 `cmd`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/cmd.swift，同 neofetch） | 已收录 |
+| `zcode` | 3.10.2 | cask——上游 CDN 的 x64 dmg 直引（core 的 zcode cask 是 arm64）；检查器走 UpdaterCore 新增的 `brewCask` 分支（`api/cask/zcode.json` 的 `.version`）；url 用 `#{version}` 插值、直引 CDN 不镜像 Release（`uploadRelease: false`） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -797,6 +800,38 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    已修为上传前重命名成上游资产名；doubao 首发的两个垃圾资产已手删。
    教训：cask 首发后必须 `brew fetch --cask` 端到端验证（成功标志 `✔︎ Cask doubao-ime`）。
 
+### 11.17 输入法 cask 的全自动安装（2026-09-03 实测，doubao-ime 免 sudo 改造）
+
+1. **官方 install.sh 不可用于全自动场景**：硬编码 `/Library/Input Methods`，且内部嵌套
+   `sudo chown -R root:staff`——无论 cask 怎么调都会弹密码。绕开方式：preflight 直接
+   `unzip` 安装器 Resources 里的内层 zip（真身 DoubaoIme.app），不执行官方脚本；
+   外层目录名带构建号每版都变，用 `DoubaoImeInstaller_*.app` 通配。
+2. **用户级输入法目录完全可行**：`~/Library/Input Methods` 是 macOS 标准输入法位置，
+   TIS 与系统设置都会列出。cask `app` stanza 的 `target:` 写 `~/...` 时
+   `resolve_target` 会 `expand_path` 展开（`cask/artifact/relocated.rb` 实读确认），
+   父目录不存在时 `Moved#move` 自动创建——真移动而非 symlink（symlink 输入法
+   过不了 TIS 的签名/路径校验，不可用）。附带好处：app 自带的自动更新写用户目录
+   不再需要管理员授权（系统级 `/Library` 反而每次自更新都要）。
+3. **自动启用输入法**：`defaults write com.apple.HIToolbox AppleEnabledInputSources
+   -array-add` 追加 `<dict>` 三键（Bundle ID / Input Mode / InputSourceKind="Input Mode"，
+   与系统设置里手动添加后的记录同构）；先 `defaults read` 判重保证幂等（升级/重装
+   不重复追加）；写完 `killall cfprefsd`（落盘）+ `killall SystemUIServer`（刷新菜单栏）。
+   输入法图标未立即出现时，注销重登一次即生效。
+4. **必须重启 `TextInputMenuAgent`，且要等几秒**：它持有登录会话启动时的输入源列表，
+   不重启新装的输入法就不出现在菜单栏（只 `killall SystemUIServer` 无效，实测）。
+   重启后 TIS 重建约需数秒——**装完立刻查会误判为"未启用"**，等 8 秒再查才稳定。
+5. **验证手段（推荐）**：`TISCreateInputSourceList` 可程序化区分「已安装」与「已启用」。
+   用 python ctypes 加载 `HIToolbox` 调用即可（`swiftc` 链接 TIS 符号会失败，别走那条路）。
+   `ALL INSTALLED` 有而 `ENABLED` 没有 = 装了但没启用；两者都有 = 真正可用。
+   `defaults read` 只反映偏好记录，不能作为"真的能用"的证据。
+6. **卸载/升级删除 app 仍会走 sudo**：brew 删只读的 app 包时统一提权（既有行为，
+   与装在用户级目录无关），非交互环境用 `SUDO_ASKPASS` 提供密码即可跑通。
+   结论：**安装免密码，卸载/升级仍需密码**——caveats 里如实说明。
+7. **`chmod -R u+w` 不破坏代码签名**：改的是权限位不是内容，`codesign -v` 仍 exit 0（实测）。
+8. **验证明细**：`brew install --cask` 全程零密码；app 落位 `~/Library/Input Methods/`
+   为真目录（非 symlink，universal x86_64+arm64）；`defaults read` 含豆包三键且重装无重复
+   （postflight 判重幂等）；TIS 的 `ENABLED` 列表含 `com.bytedance.inputmethod.doubaoime.pinyin`。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
@@ -810,8 +845,10 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
       上游源码做原料，`bottle.yml` 在 macos-26-intel 现编译出 GHCR 瓶（root_url 指向
       `ghcr.io/v2/bemly/tahoe-intel`，不是 GitHub Releases——早期设想已废弃，见 6 节
       「qemu 代编译模式」）。qemu + capstone/dtc/libslirp/vde 已收录并本机验收。
-- [ ] anomalyco 分支（feat/anomalyco-3：opencode/sst/torpedo/ripgrep/doubao-ime 等）
-      合并回 main 后，按第 9 节 SOP 为其公式逐个制瓶（复用已验证的代编译/直引流程）；
-      注意 main 与 anomalyco 是同一仓库的两个 worktree，tap 软链只指向其一。
+- [x] **anomalyco 分支（feat/anomalyco-3）已合并回 main 并逐个制瓶完成**（2026-09-03~04）：
+      `ea02f08 Merge branch 'feat/anomalyco-3' into main`；opencode/sst/torpedo/ripgrep 走 raw 流
+      公式 + 代编译/直引流程逐个制瓶（Log 见 `bottle: 更新 GHCR 瓶块（opencode,sst,torpedo）`、
+      `（ripgrep）`），workbuddy/doubao-ime cask 也已落地；15 个公式现均带 `bottle do` 块。
+      合并时的 worktree 注意事项已失效（分支已合回 main，软链指向 main 即可）。
 - [ ] watcher 目前只比对 `versions.stable`；如某软件需要跟踪 `versions.head` 再扩展。
 - [ ] 接入 `brew livecheck` 作为可选的辅助检查手段。

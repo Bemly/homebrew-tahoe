@@ -65,6 +65,14 @@ struct CheckConfig {
     /// https://raw.githubusercontent.com/anomalyco/homebrew-tap/master/opencode.rb），
     /// 核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256。
     let rawFormulaURL: String?
+    /// brew 流：查 **cask** 版本（formulae.brew.sh/api/cask/）而非公式（api/formula/）。
+    /// 用于 zcode 这类「在 core 里是 cask」的软件——版本字段是 .version 不是 .versions.stable。
+    /// 注意：core 的 cask url 是 arm64 的，不能直接取，必须配合 downloadURL 模板给 x64 直链。
+    let brewCask: Bool
+    /// cask 专用：是否把发布包上传本仓 Release 并把 url 改写为 Release 地址。
+    /// 直引上游 CDN 且链接稳定的 cask（如 zcode）置 false；链接带构建哈希、
+    /// 每次部署都变的（workbuddy / doubao-ime）置 true 走镜像。
+    let uploadRelease: Bool
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -74,7 +82,9 @@ struct CheckConfig {
          downloadURL: ((String) -> String)? = nil,
          checksumsURL: ((String) -> String)? = nil,
          customRelease: (() -> UpstreamRelease?)? = nil,
-         rawFormulaURL: String? = nil) {
+         rawFormulaURL: String? = nil,
+         brewCask: Bool = false,
+         uploadRelease: Bool = false) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -84,6 +94,8 @@ struct CheckConfig {
         self.checksumsURL = checksumsURL
         self.customRelease = customRelease
         self.rawFormulaURL = rawFormulaURL
+        self.brewCask = brewCask
+        self.uploadRelease = uploadRelease
     }
 }
 
@@ -367,40 +379,74 @@ func runCheck(_ config: CheckConfig) {
         guard let brewName = config.brewName else {
             fail("CheckConfig 配置不完整：需要 customRelease 或 brew 流（至少提供 brewName）")
         }
-        // brew 的 versions.stable 是判据：这是 brew 上的版本号，不是上游 GitHub 的最新版
-        let apiURL = "https://formulae.brew.sh/api/formula/\(brewName).json"
-        let (httpCode, body) = curlHTTP(apiURL)
-        if httpCode == 404 {
-            // TODO(brew-missing)：brew 没有收录且未接 customRelease/raw 流的软件，无法判新。
-            // 需要为该软件适配版本来源（源 tap 仓库 raw 接 rawFormulaURL，见
-            // opencode.swift；或照抄 workbuddy.swift 接上游自有接口），
-            // 适配前先明确报告并停在这里（登记于 AGENTS.md 第 12 节待办）。
-            print("brew 上没有 \(brewName)（formulae.brew.sh 404），跳过（TODO：适配版本来源）")
-            emit("status=brew-missing")
-            emit("current_version=\(current)")
-            return
-        }
-        guard httpCode == 200,
-              let json = (try? JSONSerialization.jsonObject(with: Data(body.utf8))) as? [String: Any],
-              let versions = json["versions"] as? [String: Any],
-              let stable = versions["stable"] as? String, !stable.isEmpty else {
-            fail("无法从 formulae.brew.sh 获取 \(brewName) 的 stable 版本（HTTP \(httpCode.map(String.init) ?? "请求失败")）")
-        }
-        print("brew 版本 : \(stable)")
-        // 全量式：JSON 的 urls.stable.url / .checksum 就是 core 公式 url 行指向的
-        // 真实上游直链与其 sha256；模板式（downloadURL 闭包）仍优先，兼容老用法。
-        let stableEntry = (json["urls"] as? [String: Any])?["stable"] as? [String: Any]
-        let downloadURL: String
-        if let template = config.downloadURL {
-            downloadURL = template(stable)
-        } else if let jsonURL = stableEntry?["url"] as? String, !jsonURL.isEmpty {
-            downloadURL = jsonURL
+        // 变量名避开外层的 stable / downloadURL（第 4 步之后还要用）
+        let resolvedVersion: String
+        let resolvedURL: String
+        let hintSHA: String?
+
+        if config.brewCask {
+            // cask 流：软件在 core 里是 cask（如 zcode），版本字段是 .version 而非
+            // .versions.stable。core 的 cask url 是 arm64 的，绝不能直接取 urls——
+            // 必须由 downloadURL 模板给出 x64 直链；sha 同样不能用 core 那份
+            // （属于另一个架构的包），置 nil 让核心回退下载实算。
+            let apiURL = "https://formulae.brew.sh/api/cask/\(brewName).json"
+            let (httpCode, body) = curlHTTP(apiURL)
+            if httpCode == 404 {
+                print("brew 上没有 cask \(brewName)（formulae.brew.sh 404），跳过")
+                emit("status=brew-missing")
+                emit("current_version=\(current)")
+                return
+            }
+            guard httpCode == 200,
+                  let json = (try? JSONSerialization.jsonObject(with: Data(body.utf8))) as? [String: Any],
+                  let caskVersion = json["version"] as? String, !caskVersion.isEmpty else {
+                fail("无法从 formulae.brew.sh 获取 cask \(brewName) 的版本（HTTP \(httpCode.map(String.init) ?? "请求失败")）")
+            }
+            guard let template = config.downloadURL else {
+                fail("cask 流（\(brewName)）必须提供 downloadURL 模板：core 的 url 是 arm64 的，不能直接使用")
+            }
+            print("brew cask 版本 : \(caskVersion)")
+            resolvedVersion = caskVersion
+            resolvedURL = template(caskVersion)
+            hintSHA = nil
         } else {
-            fail("无法确定 \(brewName) 的上游下载直链（JSON 缺 urls.stable.url 且未提供 downloadURL 模板）")
+            // brew 的 versions.stable 是判据：这是 brew 上的版本号，不是上游 GitHub 的最新版
+            let apiURL = "https://formulae.brew.sh/api/formula/\(brewName).json"
+            let (httpCode, body) = curlHTTP(apiURL)
+            if httpCode == 404 {
+                // TODO(brew-missing)：brew 没有收录且未接 customRelease/raw 流的软件，无法判新。
+                // 需要为该软件适配版本来源（源 tap 仓库 raw 接 rawFormulaURL，见
+                // opencode.swift；或照抄 workbuddy.swift 接上游自有接口），
+                // 适配前先明确报告并停在这里（登记于 AGENTS.md 第 12 节待办）。
+                print("brew 上没有 \(brewName)（formulae.brew.sh 404），跳过（TODO：适配版本来源）")
+                emit("status=brew-missing")
+                emit("current_version=\(current)")
+                return
+            }
+            guard httpCode == 200,
+                  let json = (try? JSONSerialization.jsonObject(with: Data(body.utf8))) as? [String: Any],
+                  let versions = json["versions"] as? [String: Any],
+                  let formulaVersion = versions["stable"] as? String, !formulaVersion.isEmpty else {
+                fail("无法从 formulae.brew.sh 获取 \(brewName) 的 stable 版本（HTTP \(httpCode.map(String.init) ?? "请求失败")）")
+            }
+            print("brew 版本 : \(formulaVersion)")
+            // 全量式：JSON 的 urls.stable.url / .checksum 就是 core 公式 url 行指向的
+            // 真实上游直链与其 sha256；模板式（downloadURL 闭包）仍优先，兼容老用法。
+            let stableEntry = (json["urls"] as? [String: Any])?["stable"] as? [String: Any]
+            if let template = config.downloadURL {
+                resolvedURL = template(formulaVersion)
+            } else if let jsonURL = stableEntry?["url"] as? String, !jsonURL.isEmpty {
+                resolvedURL = jsonURL
+            } else {
+                fail("无法确定 \(brewName) 的上游下载直链（JSON 缺 urls.stable.url 且未提供 downloadURL 模板）")
+            }
+            resolvedVersion = formulaVersion
+            hintSHA = stableEntry?["checksum"] as? String
         }
-        upstream = UpstreamRelease(version: stable,
-                                   downloadURL: downloadURL,
-                                   sha256: stableEntry?["checksum"] as? String)
+
+        upstream = UpstreamRelease(version: resolvedVersion,
+                                   downloadURL: resolvedURL,
+                                   sha256: hintSHA)
     }
     let stable = upstream.version
 
@@ -463,9 +509,11 @@ func runCheck(_ config: CheckConfig) {
         fail("得到的 sha256 不合法：\(sha)")
     }
 
-    // cask：把安装包上传到本仓 Release，url 取 Release 资产地址（而非上游 COS 直链）
+    // cask：把安装包上传到本仓 Release，url 取 Release 资产地址（而非上游 COS 直链）。
+    // 仅 uploadRelease=true 的 cask 走这条路（链接带构建哈希、每次部署都变的那些）；
+    // 直引上游 CDN 且链接稳定的 cask（zcode）置 false，url 保持上游直链。
     var finalURL = downloadURL
-    if config.isCask {
+    if config.isCask && config.uploadRelease {
         let tagName = "\(config.formula)-\(stable)"
         let assetName = URL(fileURLWithPath: downloadURL).lastPathComponent
         let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe-intel"

@@ -38,6 +38,7 @@ struct WorkbuddyCheck {
             formula: "workbuddy",
             formulaPath: "Casks",
             isCask: true,
+            uploadRelease: true,
             customRelease: {
                 guard let json = fetchJSON(
                     "https://www.workbuddy.cn/v2/update?platform=workbuddy-darwin-x64"),

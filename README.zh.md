@@ -45,7 +45,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `gh` | GitHub 官方 CLI，直接取 `gh_<ver>_macOS_amd64.zip` |
 | `fastfetch` | 类 neofetch 的系统信息工具，直接取 `fastfetch-macos-amd64.tar.gz`（release tag 无 `v` 前缀） |
 | `workbuddy` | 腾讯 WorkBuddy AI 办公工作台（Electron 桌面 app），cask，装进 `/Applications`；不在 brew core，版本由其自动更新接口动态获取 |
-| `doubao-ime` | 豆包 AI 输入法，cask，经官方安装器自动装进 `/Library/Input Methods`（需 sudo）；不在 brew core，版本由其下载接口动态获取 |
+| `doubao-ime` | 豆包 AI 输入法，cask，装进用户级 `~/Library/Input Methods`（免 sudo）并自动写入系统输入源启用；不在 brew core，版本由其下载接口动态获取 |
 | `node` | Node.js 运行时，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
@@ -53,6 +53,9 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `sst` | SST 开发框架，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`sst-mac-x86_64.tar.gz`） |
 | `torpedo` | sst/torpedo VPC 数据库访问工具，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`torpedo-mac-x86_64.tar.gz`） |
 | `ripgrep` | grep 类搜索工具，`opencode` 的依赖（随本 tap 出瓶） |
+| `mufetch` | 系统信息工具，取 release 的 `mufetch_darwin_x86_64.tar.gz` |
+| `cmd` | 终端 AI 编程 agent，npm 包 `command-code`（只暴露 `cmd` 命令）；依赖本 tap 的 node 瓶；不检查更新 |
+| `zcode` | 智谱 z.ai 的 AI 辅助开发环境，cask 取上游 CDN 的 x64 dmg（core 的 zcode cask 只有 arm64）；版本跟随 core 的 cask |
 
 ## 注意事项（同名冲突）
 

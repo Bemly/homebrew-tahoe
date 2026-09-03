@@ -34,6 +34,7 @@ struct DoubaoImeCheck {
             formula: "doubao-ime",
             formulaPath: "Casks",
             isCask: true,
+            uploadRelease: true,
             customRelease: {
                 guard let json = fetchJSON(
                     "https://shurufa.doubao.com/api/v1/app/download_url?platform=macos"),

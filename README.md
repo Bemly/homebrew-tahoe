@@ -52,7 +52,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `gh` | GitHub CLI, taken directly from `gh_<ver>_macOS_amd64.zip` |
 | `fastfetch` | Neofetch-like system info tool, taken from `fastfetch-macos-amd64.tar.gz` (release tag has no `v` prefix) |
 | `workbuddy` | Tencent WorkBuddy AI office workspace (Electron desktop app), cask, installed into `/Applications`; not in brew core — version comes from its auto-update feed |
-| `doubao-ime` | Doubao AI input method, cask, auto-installs into `/Library/Input Methods` via the official installer script (needs sudo); not in brew core — version comes from its download API |
+| `doubao-ime` | Doubao AI input method, cask, installed into `~/Library/Input Methods` (user level, no sudo) and auto-enabled by writing the system input source; not in brew core — version comes from its download API |
 | `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
@@ -60,6 +60,9 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `sst` | SST framework, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`sst-mac-x86_64.tar.gz`) |
 | `torpedo` | sst/torpedo VPC database access tool, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`torpedo-mac-x86_64.tar.gz`) |
 | `ripgrep` | Search tool like grep, bottled dependency of `opencode` (from homebrew/core sources) |
+| `mufetch` | System info tool, from the release `mufetch_darwin_x86_64.tar.gz` |
+| `cmd` | Terminal AI coding agent, npm package `command-code` (exposes the `cmd` command only); depends on this tap's node bottle; no update checks |
+| `zcode` | z.ai AI-assisted development environment, cask from the upstream CDN x64 dmg (core's zcode cask is arm64 only); version follows homebrew/core's cask |
 
 ## Switching sources (same-name conflict)
 
