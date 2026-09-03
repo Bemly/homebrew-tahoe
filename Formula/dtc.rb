@@ -4,6 +4,11 @@ class Dtc < Formula
   url "https://mirrors.edge.kernel.org/pub/software/utils/dtc/dtc-1.8.1.tar.xz"
   sha256 "23526015a6f1550e0541a53fe7acea1b5a11e3697cdf3a3bdc076abc38f6045d"
   license any_of: ["GPL-2.0-or-later", "BSD-2-Clause"]
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any, tahoe: "f4d28a5663b1fe7d66505e5e6170f183f47979fa88133e0c3e6148d962673719"
+  end
   depends_on arch: :x86_64
   depends_on macos: :tahoe
   compatibility_version 1

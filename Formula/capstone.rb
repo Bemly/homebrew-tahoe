@@ -4,6 +4,11 @@ class Capstone < Formula
   url "https://github.com/capstone-engine/capstone/archive/refs/tags/5.0.9.tar.gz"
   sha256 "0619da31af08152600af95c481527ef6d756c0a8404fca7544a4fdf6dfc2c0f9"
   license "BSD-3-Clause"
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any, tahoe: "bbbe1182552e1b20f5985516fef683a7660ebc9aa37e7b198ecfb43a09ba2a7e"
+  end
   depends_on arch: :x86_64
   depends_on macos: :tahoe
   compatibility_version 1
