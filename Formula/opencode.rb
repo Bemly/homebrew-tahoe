@@ -9,6 +9,11 @@ class Opencode < Formula
   sha256 "e182eab3a6bf095ff773d303bbc7938d3551a636eab00625b599ad6383fabd88"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "ee6ad4657705928ac2909c62478fb0f5060a0077526a7db54dd87844aa7e3006"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # ripgrep 走本 tap 的 GHCR 瓶（core 的 ripgrep 无 x86_64_tahoe 瓶，会回退源码编译）。
   depends_on arch: :x86_64

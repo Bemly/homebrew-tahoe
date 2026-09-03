@@ -8,6 +8,11 @@ class Sst < Formula
   sha256 "9244910c50db88140f12579ce94923d2f0eae5f22a27bc884b2e1d7d245dcbf5"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "162710ad8ab13cf6121a841f14f544021aeb99cf7678961f70ef67fa20115c40"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe

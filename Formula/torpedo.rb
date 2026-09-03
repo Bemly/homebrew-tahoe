@@ -8,6 +8,11 @@ class Torpedo < Formula
   sha256 "6f506cd9875688557a06cd1642ffd26c0ed0af17ac0452fd3e43725d5f87ba46"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "ca758c575be1b91f1188bd0fa40565dabd9a0a3a77fd5b922fe4e6f410cb7a73"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
