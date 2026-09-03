@@ -86,6 +86,11 @@ jobs:
       # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md 5）。
       - name: 循环制瓶并推 GHCR
         env:
+          # gh CLI 读的是 GH_TOKEN / GITHUB_TOKEN 环境变量；Actions 不会自动把
+          # secrets.GITHUB_TOKEN 注入环境，不显式传则 gh 完全无凭据，
+          # 调 API 时直接报认证错误、stdout 为空（清理会静默失效）。
+          # 本机之所以测不出来，是因为 gh 会回落到 keyring 里的个人 token。
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
           HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -135,15 +140,18 @@ jobs:
             #   2. package_name 必须带 tap 名并编码：tahoe-intel%2Fnode（漏了则 404）；
             #   3. gh api 把错误 JSON 打到 **stdout**（2>/dev/null 拦不住），
             #      必须校验 id 为纯数字，否则整段 JSON 会被当作 version id 去 DELETE；
-            #   4. 不能只删「当前版本」——老瓶也要一并清，所以删全部已有版本。
+            #   4. 只删「带标签」的版本：无标签的那些是 image index 引用的子清单
+            #      （瓶的真正内容），不是孤儿，删了会破坏 index（见 8.5）；
+            #      标签删掉后 GitHub 会自行回收不再被引用的清单。
             owner="${GITHUB_REPOSITORY_OWNER}"
             pkg_encoded="tahoe-intel%2F${ghcr_name//\//%2F}"
             old_vids=""
             api_scope="users/${owner}"
             listed=""
             for scope in "users/${owner}" "orgs/${owner}"; do
+              # tags 非空的版本才是真正挂着标签的瓶，老瓶与新瓶一视同仁全删
               listed="$(gh api "${scope}/packages/container/${pkg_encoded}/versions" \
-                --paginate --jq '.[].id' 2>/dev/null || true)"
+                --paginate --jq '.[] | select((.metadata.container.tags | length) > 0) | .id' 2>/dev/null || true)"
               echo "  探测 ${scope} -> $(printf '%s' "$listed" | head -c 200)"
               if printf '%s' "$listed" | grep -Eq '^[0-9]+$'; then
                 old_vids="$listed"
