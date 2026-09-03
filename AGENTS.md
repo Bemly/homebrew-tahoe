@@ -330,11 +330,14 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
   版本号段数不同（`3.0` / `1.2.3.4`）或注释里先出现数字都会导致误判。
 - **`bottle.yml` 的并发组是全局 `bottle`**，不按入参分组：不同入参的两次制瓶若并行，
   会同时 `git push main`、删/推 GHCR 标签而互相冲突，排队串行执行。
-- **推送后自动清理老版本标签**：`bottle.yml` 在每个软件 `pr-upload` 之后，
-  用匿名 pull token 列出该包在 GHCR 的全部标签，除本次推送的版本外全部
-  `skopeo delete` 删掉（单个删除失败只告警不阻断）。GitHub Packages 页面上
-  显示的 `sha256:...` 无标签行是 image index 引用的子清单（瓶的真正内容），
-  **不是孤儿，不要手删**；标签删掉后 GitHub 会自行回收不再被引用的清单。
+- **推送前统一清空该包的已有版本**：`bottle.yml` 在 `pr-upload` **之前**
+  用 GitHub API（`users/{owner}/packages/container/tahoe-intel%2F<name>/versions`）
+  列出该包全部版本并逐个 `DELETE`（单个失败只告警不阻断）。这一步同时达成两个目的：
+  清掉历史老瓶，以及让同版本可以重复推送（`pr-upload` 撞已存在标签会直接
+  `odie "already exists!"`，所以必须先删再传，见 11.10）。
+  GitHub Packages 页面上显示的 `sha256:...` 无标签行是 image index 引用的
+  子清单（瓶的真正内容），**不是孤儿，不要手删**；标签删掉后 GitHub 会自行
+  回收不再被引用的清单。
 - 制瓶产物（`*.bottle.json` / `*.bottle.tar.gz`）已进 `.gitignore`，不要提交。
 
 ## 9. 新增软件的 SOP（端到端 Runbook）
@@ -583,6 +586,38 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
    dylib id 只是加载身份，没有任何 load command 按旧 id 引用，改写安全；
    ruby 细节两坑：`%w[]` 是单引号语义不解析 `\x` 字节转义，binary 串与 UTF-8
    字面量 `include?` 恒 false——magic 判断用 `unpack1("H8")` 的 hex 字符串比较。
+
+### 11.10 制瓶推送 GHCR 的四个坑（2026-09-03 实测，node/node@22 连续失败的根因）
+
+`brew pr-upload` 推送前会先 `skopeo inspect` 目标标签；**标签已存在且没传
+`--keep-old` 就直接 `odie "<uri> already exists!"`**（Homebrew
+`github_packages.rb` 的 `preupload_check`）。所以「保留当前版本」与「可覆盖推送」
+不可兼得——要让同一版本能重复制瓶，就必须**先删再传**。清理逻辑踩了四个坑：
+
+1. **端点用错**：owner 是普通用户（不是组织），端点必须是
+   `users/{owner}/packages/container/...`，用 `orgs/...` 恒 404。
+2. **包名漏前缀**：`package_name` 必须带 tap 名并 URL 编码，即
+   `tahoe-intel%2Fnode`（`node@22` → `tahoe-intel%2Fnode%2F22`），
+   只写 `node` 同样 404。
+3. **gh api 把错误 JSON 打到 stdout**：`2>/dev/null` 拦不住，jq 的
+   `select(...)` 也不匹配，于是整段 `{"message":"Not Found",...}` 会被当成
+   version id 拿去 `DELETE`，表现为莫名其妙的 `exit code 4`。
+   **必须校验 id 是纯数字**（`[[ "$vid" =~ ^[0-9]+$ ]]`）才删。
+4. **用 `|| echo` 把 pr-upload 失败降级成警告是危险的**：job 会变绿，但 GHCR 上
+   仍是旧瓶，而后续步骤照样把新瓶的 sha256 写回公式 → **公式里的 sha256 与
+   实际可下载的瓶不符，用户 `brew install` 时校验失败**。宁可 job 红，不可假绿。
+
+另外两个相关坑：
+
+- **推送后用「匿名 pull token 列标签 + skopeo delete」清理老标签不可靠**：
+  包还是私有（首次推送时，公开化步骤在其后）时 `curl -f` 会失败，
+  在 `set -euo pipefail` 下以 **exit 22 中断整个 job**；且 skopeo 在 GHCR 上
+  删 manifest list 会报 `unsupported`（见 8.5）。该职责已并入「推送前统一清空」。
+- **runner 镜像预装了 core 的 node@24（实测 24.19.0）**，它占用
+  `/usr/local/bin/node` 等链接，会阻塞本 tap node 家族的 link 步骤：
+  `Target /usr/local/bin/node is a symlink belonging to node@24`。
+  `brew unlink` 对预装但登记不全的 keg 会静默失败，需改成
+  `brew uninstall --force --ignore-dependencies` 并兜底删掉冲突符号链接。
 
 ## 12. 待办 / 后续演进
 
