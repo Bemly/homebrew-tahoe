@@ -19,7 +19,7 @@ class Dtc < Formula
   depends_on "ninja" => :build
   depends_on "pkgconf" => :build
 
-  depends_on "bemly/tahoe-intel/libyaml"
+  depends_on "libyaml"
 
   uses_from_macos "bison" => :build
   uses_from_macos "flex" => :build

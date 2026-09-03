@@ -40,11 +40,11 @@ env:
 jobs:
   bottle:
     runs-on: macos-26-intel
-    # qemu 及其依赖树是代编译模式：单个批次最多要源码编译二十多个公式，
-    # qemu 自身全量 68 个目标约 2–3 小时。GitHub 单 job 上限 6 小时（360），
-    # 这里留 300 的余量；批次按依赖拓扑划分，后一批可直接 pour 前一批的瓶。
+    # qemu 是代编译模式：runner 是干净环境，core 侧依赖（glib/gnutls/openssl@3…
+    # 无 x86_64_tahoe 瓶）要现编 1–2.5 小时，qemu 自身全量 68 目标再 2–3 小时。
+    # 取平台上限 360 分钟（GitHub 单 job 硬上限 6 小时）。
     # 注：本仓是 public 仓库，标准 runner（含 macOS）不消耗付费额度。
-    timeout-minutes: 300
+    timeout-minutes: 360
 
     steps:
       - name: 检出仓库
@@ -129,8 +129,13 @@ jobs:
             done
             rm -f "${BREW_PREFIX}/share/man/man1/node.1"
 
-            # 同名公式跨 tap 不能共存：再卸掉可能预装的 core 版（如 runner 自带 gh）
-            brew uninstall --force "$f" || true
+            # 同名公式跨 tap 不能共存（check.rb:47 的 odie）：卸掉可能预装的 core 版。
+            # 加 --ignore-dependencies 是因为 brew 会以「被其它已装包依赖」为由拒绝卸载
+            # （如镜像预装的 ca-certificates）；runner 是一次性环境，强卸安全。
+            # 注意：能进本 tap 的公式都经过 hub/叶子分流（见 AGENTS.md），
+            # 只有确定可被卸载、不会被生态其他包依赖的包才自己制瓶，
+            # 生态枢纽包（openssl@3 / glib / gettext 等）一律走 core 不进本 tap。
+            brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
             brew install --build-bottle "bemly/tahoe-intel/$f"
             brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe-intel/$f"
             # GHCR 镜像名不允许 @：node@22 → node/22（与 brew image_formula_name 一致）

@@ -16,7 +16,7 @@ class Capstone < Formula
 
 
   on_macos do
-    depends_on "bemly/tahoe-intel/gettext"
+    depends_on "gettext"
   end
 
   def install

@@ -17,7 +17,7 @@ class Libslirp < Formula
   depends_on "meson" => :build
   depends_on "ninja" => :build
   depends_on "pkgconf" => :build
-  depends_on "bemly/tahoe-intel/glib"
+  depends_on "glib"
 
   def install
     system "meson", "setup", "build", "-Ddefault_library=both", *std_meson_args
