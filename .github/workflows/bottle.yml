@@ -186,26 +186,36 @@ jobs:
             rm -f *.bottle.json
           done
 
-      # GHCR 包默认私有，匿名 brew install 会 401，逐个改公开；失败不阻断，
-      # 可在仓库 Settings → Packages 手动改。
-      - name: 尝试将 GHCR 包设为公开
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # GHCR 包默认私有，匿名 brew install 会 401。GitHub 没有任何 API 能改包
+      # 可见性（2026-09-03 实测：GraphQL 内省确认不存在 updatePackageVisibility
+      # mutation；REST PATCH 带 package-deletes-preview 也返回 404），只能到
+      # Packages 页面手动改。好消息：实测「删包重建」会继承原包的公开状态。
+      # 原先那个调 GraphQL 的步骤因此从未生效过——这里改造成「匿名可拉体检」：
+      # 对本次推送的每个包实测匿名拉取，失败则给出醒目告警提醒手动处理。
+      - name: 体检 GHCR 包的匿名可拉性
         run: |
           set -euo pipefail
-          # REST 没有改可见性的端点，用 GraphQL updatePackageVisibility。
-          # 不依赖 gh CLI（前面卸载了 core gh）；GITHUB_TOKEN 带 packages:write。
-          QUERY_TMPL='mutation { updatePackageVisibility(input: { packageName: "tahoe-intel/%s", packageType: CONTAINER, visibility: PUBLIC }) { package { name visibility } } }'
+          owner="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          failed=""
           while IFS= read -r f; do
             [[ -n "$f" ]] || continue
-            QUERY="$(printf "$QUERY_TMPL" "$f")"
-            curl -fsSL -X POST \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Content-Type: application/json" \
-              --data "$(jq -n --arg q "$QUERY" '{query: $q}')" \
-              "https://api.github.com/graphql" || true
+            ghcr_name="${f//@//}"
+            anon_token="$(curl -fsSL --max-time 30 \
+              "https://ghcr.io/token?scope=repository:${owner}/tahoe-intel/${ghcr_name}:pull" \
+              | jq -r '.token // empty' || true)"
+            if [[ -n "$anon_token" ]] && curl -fsSL --max-time 30 \
+                 -H "Authorization: Bearer ${anon_token}" \
+                 "https://ghcr.io/v2/${owner}/tahoe-intel/${ghcr_name}/tags/list" \
+                 | jq -e '(.tags // []) | length > 0' >/dev/null 2>&1; then
+              echo "✓ ${ghcr_name} 可匿名拉取（公开），brew install 无需认证。"
+            else
+              failed="$failed ${ghcr_name}"
+              echo "::warning::${ghcr_name} 无法匿名拉取（包私有或缺失）。GitHub 没有 API 能改可见性，请到 https://github.com/${GITHUB_REPOSITORY_OWNER}?tab=packages 对应包 → Package settings → Danger Zone 手动改为 Public，否则匿名 brew install 会 401。"
+            fi
           done < /tmp/formulas.txt
+          [[ -z "$failed" ]] || echo "以下包不可匿名拉取：${failed}"
+          # 只告警不阻断：公开化只能手动处理，而瓶本身已推送成功
+          exit 0
 
       - name: 提交瓶块
         id: commit

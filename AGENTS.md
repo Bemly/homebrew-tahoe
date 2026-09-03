@@ -558,7 +558,13 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
 把 `UpstreamRelease.sha256` 置 nil，有更新时下载 zip 本地实算。若上游只有 dmg，
 得等 brew 修复后再收，或考虑 cask。
 
-### 11.9 桌面 app 公式的三个坑（以 WorkBuddy 为例）
+### 11.9 桌面 app 公式的坑（以 WorkBuddy 为例）
+
+> ⚠️ **现状（2026-09-03）**：workbuddy 已改为 **cask**（commit e223316），本节 1–5 条
+> 都是「公式时代」的实测记录。cask 路线不经过 build-bottle、不走公式 audit
+> （`audit_exceptions/` 目录也已随公式一并移除，且该机制本就是公式专属，
+> cask audit 不认它），所以这些坑在 cask 路线**不会触发**。保留在此，是因为
+> 若未来某个桌面 app 以公式形式收录，这些坑会原样重现。
 
 1. **zip 顶层垃圾被过滤后仍会下降**。zip 里有 `WorkBuddy.app/` + `__MACOSX/` 两个顶层
    目录，看似不会触发 11.1 的「自动下降」，但 brew 解包时先把 `__MACOSX` 当垃圾过滤掉，
@@ -571,13 +577,14 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
 3. **plist 版本可能比公式版本少段**。WorkBuddy 的 `CFBundleShortVersionString` 是三段
    （5.4.7），公式版本是四段（含构建号），post_install/test 做前缀比对而非全等
    （`version.start_with?("#{plist_version}.")`）。
-4. **安装后 audit 会扫 app 内置的异架构模块**。Electron x64 包里附带 darwin-arm64 的
-   node 原生模块（node-pty/koffi 等预编译件，运行时用不到），装完再跑
-   `audit --strict` 会报 `Binaries built for a non-native architecture`。
-   不能删（会破坏代码签名触发 Gatekeeper），解法是在 tap 的
+4. **安装后 audit 会扫 app 内置的异架构模块**（公式时代记录，现不适用）。Electron x64
+   包里附带 darwin-arm64 的 node 原生模块（node-pty/koffi 等预编译件，运行时用不到），
+   装完再跑 `audit --strict` 会报 `Binaries built for a non-native architecture`。
+   不能删（会破坏代码签名触发 Gatekeeper），公式时代的解法是在 tap 的
    `audit_exceptions/mismatched_binary_allowlist.json` 里豁免
    `WorkBuddy.app/Contents/Resources/**/*`。注意 Ruby fnmatch 的 `**` 不跨目录，
-   结尾必须是 `/**/*` 而不是 `/**`（FNM_PATHNAME 下实测）。
+   结尾必须是 `/**/*` 而不是 `/**`（FNM_PATHNAME 下实测）。该文件随 workbuddy 转
+   cask 已删除；cask 的 audit 规则不同，不需要此豁免。
 5. **build-bottle 的链接修复对 Electron 是致命的**。`brew install --build-bottle`
    会把所有非 @rpath 的 dylib id 改写成 ~80 字符的 `/usr/local/opt` 绝对路径，
    load command header 已满的二进制直接崩（`Updated load commands do not fit in
