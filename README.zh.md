@@ -61,6 +61,8 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `ffprobe` | FFmpeg 流分析器，evermeet 静态构建，与本 tap 的 ffmpeg 同版本；core 无此公式 |
 | `ffplay` | FFmpeg 播放器，evermeet 静态构建，与本 tap 的 ffmpeg 同版本；core 无此公式 |
 | `ffserver` | 上游已移除（4.0）的流媒体服务器，最后一个静态构建 3.4.2；不检查更新 |
+| `fish` | 好用的 shell，取官方 `fish-<ver>.app.zip` 内的 unix 树（universal 二进制的 Intel 切片）；版本跟随 core 的 fish |
+| `docker-buildx` | Docker 构建插件，官方 `buildx-v<ver>.darwin-amd64` 裸二进制；版本跟随 core 的 docker-buildx |
 
 ## 注意事项（同名冲突）
 

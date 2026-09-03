@@ -173,6 +173,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `ffprobe` | 9.0.1 | 同上（`ffprobe-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffprobe 公式）；core 无同名公式 | 已收录 |
 | `ffplay` | 9.0.1 | 同上（`ffplay-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffplay 公式）；core 无同名公式 | 已收录 |
 | `ffserver` | 3.4.2 | 同上（`ffserver-<ver>.zip`，上游 4.0 已移除的最后构建，2018 年二进制仍可在 Tahoe x86_64 原生运行）；**不检查更新**（无 updater/ffserver.swift） | 已收录 |
+| `fish` | 4.9.0 | 官方 `fish-<ver>.app.zip` 内的 unix 树（`base/` 即 install.sh 落盘内容，只装 base/ 不装 .app 本体；universal 含 x86_64 切片，doubao-ime 同例）；检查器 brew 流模板式（`checksumsURL: nil`，上游无 SHA256SUMS，实测 404） | 已收录 |
+| `docker-buildx` | 0.37.0 | 官方裸二进制 `buildx-v<ver>.darwin-amd64`（改名装进 bin；实测 darwin-amd64 尾缀不影响版本扫描，无需 version 行，见 11.19）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 无 darwin 条目） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -851,6 +853,24 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
 3. ffprobe/ffplay 在 core 无公式，版本判据只能走 brew 流的 **ffmpeg stable**
   （evermeet 三者同版本配套，当前同为 9.0.1；evermeet 发版若滞后于 core，
    检查器报 `upstream-missing` 开 issue 跳过，不误改公式）。
+
+### 11.19 fish.app 只装 base/；darwin-amd64 不触发版本扫描坑（2026-09-04 实测）
+
+1. fish 官方 `.app.zip` 是"启动器 + unix 树"双结构：`Contents/MacOS/fish` 只是
+   开终端的启动器，真正的 shell 在 `Contents/Resources/base/`（即官方 install.sh
+   要 `ditto` 到 /usr/local 的内容：bin/etc/share）。公式**只装 base/**
+   （`bin/etc/share` 原样进 prefix），不装 .app 本体——shell 要的是稳定路径
+   （/etc/shells + chsh 写死一路经，.app 内路径随版本变化），且 base 二进制只链
+   系统库（otool 确认仅 libiconv/libSystem），搬家安全。设默认 shell 仍要用户手动
+   `sudo sh -c 'echo …/fish >> /etc/shells'` + `chsh -s`（见公式 caveats）。
+2. `buildx-v0.37.0.darwin-amd64` 的 `amd64` 尾缀**不**触发 node 式的版本扫描坑：
+   显式 `version` 行被 audit 判冗余（实测）——说明 `Version.parse` 对该形态能正确
+   扫出 `0.37.0`。结论：尾缀是否致盲以 `audit --strict` 实测为准，不要凭字面猜
+   （opencode/sst/torpedo 同理，见 11.15）。
+3. 上游校验文件缺位两例：fish release 无 SHA256SUMS（404）；docker/buildx 的
+   checksums.txt 只有 freebsd/linux/netbsd/openbsd 条目、**无 darwin**——两者检查器
+   `checksumsURL` 皆置 nil，有更新时回退下载实算（fish ~25MB / buildx ~68MB，
+   仅检测到新版本时发生）。
 
 ## 12. 待办 / 后续演进
 

@@ -68,6 +68,8 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `ffprobe` | FFmpeg stream analyzer, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
 | `ffplay` | FFmpeg media player, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
 | `ffserver` | Legacy FFmpeg streaming server (last static build 3.4.2, removed upstream in 4.0); no update checks |
+| `fish` | User-friendly shell, unix tree from the official `fish-<ver>.app.zip` (Intel slice of the universal binary); version follows homebrew/core's fish |
+| `docker-buildx` | Docker CLI plugin, official `buildx-v<ver>.darwin-amd64` bare binary; version follows homebrew/core's docker-buildx |
 
 ## Switching sources (same-name conflict)
 
