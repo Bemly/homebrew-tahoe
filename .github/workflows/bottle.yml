@@ -97,14 +97,23 @@ jobs:
           while IFS= read -r line; do
             [[ -n "$line" ]] && FORMULAS+=("$line")
           done < /tmp/formulas.txt
+          BREW_PREFIX="$(brew --prefix)"
           for f in "${FORMULAS[@]}"; do
             echo "===== 处理 $f ====="
-            # node 家族（node / node@24 / node@22）共用 bin/npm 等符号链接，
-            # 跨 tap 与跨版本都会撞 link：先解除所有 node 变体的符号链接再装，
-            # 否则 brew install 的 link 步骤会因 "symlink belonging to node@24" 失败
+            # node 家族（node / node@24 / node@22）共用 bin/node、bin/npm 等链接。
+            # runner 镜像预装了 core 的 node@24（实测 24.19.0），它的链接会直接阻塞
+            # 本 tap 公式的 link 步骤：
+            #   "Target /usr/local/bin/node is a symlink belonging to node@24"
+            # brew unlink 对预装但登记不全的 keg 会静默失败（链接仍在），
+            # 所以再兜底直接删掉冲突符号链接——CI 是一次性环境，安全。
             for variant in node node@24 node@22; do
-              brew unlink "$variant" 2>/dev/null || true
+              brew uninstall --force --ignore-dependencies "$variant" >/dev/null 2>&1 || true
             done
+            for b in node npm npx corepack; do
+              rm -f "${BREW_PREFIX}/bin/${b}"
+            done
+            rm -f "${BREW_PREFIX}/share/man/man1/node.1"
+
             # 同名公式跨 tap 不能共存：再卸掉可能预装的 core 版（如 runner 自带 gh）
             brew uninstall --force "$f" || true
             brew install --build-bottle "bemly/tahoe-intel/$f"
@@ -114,58 +123,58 @@ jobs:
             # 版本号以 brew 实际安装结果为准，不从公式文本 grep 数字——
             # 版本号段数不同（3.0 / 1.2.3.4）或注释里先出现数字都会导致误判
             version="$(brew list --versions "$f" | awk 'NR==1{print $2}')"
-            # GHCR 镜像名不允许 @：node@22 → node/22（与 brew image_formula_name 一致）
-            ghcr_name="${f//@//}"
-            if [[ -n "$version" ]]; then
-              # 先尽力清理同名旧版本，保证重复运行可覆盖推送。
-              # 尝试多种 API 路径（org 级 / repo 级），任一成功即删。
-              pkg_encoded="${ghcr_name//\/%2F}"
-              echo "清理 ${ghcr_name} 的旧版本（保留当前 ${version}）。"
-              for api_path in \
-                "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions" \
-                "repos/${GITHUB_REPOSITORY_OWNER}/tahoe-intel/packages/container/${pkg_encoded}/versions" ; do
-                old_vids="$(gh api "$api_path" --paginate \
-                  --jq ".[] | select(.metadata.container.tags[]? == \"${version}\") | .id" 2>/dev/null || true)"
-                if [[ -n "$old_vids" ]]; then
-                  while read -r vid; do
-                    [[ -n "$vid" ]] && gh api -X DELETE "${api_path}/${vid}" \
-                      2>/dev/null && echo "已删除旧版本 ${vid}（${api_path}）。" \
-                      || echo "::warning::删除 ${vid} 失败，跳过。"
-                  done <<< "$old_vids"
-                  break
-                fi
-              done
-              [[ -z "$old_vids" ]] && echo "${ghcr_name} 无旧版本需要清理（首次推送）。"
-            else
-              echo "::warning::无法确定 $f 的安装版本号，跳过清理旧版本。"
-            fi
-            # pr-upload：版本已存在时报 "already exists" 但瓶已正确落地，算成功
-            brew pr-upload --root-url="$ROOT_URL" --no-commit \
-              && echo "pr-upload 完成。" \
-              || echo "::warning::pr-upload 非零退出（可能版本已存在，瓶已落地），继续。"
-            rm -f *.bottle.json
+            echo "本次制瓶版本：${version:-未知}"
 
-            # 清理老版本标签：只保留本次推送的版本，其余删除，避免旧瓶在 GHCR 越积越多。
-            # 列标签用匿名 pull token（包已是公开，只读即可）；删除用 skopeo + 写凭证。
-            # 删除单个标签失败只告警不阻断（老标签残留只占空间，不影响安装走新瓶）。
-            if [[ -n "$version" ]]; then
-              anon_token="$(curl -fsSL --max-time 30 \
-                "https://ghcr.io/token?scope=repository:bemly/tahoe-intel/${ghcr_name}:pull" | jq -r '.token')"
-              old_tags="$(curl -fsSL --max-time 30 -H "Authorization: Bearer ${anon_token}" \
-                "https://ghcr.io/v2/bemly/tahoe-intel/${ghcr_name}/tags/list" \
-                | jq -r '.tags[]?' | grep -vxF "$version" || true)"
-              if [[ -n "$old_tags" ]]; then
-                for t in $old_tags; do
-                  echo "清理 ${ghcr_name} 的老版本标签：${t}"
-                  skopeo delete --creds "${HOMEBREW_GITHUB_PACKAGES_USER}:${HOMEBREW_GITHUB_PACKAGES_TOKEN}" \
-                    "docker://ghcr.io/bemly/tahoe-intel/${ghcr_name}:${t}" \
-                    && echo "已删除 ${ghcr_name}:${t}。" \
-                    || echo "::warning::删除 ${ghcr_name}:${t} 失败，跳过。"
-                done
-              else
-                echo "${ghcr_name} 无老版本标签需要清理（仅保留 ${version}）。"
+            # —— 推送前清空 GHCR 上该包的已有版本 ——
+            # 两个目的：①清掉历史老瓶；②让「同版本重复运行」也能覆盖推送。
+            #   brew pr-upload 发现标签已存在会直接 odie "<uri> already exists!"
+            #   （Homebrew github_packages.rb 的 preupload_check），
+            #   所以「保留当前版本」与「可覆盖推送」不可兼得，必须先删再传。
+            # 四个实测踩坑（2026-09-03，node / node@22 推送失败的根因）：
+            #   1. owner 是普通用户 → 端点必须是 users/，orgs/ 恒 404；
+            #   2. package_name 必须带 tap 名并编码：tahoe-intel%2Fnode（漏了则 404）；
+            #   3. gh api 把错误 JSON 打到 **stdout**（2>/dev/null 拦不住），
+            #      必须校验 id 为纯数字，否则整段 JSON 会被当作 version id 去 DELETE；
+            #   4. 不能只删「当前版本」——老瓶也要一并清，所以删全部已有版本。
+            owner="${GITHUB_REPOSITORY_OWNER}"
+            pkg_encoded="tahoe-intel%2F${ghcr_name//\//%2F}"
+            old_vids=""
+            api_scope="users/${owner}"
+            for scope in "users/${owner}" "orgs/${owner}"; do
+              listed="$(gh api "${scope}/packages/container/${pkg_encoded}/versions" \
+                --paginate --jq '.[].id' 2>/dev/null || true)"
+              if printf '%s' "$listed" | grep -Eq '^[0-9]+$'; then
+                old_vids="$listed"
+                api_scope="$scope"
+                break
               fi
+            done
+            if [[ -n "$old_vids" ]]; then
+              echo "清理 ${ghcr_name} 在 GHCR 上的已有版本，保证可覆盖推送。"
+              while read -r vid; do
+                [[ "$vid" =~ ^[0-9]+$ ]] || continue
+                gh api -X DELETE \
+                  "${api_scope}/packages/container/${pkg_encoded}/versions/${vid}" \
+                  >/dev/null 2>&1 \
+                  && echo "已删除版本 ${vid}。" \
+                  || echo "::warning::删除版本 ${vid} 失败，跳过。"
+              done <<< "$old_vids"
+            else
+              echo "${ghcr_name} 无已上传版本（首次推送），跳过清理。"
             fi
+
+            # 老版本已在上一步连同清空，这里只需推送当前版本。
+            # （原先「推送后用匿名 pull token 列标签 + skopeo delete 清理」那段已移除：
+            #   包私有时 curl -f 失败会以 exit 22 中断整个 job，且 skopeo 在 GHCR 上
+            #   删 manifest list 会报 "unsupported"。）
+            #
+            # 这里绝不能用 `|| echo` 把失败降级成警告：pr-upload 失败意味着 GHCR 上
+            # 仍是旧瓶，而后续步骤照样把新瓶的 sha256 写回公式，就会造成
+            # 「公式 sha256 与实际可下载的瓶不符」，用户 brew install 时校验失败。
+            # 宁可 job 红，不可假绿。
+            brew pr-upload --root-url="$ROOT_URL" --no-commit
+            echo "pr-upload 完成：${ghcr_name}:${version}"
+            rm -f *.bottle.json
           done
 
       # GHCR 包默认私有，匿名 brew install 会 401，逐个改公开；失败不阻断，
