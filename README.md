@@ -31,13 +31,18 @@ brew tap bemly/tahoe-intel
 # formulae with the same name across taps cannot coexist — brew refuses to install.
 brew uninstall gh
 brew uninstall fastfetch
+brew uninstall opencode # core ships an npm-based opencode under the same name
 
 brew install bemly/tahoe-intel/gh
 brew install bemly/tahoe-intel/fastfetch
+brew install bemly/tahoe-intel/opencode # pulls bemly/tahoe-intel/ripgrep as a dependency
 
 # workbuddy is a desktop app, delivered as a cask (installed into /Applications,
 # visible in Launchpad/Spotlight)
 brew install --cask bemly/tahoe-intel/workbuddy
+# doubao-ime is an input method, delivered as a cask (auto-runs the official
+# installer into /Library/Input Methods, requires sudo password)
+brew install --cask bemly/tahoe-intel/doubao-ime
 ```
 
 ## Packages
@@ -47,9 +52,14 @@ brew install --cask bemly/tahoe-intel/workbuddy
 | `gh` | GitHub CLI, taken directly from `gh_<ver>_macOS_amd64.zip` |
 | `fastfetch` | Neofetch-like system info tool, taken from `fastfetch-macos-amd64.tar.gz` (release tag has no `v` prefix) |
 | `workbuddy` | Tencent WorkBuddy AI office workspace (Electron desktop app), cask, installed into `/Applications`; not in brew core — version comes from its auto-update feed |
+| `doubao-ime` | Doubao AI input method, cask, auto-installs into `/Library/Input Methods` via the official installer script (needs sudo); not in brew core — version comes from its download API |
 | `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
+| `opencode` | AI coding agent, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`opencode-darwin-x64.zip`); shares its name with core's npm build — uninstall one before installing the other |
+| `sst` | SST framework, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`sst-mac-x86_64.tar.gz`) |
+| `torpedo` | sst/torpedo VPC database access tool, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`torpedo-mac-x86_64.tar.gz`) |
+| `ripgrep` | Search tool like grep, bottled dependency of `opencode` (from homebrew/core sources) |
 
 ## Switching sources (same-name conflict)
 

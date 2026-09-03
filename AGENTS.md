@@ -152,6 +152,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `neofetch` | 7.1.0 | GitHub 归档发布包 `neofetch-7.1.0.tar.gz`（外部链接，纯 bash 脚本、已归档为最后一版）；**不走 updater 检查器**（无更新），`install` 用 `make install PREFIX`，`post_install` 不做 x86_64 文件校验 | 已收录 |
 | `workbuddy` | 5.4.7.37521366 | cask——WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取），镜像到本仓 GitHub Release | 已收录 |
+| `doubao-ime` | 0.9.7 | cask——豆包输入法安装器（官方下载接口 `/api/v1/app/download_url?platform=macos` 动态获取，去 V 取版本），镜像到本仓 GitHub Release；cask 经 installer script 自动跑官方 install.sh 装进 `/Library/Input Methods`（需 sudo） | 已收录 |
 | `node` | 26.8.1 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `node@24` | 24.20.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
 | `node@22` | 22.23.2 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
@@ -160,6 +161,10 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `dtc` | 1.8.1 | 代编译模式：qemu 专属依赖（扇入 1） | 已收录 |
 | `libslirp` | 4.9.4 | 代编译模式：qemu 专属依赖（扇入 4） | 已收录 |
 | `vde` | 2.3.3 | 代编译模式：qemu 专属依赖（扇入 2）；2016 年旧代码需 `-std=gnu17` 编译开关（见 11.13） | 已收录 |
+| `opencode` | 1.18.27 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`opencode-darwin-x64.zip`）；与 core 的 npm 版同名，`depends_on "bemly/tahoe-intel/ripgrep"` 走自家 GHCR | 已收录 |
+| `sst` | 4.17.1 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`sst-mac-x86_64.tar.gz`）；`sst version` 子命令取版本（不支持 `--version`） | 已收录 |
+| `torpedo` | 0.0.13 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`torpedo-mac-x86_64.tar.gz`，上游 `sst/torpedo`）；无任何版本命令，不做版本自检 | 已收录 |
+| `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -436,14 +441,17 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 ### 9.3 登记到 watcher（updater/）
 
-5. 新建 `updater/<name>.swift`（与 `Formula/<name>.rb` 同名，一一对应），两种写法：
+5. 新建 `updater/<name>.swift`（与 `Formula/<name>.rb` 同名，一一对应），四种写法：
    - **brew 流**（软件在 homebrew/core）：照抄 `gh.swift` 的 `@main` 结构，改 4 处配置——
      `formula` / `brewName`、`asset`、`downloadURL`、`checksumsURL`
      （上游无 checksums 文件则置 `nil`，核心自动回退下载计算）；
-   - **brew 流-全量式**（qemu 类：core 公式 url 模板不好推、上游换镜像自动跟随）：
-     只给 `CheckConfig(formula: "<name>", brewName: "<name>")` 即可，url 与 sha256 由核心
-     直取 JSON 的 `urls.stable.url` / `.checksum`，无需 asset/downloadURL/checksumsURL
-     （见 6 节「qemu 代编译模式」；`UpdaterCore` 内已实现，模板式仍优先）；
+   - **brew 流-全量式**（qemu 链 / ripgrep 这类从 core 拷入、url 模板不好推的公式）：
+     只需 `CheckConfig(formula: "<name>", brewName: "<name>")`，url 与 sha256 由核心直取
+     JSON 的 `urls.stable.url` / `.checksum`，上游换镜像自动跟随（见 6 节「qemu 代编译
+     模式」；模板式仍优先）；
+   - **raw 流**（软件来自其他 tap 仓库，如 `anomalyco/homebrew-tap` 的三包）：
+     照抄 `opencode.swift`，只配 `formula` + `rawFormulaURL`（源公式 raw 地址），
+     核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256；
    - **自定义流**（brew 未收录）：照抄 `workbuddy.swift`，实现 `customRelease` 闭包调
      上游自有更新接口，返回 `UpstreamRelease(version:downloadURL:sha256:)`
      （sha 仅在实测确认归属时才给，否则置 nil 由核心下载实算）。
@@ -724,6 +732,7 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
   拉取即可恢复；`brew fetch --bottle-tag=tahoe` 也是排查瓶是否可拉的最快手段
   （成功标志：`✔︎ Bottle Manifest` + `✔︎ Bottle` 两行）。
 
+<<<<<<< HEAD
 ### 11.11 依赖树照搬进 tap 不可行：同名跨 tap 对依赖同样无条件 odie
 
 qemu 初版方案把 30 个依赖全复制进本 tap（依赖全名化 + 全量流检查器都做好了），
@@ -759,6 +768,34 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
   arm64_* 和更老的 sonoma）→ 代编译前提成立，别拿「core 有 tahoe 瓶」否定整套方案。
 - Actions 的 `GITHUB_TOKEN` 在 **public 仓库**建的 GHCR 包**默认即公开**（匿名
   curl 可直接拉 tags），「首推后需手动改 Public」不成立；删包重建也继承公开状态。
+### 11.15 迁移 tap 公式 + raw 流的坑（2026-09-03 实测，opencode/sst/torpedo）
+
+1. **version 行去留以 `audit --strict` 为准，不要凭 URL 猜**。本以为
+   `*-darwin-x64.zip` / `*-mac-x86_64.tar.gz` 尾部数字会像 node 一样扫出 `"64"`，
+   实测三包的 `v` 前缀版本号都能被正确扫描，显式 `version` 全被判冗余——删掉才过。
+   结论：迁移公式先不写 version，跑一遍 audit 再定。
+2. **`--version` 不是通用契约**。sst 裸跑 `--version` 打帮助 exit 1，版本在
+   `sst version` 子命令里；torpedo 根本没有版本命令（`--version` 与 `version`
+   子命令都非零退出）。`safe_popen_read` 不容忍非零退出（同 neofetch 坑），
+   post_install/test 必须按实测写：sst 用 `sst version`，torpedo 用 `--help` + 架构校验。
+3. **raw 解析三约束**（见 `parseGoReleaserRaw`）：先截 `on_linux` 段再找
+   （linux 资产也带 x64）；只认 `intel?` 标记后的 url（torpedo 的 arm 块在前）；
+   sha 校验 64 位 hex。降级模拟三包改写与源备份逐字节一致。
+4. **依赖必须先制瓶**。`depends_on "bemly/tahoe-intel/ripgrep"` 全限定名强制走自家
+   GHCR；但 `bottle.yml` 内按字母排序（opencode 排在 ripgrep 前），一次跑会让
+   opencode 先编。制瓶分两次：先 `-f ripgrep`，再 `-f "opencode,sst,torpedo"`。
+
+### 11.16 cask 发 Release 的两处核心 bug（2026-09-03 实测，doubao-ime 首发）
+
+1. **旧 release 清理从未跑起来过**。`gh release list --json tagName` 回的是对象数组
+   `[{"tagName":"..."}]`，核心按 `[String]` 强转恒失败 → 警告跳过 → 旧 release 堆积
+   （workbuddy 亦然，只是目前只有一个版本没暴露）。已修为取 `tagName` 字段，
+   并用假 release `doubao-ime-0.0.0-test` 实测删旧留新通过。
+2. **上传用的临时文件名导致资产 404**。`gh release create/upload` 以本地文件名做资产名，
+   核心直接传 curl 的 `updater-<UUID>` 临时文件 → Release 里资产名随机 → cask url 404。
+   （workbuddy 的资产名是对的，应是当初手动传的，核心 bug 一直没暴露。）
+   已修为上传前重命名成上游资产名；doubao 首发的两个垃圾资产已手删。
+   教训：cask 首发后必须 `brew fetch --cask` 端到端验证（成功标志 `✔︎ Cask doubao-ime`）。
 
 ## 12. 待办 / 后续演进
 
