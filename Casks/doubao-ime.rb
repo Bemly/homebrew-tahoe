@@ -19,7 +19,7 @@ cask "doubao-ime" do
   installer script: {
     executable: "/bin/sh",
     args:       ["-c",
-                 "APP_NAME=DoubaoIme exec \"#{staged_path}/DoubaoImeInstaller.app/Contents/Resources/install.sh\""],
+                 "APP_NAME=DoubaoIme /bin/sh \"#{staged_path}/DoubaoImeInstaller.app/Contents/Resources/install.sh\""],
     sudo:       true,
   }
 
