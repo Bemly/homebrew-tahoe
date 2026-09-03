@@ -140,15 +140,21 @@ jobs:
             pkg_encoded="tahoe-intel%2F${ghcr_name//\//%2F}"
             old_vids=""
             api_scope="users/${owner}"
+            listed=""
             for scope in "users/${owner}" "orgs/${owner}"; do
               listed="$(gh api "${scope}/packages/container/${pkg_encoded}/versions" \
                 --paginate --jq '.[].id' 2>/dev/null || true)"
+              echo "  探测 ${scope} -> $(printf '%s' "$listed" | head -c 200)"
               if printf '%s' "$listed" | grep -Eq '^[0-9]+$'; then
                 old_vids="$listed"
                 api_scope="$scope"
                 break
               fi
             done
+            # 诊断：拿不到 id 时把原始返回打出来，避免「清理静默失效」无从查起
+            if [[ -z "$old_vids" ]]; then
+              echo "::warning::未能列出 ${ghcr_name} 的已有版本；最后一次原始返回：$(printf '%s' "$listed" | head -c 300)"
+            fi
             if [[ -n "$old_vids" ]]; then
               echo "清理 ${ghcr_name} 在 GHCR 上的已有版本，保证可覆盖推送。"
               while read -r vid; do
