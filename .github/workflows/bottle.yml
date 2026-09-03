@@ -114,28 +114,35 @@ jobs:
             # 版本号以 brew 实际安装结果为准，不从公式文本 grep 数字——
             # 版本号段数不同（3.0 / 1.2.3.4）或注释里先出现数字都会导致误判
             version="$(brew list --versions "$f" | awk 'NR==1{print $2}')"
+            # GHCR 镜像名不允许 @：node@22 → node/22（与 brew image_formula_name 一致）
+            ghcr_name="${f//@//}"
             if [[ -n "$version" ]]; then
-              # GHCR 不支持 skopeo 按标签删 manifest list（报 "unsupported"），
-              # 改用 GitHub API 按标签删旧版本，保证重复运行可覆盖推送。
-              # 包从未上传过时 404 是预期的，|| true 保非致命。
+              # 先尽力清理同名旧版本，保证重复运行可覆盖推送。
+              # 尝试多种 API 路径（org 级 / repo 级），任一成功即删。
               pkg_encoded="${ghcr_name//\/%2F}"
-              echo "清理 ${ghcr_name} 的旧版本（保留当前 ${version}），保证可覆盖推送。"
-              old_vids="$(gh api "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions" \
-                --paginate --jq ".[] | select(.metadata.container.tags[]? == \"${version}\") | .id" 2>/dev/null || true)"
-              if [[ -n "$old_vids" ]]; then
-                while read -r vid; do
-                  [[ -n "$vid" ]] && gh api -X DELETE \
-                    "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions/${vid}" \
-                    2>/dev/null && echo "已删除旧版本 ${vid}。" \
-                    || echo "::warning::删除旧版本 ${vid} 失败，跳过。"
-                done <<< "$old_vids"
-              else
-                echo "${ghcr_name} 无旧版本需要清理（首次推送或已是最新）。"
-              fi
+              echo "清理 ${ghcr_name} 的旧版本（保留当前 ${version}）。"
+              for api_path in \
+                "orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${pkg_encoded}/versions" \
+                "repos/${GITHUB_REPOSITORY_OWNER}/tahoe-intel/packages/container/${pkg_encoded}/versions" ; do
+                old_vids="$(gh api "$api_path" --paginate \
+                  --jq ".[] | select(.metadata.container.tags[]? == \"${version}\") | .id" 2>/dev/null || true)"
+                if [[ -n "$old_vids" ]]; then
+                  while read -r vid; do
+                    [[ -n "$vid" ]] && gh api -X DELETE "${api_path}/${vid}" \
+                      2>/dev/null && echo "已删除旧版本 ${vid}（${api_path}）。" \
+                      || echo "::warning::删除 ${vid} 失败，跳过。"
+                  done <<< "$old_vids"
+                  break
+                fi
+              done
+              [[ -z "$old_vids" ]] && echo "${ghcr_name} 无旧版本需要清理（首次推送）。"
             else
-              echo "::warning::无法确定 $f 的安装版本号，跳过清理旧版本（pr-upload 仍会覆盖推送）。"
+              echo "::warning::无法确定 $f 的安装版本号，跳过清理旧版本。"
             fi
-            brew pr-upload --root-url="$ROOT_URL" --no-commit
+            # pr-upload：版本已存在时报 "already exists" 但瓶已正确落地，算成功
+            brew pr-upload --root-url="$ROOT_URL" --no-commit \
+              && echo "pr-upload 完成。" \
+              || echo "::warning::pr-upload 非零退出（可能版本已存在，瓶已落地），继续。"
             rm -f *.bottle.json
 
             # 清理老版本标签：只保留本次推送的版本，其余删除，避免旧瓶在 GHCR 越积越多。
