@@ -175,6 +175,9 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `ffserver` | 3.4.2 | 同上（`ffserver-<ver>.zip`，上游 4.0 已移除的最后构建，2018 年二进制仍可在 Tahoe x86_64 原生运行）；**不检查更新**（无 updater/ffserver.swift） | 已收录 |
 | `fish` | 4.9.0 | 官方 `fish-<ver>.app.zip` 内的 unix 树（`base/` 即 install.sh 落盘内容，只装 base/ 不装 .app 本体；universal 含 x86_64 切片，doubao-ime 同例）；检查器 brew 流模板式（`checksumsURL: nil`，上游无 SHA256SUMS，实测 404） | 已收录 |
 | `docker-buildx` | 0.37.0 | 官方裸二进制 `buildx-v<ver>.darwin-amd64`（改名装进 bin；实测 darwin-amd64 尾缀不影响版本扫描，无需 version 行，见 11.19）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 无 darwin 条目） | 已收录 |
+| `checkra1n` | 0.12.4 | cask——上游 dmg 直引（URL 路径即文件 sha256；core 同名 cask 因过不了 Gatekeeper 已被 disable，本 tap 提供可用安装路径）；附 `binary` 垫片出 `checkra1n` 命令；**不检查更新**（无 updater/checkra1n.swift） | 已收录 |
+| `palera1n` | 3.0.0-beta.2 | cask——上游 universal dmg 直引（x86_64+arm64 双切片，单包覆盖双架构，无需 arch 分包；直引不镜像 Release）；**不检查更新**（无 updater/palera1n.swift） | 已收录 |
+| `macos-tskmgr` | 1.1.1 | cask——上游按架构分包（`arch` 插值各取各的，`sha256 arm:/intel:` 直给；直引不镜像 Release）；**不检查更新**（无 updater/macos-tskmgr.swift） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -871,6 +874,27 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    checksums.txt 只有 freebsd/linux/netbsd/openbsd 条目、**无 darwin**——两者检查器
    `checksumsURL` 皆置 nil，有更新时回退下载实算（fish ~25MB / buildx ~68MB，
    仅检测到新版本时发生）。
+
+### 11.20 越狱系 cask 三则（2026-09-04 实测，checkra1n/palera1n/TSKMGR）
+
+1. **core 被 disable 的 cask 正是本 tap 的机会**：core 的 checkra1n 因过不了
+   Gatekeeper 已 `disable!`（2026-09-01），新用户装不上——本 tap 同版本同文件
+   同 sha 直引即成可用路径（cask 无 bottle 机制，不存在"瓶缺失"问题）。
+   同名 cask 跨 tap 照样互斥：装过 core 旧版的先 `brew uninstall --cask`。
+2. **audit 的"URL 无版本"靠 `#{version}` 插值消解**：checkra1n 的 `%20` 编码文件名、
+   palera1n 的版本号只在路径（`v3.0.0-beta.2/`）不在文件名——两者都被判 unversioned
+   而要求 `sha256 :no_check`。写法照抄 core/zcode：url 里写 `#{version}` 插值
+   （值仍 pin 死在 version 行，不检查更新），audit 即过。
+3. **双架构 cask 两种形态**：universal 单包（palera1n）什么都不用做，一个 url+sha
+   天然覆盖双架构；按架构分包（TSKMGR）用 `arch arm:/intel:` + url `#{arch}` 插值，
+   `app` 行同样插值（`MacOSTSKMGR-#{arch}.app`），sha256 用 `sha256 arm:/intel:`
+   直给——**不要只为 sha256 套 `on_arm`/`on_intel`**，会被 style 的
+   `OnSystemConditionals` 判违规；另 `desc` 禁止出现平台词（"for macOS" 撞
+   `Cask/Desc`，见 macos-tskmgr 首版）。
+4. **装前看 /Applications 是否已有同名 app**：本机实测三者都被用户多年前手装过，
+   cask 安装会报 `already an App` 中断——属保护机制非 bug；要迁入 brew 管理需先
+   备份移走旧 app，验证完本轮已原样恢复（checkra1n 顺带验证了 `binary` 垫片，
+   `checkra1n --version` 出 `beta 0.12.4`）。
 
 ## 12. 待办 / 后续演进
 

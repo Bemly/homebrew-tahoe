@@ -63,6 +63,9 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `ffserver` | 上游已移除（4.0）的流媒体服务器，最后一个静态构建 3.4.2；不检查更新 |
 | `fish` | 好用的 shell，取官方 `fish-<ver>.app.zip` 内的 unix 树（universal 二进制的 Intel 切片）；版本跟随 core 的 fish |
 | `docker-buildx` | Docker 构建插件，官方 `buildx-v<ver>.darwin-amd64` 裸二进制；版本跟随 core 的 docker-buildx |
+| `checkra1n` | checkm8 越狱工具，Intel x86_64 版（core 同名 cask 因 Gatekeeper 已被 disable）；锁定版本不检查更新 |
+| `palera1n` | checkm8 越狱工具，universal 包单下载同时覆盖 Intel 与 Apple Silicon；锁定版本不检查更新 |
+| `macos-tskmgr` | 任务管理器，按架构分包（`arch` 插值）；锁定版本不检查更新 |
 
 ## 注意事项（同名冲突）
 

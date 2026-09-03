@@ -70,6 +70,9 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `ffserver` | Legacy FFmpeg streaming server (last static build 3.4.2, removed upstream in 4.0); no update checks |
 | `fish` | User-friendly shell, unix tree from the official `fish-<ver>.app.zip` (Intel slice of the universal binary); version follows homebrew/core's fish |
 | `docker-buildx` | Docker CLI plugin, official `buildx-v<ver>.darwin-amd64` bare binary; version follows homebrew/core's docker-buildx |
+| `checkra1n` | checkm8 jailbreak app, Intel x86_64 build (core's cask is disabled over Gatekeeper); pinned, no update checks |
+| `palera1n` | checkm8 jailbreak app, universal dmg covering Intel and Apple Silicon with a single download; pinned, no update checks |
+| `macos-tskmgr` | Task manager app, per-arch downloads via the `arch` stanza; pinned, no update checks |
 
 ## Switching sources (same-name conflict)
 
