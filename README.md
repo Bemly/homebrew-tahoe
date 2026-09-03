@@ -63,6 +63,11 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `mufetch` | System info tool, from the release `mufetch_darwin_x86_64.tar.gz` |
 | `cmd` | Terminal AI coding agent, npm package `command-code` (exposes the `cmd` command only); depends on this tap's node bottle; no update checks |
 | `zcode` | z.ai AI-assisted development environment, cask from the upstream CDN x64 dmg (core's zcode cask is arm64 only); version follows homebrew/core's cask |
+| `deepseek-harness` | DeepSeek agent harness, npm package `@deepseek-ai/dsh` (exposes the `dsh` command only, `dsh web` serves the browser UI); depends on this tap's node bottle; no update checks |
+| `ffmpeg` | FFmpeg itself, Intel x86_64 static build from evermeet (`ffmpeg-<ver>.zip`); version follows homebrew/core's ffmpeg |
+| `ffprobe` | FFmpeg stream analyzer, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
+| `ffplay` | FFmpeg media player, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
+| `ffserver` | Legacy FFmpeg streaming server (last static build 3.4.2, removed upstream in 4.0); no update checks |
 
 ## Switching sources (same-name conflict)
 

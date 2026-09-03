@@ -168,6 +168,11 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `mufetch` | 0.1.1 | GitHub release 的 `mufetch_darwin_x86_64.tar.gz`（外部直链，tar 无顶层目录，文件直接在 CWD）；brew 流模板式检查器，sha 取自 release 的 `checksums.txt`（约 2KB） | 已收录 |
 | `cmd` | 1.45.0 | npm 包 `command-code` 的 tarball 直引（`npm install` 到 libexec，四入口只暴露 `cmd`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/cmd.swift，同 neofetch） | 已收录 |
 | `zcode` | 3.10.2 | cask——上游 CDN 的 x64 dmg 直引（core 的 zcode cask 是 arm64）；检查器走 UpdaterCore 新增的 `brewCask` 分支（`api/cask/zcode.json` 的 `.version`）；url 用 `#{version}` 插值、直引 CDN 不镜像 Release（`uploadRelease: false`） | 已收录 |
+| `deepseek-harness` | 0.1.1-rc.2 | npm 包 `@deepseek-ai/dsh` 的 tarball 直引（`npm install` 到 libexec，只暴露 `dsh`，`dsh web` 起 Web UI，默认 `http://127.0.0.1:3080`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/deepseek-harness.swift，同 cmd/neofetch）；与 core 的 `dsh`（Dancer's shell）无关但共享 `bin/dsh` 链接，同时安装时以后 link 的为准 | 已收录 |
+| `ffmpeg` | 9.0.1 | evermeet 静态发行版 `ffmpeg-<ver>.zip`（单 x86_64 二进制；不用 getrelease 的 7z——brew 解 7z 需 p7zip，core 无 Intel Tahoe 瓶，见 11.18）；检查器 brew 流模板式（`brewName: ffmpeg`，`checksumsURL: nil` 回退下载实算） | 已收录 |
+| `ffprobe` | 9.0.1 | 同上（`ffprobe-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffprobe 公式）；core 无同名公式 | 已收录 |
+| `ffplay` | 9.0.1 | 同上（`ffplay-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffplay 公式）；core 无同名公式 | 已收录 |
+| `ffserver` | 3.4.2 | 同上（`ffserver-<ver>.zip`，上游 4.0 已移除的最后构建，2018 年二进制仍可在 Tahoe x86_64 原生运行）；**不检查更新**（无 updater/ffserver.swift） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -831,6 +836,21 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
 8. **验证明细**：`brew install --cask` 全程零密码；app 落位 `~/Library/Input Methods/`
    为真目录（非 symlink，universal x86_64+arm64）；`defaults read` 含豆包三键且重装无重复
    （postflight 判重幂等）；TIS 的 `ENABLED` 列表含 `com.bytedance.inputmethod.doubaoime.pinyin`。
+
+### 11.18 evermeet 取 zip 不取 7z：brew 解 7z 需要 p7zip（2026-09-04 实测）
+
+1. `getrelease[/ffprobe|/ffplay|/ffserver]` 302 到的都是 **7z**（`deolaha.ca/ffmpeg/<name>-<ver>.7z`），
+   但 brew 的 `P7Zip` 策略硬依赖 `p7zip` 公式（`7zr`，`unpack_strategy/p7zip.rb` 实读确认）——
+   p7zip 在 core 无 x86_64_tahoe 瓶，用户装它要从源码编译，违背本 tap 使命。
+   同站有同版本 **zip**（`https://evermeet.cx/ffmpeg/<name>-<ver>.zip`，302 到
+   `deolaha.ca/pub/ffmpeg/`，brew 原生格式零依赖）——公式一律取 zip。
+   zip 内为单个二进制、无顶层目录（与 mufetch 同构，`bin.install "<name>"` 即可）。
+2. GPG 签名验证：密钥 `0x476C4B611A660874`（指纹与上游公布一致）导入后完好；
+   签名文件是 `<file-url>.sig` 后缀形式（如 `ffmpeg-9.0.1.zip.sig`），不是字面
+   `/sig` 路径——按字面拼会 404。
+3. ffprobe/ffplay 在 core 无公式，版本判据只能走 brew 流的 **ffmpeg stable**
+  （evermeet 三者同版本配套，当前同为 9.0.1；evermeet 发版若滞后于 core，
+   检查器报 `upstream-missing` 开 issue 跳过，不误改公式）。
 
 ## 12. 待办 / 后续演进
 
