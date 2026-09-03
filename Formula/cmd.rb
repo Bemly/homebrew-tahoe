@@ -7,6 +7,11 @@ class Cmd < Formula
   # 上游 package.json 的 license 是 "UNLICENSED"（npm 的私有占位，不是标准 SPDX 标识），
   # 声明会被 audit 判无效 SPDX —— 不声明则 audit 跳过 license 检查。
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any, tahoe: "7fa924d9d06989e9fe56876b29650940a0447168f6a334b3952b15586bec28c3"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe-intel/node"
   depends_on macos: :tahoe

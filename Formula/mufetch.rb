@@ -5,6 +5,11 @@ class Mufetch < Formula
   sha256 "71be64e17d22cece98ebc2f54c5c6e964e9a868623546fd2a3c29573278a5dbb"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "05f0e4712d9a2b332ba2dbec4acc3bb16063c7805f1b75f2ff2a461eb3119ac2"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # 上游 release 提供 macOS amd64 预编译包，直接引用（不构建）。
   depends_on arch: :x86_64
