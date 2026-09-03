@@ -43,6 +43,9 @@ brew install bemly/tahoe-intel/fastfetch
 | `gh` | GitHub CLI, taken directly from `gh_<ver>_macOS_amd64.zip` |
 | `fastfetch` | Neofetch-like system info tool, taken from `fastfetch-macos-amd64.tar.gz` (release tag has no `v` prefix) |
 | `workbuddy` | Tencent WorkBuddy AI office workspace (Electron desktop app), taken from the official zip; not in brew core — version comes from its auto-update feed |
+| `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
+| `node@24` | Node.js 24 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
+| `node@22` | Node.js 22 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 
 ## Switching sources (same-name conflict)
 

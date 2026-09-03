@@ -141,6 +141,9 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `gh` | 2.99.0 | GitHub 官方发布包 `gh_2.99.0_macOS_amd64.zip`（外部链接） | 已收录 |
 | `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `workbuddy` | 5.4.7.37521366 | WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取，外部链接） | 已收录 |
+| `node` | 26.8.1 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
+| `node@24` | 24.20.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
+| `node@22` | 22.23.2 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -194,6 +197,30 @@ zip 约 465MB。WorkBuddy **不在 brew core**，版本来源用它的 Electron 
   的符号链接会调不存在的 `MacOS.system_dir?` 直接崩（上游 bug，见 11.8），zip 无此问题；
 - 产物文件名带版本 + 构建哈希（`-b148bd1d`），每次部署都变 → URL 必须整条动态获取、
   公式改写整条替换（`rewriteFormula` 的 newURL 模式）。
+
+### node / node@24 / node@22 发布包结构（已实测，三版本同构）
+
+```
+node-v<ver>-darwin-x64/                  # 5866 个文件，单顶层目录（brew 会下降进入）
+├── bin/
+│   ├── node                             # 主二进制，x86_64
+│   ├── npm  -> ../lib/node_modules/npm/bin/npm-cli.js      # 相对符号链接
+│   ├── npx  -> ../lib/node_modules/npm/bin/npx-cli.js
+│   └── corepack -> ../lib/node_modules/corepack/dist/corepack.js
+├── include/node/...
+├── lib/node_modules/
+│   ├── npm/                             # 完整 npm 包树
+│   └── corepack/
+└── share/man/man1/node.1
+```
+
+tar.gz 约 25MB。三个都在 **homebrew/core**，版本来源走 brew 流的 `versions.stable`，
+sha 取自同目录的 `SHASUMS256.txt`（官方发布清单，约 2KB）。
+
+⚠️ **brew 版本扫描的坑**：文件名 `node-v<ver>-darwin-x64.tar.gz` 尾部的 `x64` 会让
+brew 的 `Version.parse` 只抓到 `"64"`（实测 `brew info` 显示 `stable 64`），与真实版本不符。
+解法：公式**显式声明 `version` 行**（audit 仅在声明值与扫描值相同时才判冗余，不同则允许）。
+由此引出 `rewriteFormula` 必须同步替换 version 行，否则 url 与 version 脱节。
 
 ## 7. Watcher 工作原理
 
@@ -274,7 +301,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 | 场景 | 处理 |
 | --- | --- |
-| 包有新版本，或 GHCR 里还没有瓶 | 手动触发 `bottle.yml`：制瓶 → 覆盖 GHCR 上的旧瓶 → 瓶块提交回公式 |
+| 包有新版本，或 GHCR 里还没有瓶 | 手动触发 `bottle.yml`：制瓶 → 覆盖 GHCR 上的旧瓶 → 清理老版本标签 → 瓶块提交回公式 |
 | 下次 gh 又更新 | `watch-updates.yml` 先摘掉失效瓶块并开 issue；再跑一次 `bottle.yml` 覆盖 GHCR |
 | 无更新 | 保持走 GHCR 瓶下载 |
 | 上游资源取不到 | `watch-updates.yml` 开 issue 告警，不动公式 |
@@ -294,6 +321,11 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
   版本号段数不同（`3.0` / `1.2.3.4`）或注释里先出现数字都会导致误判。
 - **`bottle.yml` 的并发组是全局 `bottle`**，不按入参分组：不同入参的两次制瓶若并行，
   会同时 `git push main`、删/推 GHCR 标签而互相冲突，排队串行执行。
+- **推送后自动清理老版本标签**：`bottle.yml` 在每个软件 `pr-upload` 之后，
+  用匿名 pull token 列出该包在 GHCR 的全部标签，除本次推送的版本外全部
+  `skopeo delete` 删掉（单个删除失败只告警不阻断）。GitHub Packages 页面上
+  显示的 `sha256:...` 无标签行是 image index 引用的子清单（瓶的真正内容），
+  **不是孤儿，不要手删**；标签删掉后 GitHub 会自行回收不再被引用的清单。
 - 制瓶产物（`*.bottle.json` / `*.bottle.tar.gz`）已进 `.gitignore`，不要提交。
 
 ## 9. 新增软件的 SOP（端到端 Runbook）
