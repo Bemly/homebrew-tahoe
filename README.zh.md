@@ -34,6 +34,8 @@ brew install bemly/tahoe-intel/opencode # 会连带装上本 tap 的 ripgrep 依
 
 # workbuddy 是桌面 app，走 cask（装进 /Applications，Launchpad/Spotlight 可见）
 brew install --cask bemly/tahoe-intel/workbuddy
+# doubao-ime 是输入法，走 cask（自动跑官方安装器装进 /Library/Input Methods，会弹密码框）
+brew install --cask bemly/tahoe-intel/doubao-ime
 ```
 
 ## 收录的软件
@@ -43,6 +45,7 @@ brew install --cask bemly/tahoe-intel/workbuddy
 | `gh` | GitHub 官方 CLI，直接取 `gh_<ver>_macOS_amd64.zip` |
 | `fastfetch` | 类 neofetch 的系统信息工具，直接取 `fastfetch-macos-amd64.tar.gz`（release tag 无 `v` 前缀） |
 | `workbuddy` | 腾讯 WorkBuddy AI 办公工作台（Electron 桌面 app），cask，装进 `/Applications`；不在 brew core，版本由其自动更新接口动态获取 |
+| `doubao-ime` | 豆包 AI 输入法，cask，经官方安装器自动装进 `/Library/Input Methods`（需 sudo）；不在 brew core，版本由其下载接口动态获取 |
 | `node` | Node.js 运行时，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |

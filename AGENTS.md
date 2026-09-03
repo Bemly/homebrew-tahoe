@@ -146,6 +146,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `neofetch` | 7.1.0 | GitHub 归档发布包 `neofetch-7.1.0.tar.gz`（外部链接，纯 bash 脚本、已归档为最后一版）；**不走 updater 检查器**（无更新），`install` 用 `make install PREFIX`，`post_install` 不做 x86_64 文件校验 | 已收录 |
 | `workbuddy` | 5.4.7.37521366 | cask——WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取），镜像到本仓 GitHub Release | 已收录 |
+| `doubao-ime` | 0.9.7 | cask——豆包输入法安装器（官方下载接口 `/api/v1/app/download_url?platform=macos` 动态获取，去 V 取版本），镜像到本仓 GitHub Release；cask 经 installer script 自动跑官方 install.sh 装进 `/Library/Input Methods`（需 sudo） | 已收录 |
 | `node` | 26.8.1 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `node@24` | 24.20.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
 | `node@22` | 22.23.2 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
@@ -674,6 +675,18 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
 4. **依赖必须先制瓶**。`depends_on "bemly/tahoe-intel/ripgrep"` 全限定名强制走自家
    GHCR；但 `bottle.yml` 内按字母排序（opencode 排在 ripgrep 前），一次跑会让
    opencode 先编。制瓶分两次：先 `-f ripgrep`，再 `-f "opencode,sst,torpedo"`。
+
+### 11.12 cask 发 Release 的两处核心 bug（2026-09-04 实测，doubao-ime 首发）
+
+1. **旧 release 清理从未跑起来过**。`gh release list --json tagName` 回的是对象数组
+   `[{"tagName":"..."}]`，核心按 `[String]` 强转恒失败 → 警告跳过 → 旧 release 堆积
+   （workbuddy 亦然，只是目前只有一个版本没暴露）。已修为取 `tagName` 字段，
+   并用假 release `doubao-ime-0.0.0-test` 实测删旧留新通过。
+2. **上传用的临时文件名导致资产 404**。`gh release create/upload` 以本地文件名做资产名，
+   核心直接传 curl 的 `updater-<UUID>` 临时文件 → Release 里资产名随机 → cask url 404。
+   （workbuddy 的资产名是对的，应是当初手动传的，核心 bug 一直没暴露。）
+   已修为上传前重命名成上游资产名；doubao 首发的两个垃圾资产已手删。
+   教训：cask 首发后必须 `brew fetch --cask` 端到端验证（成功标志 `✔︎ Cask doubao-ime`）。
 
 ## 12. 待办 / 后续演进
 

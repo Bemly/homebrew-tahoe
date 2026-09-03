@@ -476,15 +476,29 @@ func runCheck(_ config: CheckConfig) {
         if let fileHash = sha256(ofFile: zipPath), fileHash != sha {
             fail("文件 sha256 不一致：期望 \(sha)，实算 \(fileHash)")
         }
+        // gh 用本地文件名做资产名：必须先把 curl 的随机临时文件名
+        // （updater-<UUID>）改成上游资产名，否则 Release 里资产名与 cask url
+        // 对不上、下载 404（2026-09-04 实测，doubao 首发即因此 404）。
+        let namedPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("updater-\(UUID().uuidString)")
+            .appendingPathComponent(assetName).path
+        do {
+            try FileManager.default.createDirectory(
+                atPath: (namedPath as NSString).deletingLastPathComponent,
+                withIntermediateDirectories: true)
+            try FileManager.default.moveItem(atPath: zipPath, toPath: namedPath)
+        } catch {
+            fail("重命名待上传文件失败：\(error)")
+        }
         let gh = which("gh")
         if let gh {
             let repoFlag = "--repo"
-            let createArgs = ["release", "create", tagName, zipPath,
+            let createArgs = ["release", "create", tagName, namedPath,
                               repoFlag, repo, "--generate-notes", "--title", "\(config.formula) \(stable)"]
             let (cStatus, cOut) = run(gh, createArgs)
             if cStatus != 0 {
                 // 同名 tag 已存在（重复运行）→ 改为覆盖上传资产
-                let uploadArgs = ["release", "upload", tagName, zipPath, repoFlag, repo, "--clobber"]
+                let uploadArgs = ["release", "upload", tagName, namedPath, repoFlag, repo, "--clobber"]
                 let (uStatus, uOut) = run(gh, uploadArgs)
                 if uStatus != 0 {
                     fail("上传 Release 失败：\(cOut)\n\(uOut)")
@@ -496,6 +510,8 @@ func runCheck(_ config: CheckConfig) {
             print("::warning::未找到 gh CLI，跳过 Release 上传（本地测试时正常）；url 回退为上游直链")
         }
         try? FileManager.default.removeItem(atPath: zipPath)
+        try? FileManager.default.removeItem(
+            atPath: (namedPath as NSString).deletingLastPathComponent)
 
         // 清理该 cask 的旧版 Release：只保留本次发布的 tagName，其余 <formula>-* 全删。
         // 删除单个失败只警告不阻断（旧 release 残留只占空间，不影响安装走新版）。
@@ -538,11 +554,15 @@ private func deleteOldCaskReleases(repo: String, formula: String, keepTag: Strin
         print("::warning::列出 Release 失败，跳过旧版清理")
         return
     }
+    // 注意：`gh release list --json tagName` 回的是对象数组
+    // [{"tagName":"..."}]，不是字符串数组——直接 as? [String] 恒失败
+    // （2026-09-04 实测：旧版清理从未真正跑起来过），必须先取 tagName 字段。
     guard let data = listOut.data(using: .utf8),
-          let tags = (try? JSONSerialization.jsonObject(with: data)) as? [String] else {
+          let items = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] else {
         print("::warning::解析 Release 列表失败，跳过旧版清理")
         return
     }
+    let tags = items.compactMap { $0["tagName"] as? String }
 
     let prefix = "\(formula)-"
     for tag in tags {

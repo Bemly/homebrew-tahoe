@@ -40,6 +40,9 @@ brew install bemly/tahoe-intel/opencode # pulls bemly/tahoe-intel/ripgrep as a d
 # workbuddy is a desktop app, delivered as a cask (installed into /Applications,
 # visible in Launchpad/Spotlight)
 brew install --cask bemly/tahoe-intel/workbuddy
+# doubao-ime is an input method, delivered as a cask (auto-runs the official
+# installer into /Library/Input Methods, requires sudo password)
+brew install --cask bemly/tahoe-intel/doubao-ime
 ```
 
 ## Packages
@@ -49,6 +52,7 @@ brew install --cask bemly/tahoe-intel/workbuddy
 | `gh` | GitHub CLI, taken directly from `gh_<ver>_macOS_amd64.zip` |
 | `fastfetch` | Neofetch-like system info tool, taken from `fastfetch-macos-amd64.tar.gz` (release tag has no `v` prefix) |
 | `workbuddy` | Tencent WorkBuddy AI office workspace (Electron desktop app), cask, installed into `/Applications`; not in brew core — version comes from its auto-update feed |
+| `doubao-ime` | Doubao AI input method, cask, auto-installs into `/Library/Input Methods` via the official installer script (needs sudo); not in brew core — version comes from its download API |
 | `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
