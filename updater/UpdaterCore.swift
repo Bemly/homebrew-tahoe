@@ -216,13 +216,21 @@ private func githubLatestTag(repo: String) -> String? {
     // 否则 runner 上永远不知道是 DNS/限流/无 Location（2026-09-04 brewui 三连败）。
     var lastStatus: Int32 = -1
     var lastBytes = 0
-    var lastHead = ""
+    var lastDump = ""
     for attempt in 1...3 {
         let (status, out) = run(curl, baseArgs)
         lastStatus = status
         lastBytes = out.utf8.count
         if status == 0 {
-            for line in out.components(separatedBy: "\n") {
+            let lines = out.components(separatedBy: "\n")
+            if lastDump.isEmpty {
+                // 诊断用：行数 + 每行前 60 字符（\r 转义），定位 Location 缺失
+                let shown = lines.prefix(14).map { String($0.prefix(60)) }.joined(separator: "\\n")
+                lastDump = "\(lines.count)行:"
+                    + shown.replacingOccurrences(of: "\r", with: "<CR>")
+                        .replacingOccurrences(of: "\t", with: "<TAB>")
+            }
+            for line in lines {
                 guard line.lowercased().hasPrefix("location:") else { continue }
                 let loc = line.dropFirst("location:".count)
                     .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -230,11 +238,10 @@ private func githubLatestTag(repo: String) -> String? {
                     return String(tag)
                 }
             }
-            if lastHead.isEmpty { lastHead = String(out.prefix(300)) }
         }
         if attempt < 3 { _ = sleep(5) }
     }
-    print("::warning::githubLatestTag(\(repo)) 3 次均失败（curl exit=\(lastStatus)，末次输出 \(lastBytes)B，头 300B：\(lastHead)）")
+    print("::warning::githubLatestTag(\(repo)) 3 次均失败（curl exit=\(lastStatus)，\(lastBytes)B，\(lastDump)）")
     return nil
 }
 
