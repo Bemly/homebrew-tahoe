@@ -938,6 +938,26 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    （删包重建后本机缓存旧 manifest）：`brew fetch --force --bottle-tag=tahoe`
    刷新即恢复——用户侧遇到先走这条，不用动公式。
 
+### 11.23 Swift 实参顺序 + runner 纯 CR 响应头（2026-09-04 实测，watcher 红史）
+
+1. **Swift 实参必须与形参同序**：`doubao-ime.swift` / `workbuddy.swift` 把
+   `uploadRelease:` 写在 `customRelease:` 之前，从落仓第一天起就没编译通过过
+   （`argument 'customRelease' must precede argument 'uploadRelease'`）——此前
+   无人跑过全量 watcher 才没暴露。修法：闭包实参按 init 声明序放
+   （zcode.swift 早有注释，另两文件照抄）。**教训**：改完 `updater/` 必须在本地
+   把 CI 循环完整跑一遍再 push（25 个逐个 `swiftc`，见下），不能只编自己新增的：
+   `for sw in updater/*.swift; do swiftc -O -o /tmp/check-$(basename $sw .swift) updater/UpdaterCore.swift $sw; done`。
+2. **runner 的 curl 响应头可能是纯 `\r` 分隔**（无 `\n`）：brewui 的 github 流在
+   本机全通、在 ubuntu runner 上三连 check-failed；诊断打出 `curl exit=0`、
+   输出 4888B 却是"1 行"——`components(separatedBy: "\n")` 永远找不到 Location。
+   修法：header 解析一律按 `CharacterSet.newlines` 切分（`\n`/`\r\n`/纯`\r` 全兼容）。
+   成因未深究（runner curl/代理 quirks），只认现象。
+3. **检查器失败必须明示**：`githubLatestTag` 拿不到 tag 时曾直接 `fail()`（exit 1
+   无 status），workflow 会当"无需更新"静默吃掉。现改为重试 3 次仍失败则发
+   `status=check-failed`（exit 0），`watch-updates.yml` 收集公示（不开 issue，
+   下次自动恢复）。顺带给该路径加了 GH_TOKEN 认证（匿名限流的防御，虽与本次
+   根因无关、保留无害）。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
