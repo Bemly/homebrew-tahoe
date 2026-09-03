@@ -330,11 +330,14 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
   版本号段数不同（`3.0` / `1.2.3.4`）或注释里先出现数字都会导致误判。
 - **`bottle.yml` 的并发组是全局 `bottle`**，不按入参分组：不同入参的两次制瓶若并行，
   会同时 `git push main`、删/推 GHCR 标签而互相冲突，排队串行执行。
-- **推送前统一清空该包的已有版本**：`bottle.yml` 在 `pr-upload` **之前**
-  用 GitHub API（`users/{owner}/packages/container/tahoe-intel%2F<name>/versions`）
-  列出该包全部版本并逐个 `DELETE`（单个失败只告警不阻断）。这一步同时达成两个目的：
-  清掉历史老瓶，以及让同版本可以重复推送（`pr-upload` 撞已存在标签会直接
-  `odie "already exists!"`，所以必须先删再传，见 11.10）。
+- **推送前「删整个包」再由 pr-upload 重建**：`bottle.yml` 在 `pr-upload` **之前**
+  检查该包在 GHCR 上有无带标签版本；有则整包删除
+  （`DELETE users/{owner}/packages/container/tahoe-intel%2F<name>`），让
+  `pr-upload` 重新建包推送。这一步同时达成两个目的：清掉历史老瓶，以及让
+  同版本可以重复推送（`pr-upload` 撞已存在标签会直接 `odie "already exists!"`，
+  所以必须先删再传，见 11.10）。**不能逐个删版本**：GitHub 禁止删除包的
+  「最后一个带标签版本」。新建的包默认私有，由后续「设为公开」步骤兜底
+  （实测重建后的包会继承公开状态，匿名拉取正常）。
   GitHub Packages 页面上显示的 `sha256:...` 无标签行是 image index 引用的
   子清单（瓶的真正内容），**不是孤儿，不要手删**；标签删掉后 GitHub 会自行
   回收不再被引用的清单。
@@ -587,37 +590,57 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
    ruby 细节两坑：`%w[]` 是单引号语义不解析 `\x` 字节转义，binary 串与 UTF-8
    字面量 `include?` 恒 false——magic 判断用 `unpack1("H8")` 的 hex 字符串比较。
 
-### 11.10 制瓶推送 GHCR 的四个坑（2026-09-03 实测，node/node@22 连续失败的根因）
+### 11.10 制瓶推送 GHCR 的坑（2026-09-03 实测，node/node@22 连续失败 + 假绿的根因）
 
 `brew pr-upload` 推送前会先 `skopeo inspect` 目标标签；**标签已存在且没传
 `--keep-old` 就直接 `odie "<uri> already exists!"`**（Homebrew
 `github_packages.rb` 的 `preupload_check`）。所以「保留当前版本」与「可覆盖推送」
-不可兼得——要让同一版本能重复制瓶，就必须**先删再传**。清理逻辑踩了四个坑：
+不可兼得——要让同一版本能重复制瓶，就必须**先删再传**。清理逻辑踩了六个坑：
 
 1. **端点用错**：owner 是普通用户（不是组织），端点必须是
    `users/{owner}/packages/container/...`，用 `orgs/...` 恒 404。
 2. **包名漏前缀**：`package_name` 必须带 tap 名并 URL 编码，即
    `tahoe-intel%2Fnode`（`node@22` → `tahoe-intel%2Fnode%2F22`），
    只写 `node` 同样 404。
-3. **gh api 把错误 JSON 打到 stdout**：`2>/dev/null` 拦不住，jq 的
+3. **CI 里 gh 没有凭据**：Actions 不会自动把 `secrets.GITHUB_TOKEN` 注入环境变量，
+   `gh` CLI 只认 `GH_TOKEN`/`GITHUB_TOKEN`——不显式传就完全无凭据，调 API 直接
+   报认证错误且 **stdout 为空**，清理静默失效。本机怎么测都测不出来：
+   gh 会回落到 keyring 里的个人 token。这是整个「清理失效 → already exists」
+   链条里最隐蔽的一环（诊断手段：把 API 原始返回打进日志）。
+4. **gh api 把错误 JSON 打到 stdout**：`2>/dev/null` 拦不住，jq 的
    `select(...)` 也不匹配，于是整段 `{"message":"Not Found",...}` 会被当成
    version id 拿去 `DELETE`，表现为莫名其妙的 `exit code 4`。
    **必须校验 id 是纯数字**（`[[ "$vid" =~ ^[0-9]+$ ]]`）才删。
-4. **用 `|| echo` 把 pr-upload 失败降级成警告是危险的**：job 会变绿，但 GHCR 上
+5. **GitHub 禁止删除包的「最后一个带标签版本」**：逐个删版本的路线走不通，
+   `DELETE .../versions/<id>` 会返回 HTTP 400
+   `You cannot delete the last tagged version of a package. You must delete
+   the package instead.`（个人 token 带 delete:packages 也一样）。
+   **唯一出路：删除整个包，让 pr-upload 重建**（包不存在时 pr-upload 正常
+   建包推瓶；重建后的包会继承公开状态，实测匿名拉取正常）。
+   对比：`docker push` 同名 tag 天然覆盖，根本没有这道检查——CharonAnchor
+   那类 docker 镜像项目享受不到这个限制，也别拿它类比 brew 瓶。
+6. **用 `|| echo` 把 pr-upload 失败降级成警告是危险的**：job 会变绿，但 GHCR 上
    仍是旧瓶，而后续步骤照样把新瓶的 sha256 写回公式 → **公式里的 sha256 与
    实际可下载的瓶不符，用户 `brew install` 时校验失败**。宁可 job 红，不可假绿。
+   「删整个包重建」的方案下同样禁止：删除失败要让 job 红着暴露问题。
 
-另外两个相关坑：
+另外三个相关坑：
 
 - **推送后用「匿名 pull token 列标签 + skopeo delete」清理老标签不可靠**：
   包还是私有（首次推送时，公开化步骤在其后）时 `curl -f` 会失败，
   在 `set -euo pipefail` 下以 **exit 22 中断整个 job**；且 skopeo 在 GHCR 上
-  删 manifest list 会报 `unsupported`（见 8.5）。该职责已并入「推送前统一清空」。
+  删 manifest list 会报 `unsupported`（见 8.5）。该职责已并入「推送前删包重建」。
 - **runner 镜像预装了 core 的 node@24（实测 24.19.0）**，它占用
   `/usr/local/bin/node` 等链接，会阻塞本 tap node 家族的 link 步骤：
   `Target /usr/local/bin/node is a symlink belonging to node@24`。
   `brew unlink` 对预装但登记不全的 keg 会静默失败，需改成
   `brew uninstall --force --ignore-dependencies` 并兜底删掉冲突符号链接。
+- **brew 会缓存 GHCR 的 manifest JSON**：删包重建（同一 tag 指向新 manifest）后，
+  本机若缓存了旧 manifest，`brew install/reinstall` 会报
+  `Couldn't find manifest matching bottle checksum.`——瓶和公式其实都对，
+  是缓存没刷新。`brew fetch --force --bottle-tag=tahoe <formula>` 强制重新
+  拉取即可恢复；`brew fetch --bottle-tag=tahoe` 也是排查瓶是否可拉的最快手段
+  （成功标志：`✔︎ Bottle Manifest` + `✔︎ Bottle` 两行）。
 
 ## 12. 待办 / 后续演进
 
