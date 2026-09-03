@@ -4,6 +4,11 @@ class Vde < Formula
   url "https://github.com/virtualsquare/vde-2/archive/refs/tags/v2.3.3.tar.gz"
   sha256 "a7d2cc4c3d0c0ffe6aff7eb0029212f2b098313029126dcd12dc542723972379"
   license all_of: ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 tahoe: "06f4845c96f24175867c44377ac4d6b1ced705fcbe4c6ea93f4c9b7256b39eca"
+  end
   depends_on arch: :x86_64
   depends_on macos: :tahoe
   head "https://github.com/virtualsquare/vde-2.git", branch: "master"
