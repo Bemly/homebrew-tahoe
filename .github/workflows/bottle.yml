@@ -94,7 +94,13 @@ jobs:
 
       # 一次任务内顺序处理所有软件：build-bottle 安装 → 制瓶 → 删旧标签 → 推 GHCR。
       # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md 5）。
+      # pr-upload 会把瓶块写进 Formula/*.rb（--no-commit 只是不 git 提交），
+      # 该改动由后面的「提交瓶块」步骤入库。若循环中途失败，前面的瓶块改动
+      # 会随 runner 丢弃（2026-09-03 实测：capstone/dtc/libslirp 的瓶已推上 GHCR
+      # 但瓶块丢失，导致后续 qemu 构建判其无瓶而失败）——
+      # 故「提交瓶块」用 if: always() 兜底，并另设失败门槛步。
       - name: 循环制瓶并推 GHCR
+        id: bottle_loop
         env:
           # gh CLI 读的是 GH_TOKEN / GITHUB_TOKEN 环境变量；Actions 不会自动把
           # secrets.GITHUB_TOKEN 注入环境，不显式传则 gh 完全无凭据，
@@ -232,8 +238,11 @@ jobs:
           # 只告警不阻断：公开化只能手动处理，而瓶本身已推送成功
           exit 0
 
+      # if: always()：循环中途失败时仍把已成功的瓶块提交入库（GHCR 上的瓶
+      # 与公式瓶块必须一致，否则后续安装判「无瓶」），再让门槛步红掉。
       - name: 提交瓶块
         id: commit
+        if: always()
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
@@ -247,6 +256,15 @@ jobs:
           git commit -m "bottle: 更新 GHCR 瓶块（$(paste -sd, /tmp/formulas.txt)）"
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # 失败门槛：循环制瓶有失败项时 job 仍然红掉（宁可真红不可假绿），
+      # 但此时已成功部分的瓶块已由上面的 if: always() 步骤提交。
+      - name: 制瓶失败门槛
+        if: steps.bottle_loop.outcome == 'failure'
+        run: |
+          echo "::error::循环制瓶存在失败项（详见上文日志）。已成功部分的瓶块已提交入库；"
+          echo "请先单独重跑失败的公式（bottle.yml 支持逗号列表），再重跑 qemu。"
+          exit 1
 
       - name: 输出结论
         if: always()
