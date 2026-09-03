@@ -14,6 +14,11 @@ class Vde < Formula
   depends_on "libtool" => :build
 
   def install
+    # vde 2.3.3（2016 年）是旧式 C 代码：头文件写空参括号 `int f();`。
+    # C23 起 `()` 等于 `(void)`，新版 clang（Xcode 26 runner，默认 gnu23）
+    # 下 libvdehist.c 报 20 个 "too many arguments ... expected 0, have 3"
+    # （本机 clang 21 已复现）。锁回 gnu17（clang 15–19 的默认标准）恢复旧语义。
+    ENV.append "CFLAGS", "-std=gnu17"
     system "autoreconf", "--force", "--install", "--verbose"
     system "./configure", *std_configure_args
     system "make", "install"
