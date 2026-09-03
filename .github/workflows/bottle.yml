@@ -130,51 +130,46 @@ jobs:
             version="$(brew list --versions "$f" | awk 'NR==1{print $2}')"
             echo "本次制瓶版本：${version:-未知}"
 
-            # —— 推送前清空 GHCR 上该包的已有版本 ——
-            # 两个目的：①清掉历史老瓶；②让「同版本重复运行」也能覆盖推送。
-            #   brew pr-upload 发现标签已存在会直接 odie "<uri> already exists!"
-            #   （Homebrew github_packages.rb 的 preupload_check），
-            #   所以「保留当前版本」与「可覆盖推送」不可兼得，必须先删再传。
-            # 四个实测踩坑（2026-09-03，node / node@22 推送失败的根因）：
-            #   1. owner 是普通用户 → 端点必须是 users/，orgs/ 恒 404；
-            #   2. package_name 必须带 tap 名并编码：tahoe-intel%2Fnode（漏了则 404）；
-            #   3. gh api 把错误 JSON 打到 **stdout**（2>/dev/null 拦不住），
-            #      必须校验 id 为纯数字，否则整段 JSON 会被当作 version id 去 DELETE；
-            #   4. 只删「带标签」的版本：无标签的那些是 image index 引用的子清单
-            #      （瓶的真正内容），不是孤儿，删了会破坏 index（见 8.5）；
-            #      标签删掉后 GitHub 会自行回收不再被引用的清单。
+            # —— 推送前清理 GHCR 上该包的旧版本 ——
+            # brew pr-upload 推送前会先 skopeo inspect，撞到已存在标签直接
+            # odie "<uri> already exists!"（github_packages.rb 的 preupload_check），
+            # 必须「先删再传」。（对比：docker push 同名 tag 天然覆盖，没有这道
+            # 检查——CharonAnchor 能反复推正是这个原因，brew 瓶享受不到。）
+            # 而逐个删版本是死路：GitHub 禁止删除包的「最后一个带标签版本」
+            # （HTTP 400 "You cannot delete the last tagged version of a package.
+            # You must delete the package instead."，2026-09-03 实测）。
+            # → 只要有带标签的旧版本，就**删除整个包**，由 pr-upload 重建
+            #   （包不存在时 pr-upload 正常建包推瓶，node@24 首推已验证）；
+            #   新建的包默认私有，随后的「设为公开」步骤会再处理。
+            # 其余实测踩坑（2026-09-03）：
+            #   1. owner 是普通用户 → 端点必须 users/，orgs/ 恒 404；
+            #   2. 包名必须带 tap 前缀并编码：tahoe-intel%2Fnode（漏了则 404）；
+            #   3. gh CLI 需要 GH_TOKEN 环境变量——Actions 不会自动把
+            #      secrets.GITHUB_TOKEN 注入环境，不传则完全无凭据、stdout 为空，
+            #      清理静默失效（本机测不出：gh 会回落 keyring 的个人 token）；
+            #   4. 判断「有无旧瓶」只看带标签的版本；无标签版本是 image index
+            #      引用的子清单，不是孤儿（见 8.5），不参与判断、也无需清理。
             owner="${GITHUB_REPOSITORY_OWNER}"
             pkg_encoded="tahoe-intel%2F${ghcr_name//\//%2F}"
-            old_vids=""
-            api_scope="users/${owner}"
-            listed=""
+            tagged_vids=""
+            del_scope="users/${owner}"
             for scope in "users/${owner}" "orgs/${owner}"; do
-              # tags 非空的版本才是真正挂着标签的瓶，老瓶与新瓶一视同仁全删
               listed="$(gh api "${scope}/packages/container/${pkg_encoded}/versions" \
                 --paginate --jq '.[] | select((.metadata.container.tags | length) > 0) | .id' 2>/dev/null || true)"
-              echo "  探测 ${scope} -> $(printf '%s' "$listed" | head -c 200)"
               if printf '%s' "$listed" | grep -Eq '^[0-9]+$'; then
-                old_vids="$listed"
-                api_scope="$scope"
+                tagged_vids="$listed"
+                del_scope="$scope"
                 break
               fi
             done
-            # 诊断：拿不到 id 时把原始返回打出来，避免「清理静默失效」无从查起
-            if [[ -z "$old_vids" ]]; then
-              echo "::warning::未能列出 ${ghcr_name} 的已有版本；最后一次原始返回：$(printf '%s' "$listed" | head -c 300)"
-            fi
-            if [[ -n "$old_vids" ]]; then
-              echo "清理 ${ghcr_name} 在 GHCR 上的已有版本，保证可覆盖推送。"
-              while read -r vid; do
-                [[ "$vid" =~ ^[0-9]+$ ]] || continue
-                gh api -X DELETE \
-                  "${api_scope}/packages/container/${pkg_encoded}/versions/${vid}" \
-                  >/dev/null 2>&1 \
-                  && echo "已删除版本 ${vid}。" \
-                  || echo "::warning::删除版本 ${vid} 失败，跳过。"
-              done <<< "$old_vids"
+            if [[ -n "$tagged_vids" ]]; then
+              echo "发现 ${ghcr_name} 已有带标签版本（$(echo "$tagged_vids" | tr '\n' ' ')），删除整个包以便重建。"
+              gh api -X DELETE "${del_scope}/packages/container/${pkg_encoded}" \
+                >/dev/null 2>&1 \
+                && echo "已删除包 ${ghcr_name}，pr-upload 将重建。" \
+                || echo "::warning::删除包 ${ghcr_name} 失败（可能权限不足）：pr-upload 会因 already exists 失败，需到 Packages 页面手动删除该包。"
             else
-              echo "${ghcr_name} 无已上传版本（首次推送），跳过清理。"
+              echo "${ghcr_name} 无带标签的旧版本（首次推送或已清理），直接推送。"
             fi
 
             # 老版本已在上一步连同清空，这里只需推送当前版本。
