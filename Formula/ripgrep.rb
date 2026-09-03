@@ -13,6 +13,11 @@ class Ripgrep < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any, tahoe: "1ce904c130b0d22c0ca94f4fae85afe30da7531c1eb0ada4e345c48d50bceaa3"
+  end
+
   depends_on "asciidoctor" => :build
   depends_on "pkgconf" => :build
   depends_on "rust" => :build
