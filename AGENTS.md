@@ -955,8 +955,17 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
 3. **检查器失败必须明示**：`githubLatestTag` 拿不到 tag 时曾直接 `fail()`（exit 1
    无 status），workflow 会当"无需更新"静默吃掉。现改为重试 3 次仍失败则发
    `status=check-failed`（exit 0），`watch-updates.yml` 收集公示（不开 issue，
-   下次自动恢复）。顺带给该路径加了 GH_TOKEN 认证（匿名限流的防御，虽与本次
-   根因无关、保留无害）。
+   下次自动恢复）。顺带给该路径加过 GH_TOKEN 认证（已 revert：限流就等下次，
+   反复跑只会更限——保持匿名）。
+
+### 11.24 上游会重切同版本包：sha 可能出生即过期（2026-09-04 实测，gh 2.100.0）
+
+watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
+`Formula reports different checksum`——当时 checksums.txt 与实包都已变成
+`fcd7…`（cli 团队重传了同名资产）。症状即 `reports different checksum`；
+修法：重下实物算 sha，再核对 checksums.txt **当下**值，三方
+（下载实物/当下 checksums/公式）一致才改公式，改完重跑 bottle。
+教训：checksums.txt 不是不可变快照，同版本重切只认三方一致，不认"watcher 当时看到的值"。
 
 ## 12. 待办 / 后续演进
 

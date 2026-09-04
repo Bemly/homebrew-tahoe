@@ -197,27 +197,20 @@ private func curlHeadOK(_ url: String) -> Bool {
 /// 取 GitHub 仓库最新 release 的 tag：HEAD 请求 releases/latest，
 /// 只读跳转目标的 Location（形如 .../releases/tag/v0.2.1），不跟随跳转、
 /// 不调 GitHub API（不消耗 API 限额）。
-/// Actions 共享出口 IP 匿名请求 github.com 极易被限流（429），故有 GH_TOKEN
-///（watch-updates.yml 已注入 secrets.GITHUB_TOKEN）时带上认证，把限额从
-/// 匿名 60/小时提到 token 级别；本地无 token 时保持匿名。
-/// 仍失败重试 3 次；最终失败返回 nil（由调用方发 status=check-failed 明示，
+/// 刻意保持匿名：不带 GH_TOKEN 认证（限流就等下次跑；反复跑只会更限）。
+/// 失败重试 3 次；仍失败返回 nil（由调用方发 status=check-failed 明示，
 /// 而不是静默跳过——见 runCheck）。
 private func githubLatestTag(repo: String) -> String? {
     guard let curl = which("curl") else { return nil }
-    let env = ProcessInfo.processInfo.environment
-    let token = env["GH_TOKEN"] ?? env["GITHUB_TOKEN"]
-    var baseArgs = ["-fsSI", "--retry", "2", "--retry-delay", "3",
-                    "--max-time", "30"]
-    if let token, !token.isEmpty {
-        baseArgs += ["-H", "Authorization: Bearer \(token)"]
-    }
-    baseArgs.append("https://github.com/\(repo)/releases/latest")
+    let args = ["-fsSI", "--retry", "2", "--retry-delay", "3",
+                "--max-time", "30",
+                "https://github.com/\(repo)/releases/latest"]
     // 诊断用：最终失败时把最后一次 curl 退出码与输出规模打出来，
     // 否则 runner 上永远不知道是 DNS/限流/无 Location（2026-09-04 brewui 三连败）。
     var lastStatus: Int32 = -1
     var lastBytes = 0
     for attempt in 1...3 {
-        let (status, out) = run(curl, baseArgs)
+        let (status, out) = run(curl, args)
         lastStatus = status
         lastBytes = out.utf8.count
         if status == 0 {
