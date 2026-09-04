@@ -161,7 +161,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `dtc` | 1.8.1 | 代编译模式：qemu 专属依赖（扇入 1） | 已收录 |
 | `libslirp` | 4.9.4 | 代编译模式：qemu 专属依赖（扇入 4） | 已收录 |
 | `vde` | 2.3.3 | 代编译模式：qemu 专属依赖（扇入 2）；2016 年旧代码需 `-std=gnu17` 编译开关（见 11.13） | 已收录 |
-| `opencode` | 1.18.27 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，取 mac 双架构段（`opencode-darwin-x64/arm64.zip`，结构照抄源文件；Intel 走 GHCR 瓶、ARM 走直链，见 11.27）；与 core 的 npm 版同名，`depends_on "bemly/tahoe-intel/ripgrep"` 走自家源 | 已收录 |
+| `opencode` | 1.18.28 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，取 mac 双架构段（`opencode-darwin-x64/arm64.zip`，主段放顶层、ARM 段在 `on_macos` 内覆盖；Intel 走 GHCR 瓶、ARM 走直链，见 11.27）；与 core 的 npm 版同名，`depends_on "bemly/tahoe-intel/ripgrep"` 走自家源 | 已收录 |
 | `sst` | 4.17.1 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`sst-mac-x86_64.tar.gz`）；`sst version` 子命令取版本（不支持 `--version`） | 已收录 |
 | `torpedo` | 0.0.13 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`torpedo-mac-x86_64.tar.gz`，上游 `sst/torpedo`）；无任何版本命令，不做版本自检 | 已收录 |
 | `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
@@ -1046,11 +1046,15 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
 
 ### 11.27 opencode 双架构：摘 arch 门槛的例外（2026-09-04 实测）
 
-1. 本 tap 唯一摘 `arch` 门槛的公式：`opencode`（加回 `darwin-arm64` 段，结构照抄
-   源文件 `on_macos` 内套双 `if Hardware::CPU`）+ 它的依赖 `ripgrep`
+1. 本 tap 唯一摘 `arch` 门槛的公式：`opencode`（加回 `darwin-arm64` 段，主段放
+   顶层、ARM 段在 `on_macos` 内 `if Hardware::CPU.arm?` 覆盖）+ 它的依赖 `ripgrep`
    （ARM 装 opencode 会依赖到它，不摘则 ARM 直接被拒；ripgrep 是源码编译，
    ARM 上现编即可）。`macos: :tahoe` 门槛保留。sst/torpedo 暂不动（同系列但
    无人要 ARM 版，要了再按此套路加）。
+   **顶层必须留 Intel 段**：初版把双段全塞进 `on_macos`，`brew readall` 在
+   Linux 下直接 `requires at least a URL` 红掉制瓶（`on_macos` 包不住 Linux，
+   顶层无 url 即非法——GoReleaser 源文件同病，只是人家不跑 readall）。
+   改写规则同步调整：顶层 url/sha 归 intel 槽，arm 块归 arm 槽。
 2. 瓶仍只有 x86_64（macos-26-intel 制出，无 ARM runner 可出 arm 瓶）——ARM 安装
    回退上游直链（同版本 arm64 包，无需制瓶）。公式只改门槛/加段、不动安装产物
    时，旧瓶继续有效，不必重制（本次即如此）。
@@ -1058,6 +1062,8 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
    取双块 url/sha，`rewriteFormulaRawDual` 按缩进判定块作用域改写双块
    （块内 `def install...end` 缩进更深，不会误出块；找不到对应行直接 fail）。
    双改写的端到端验证靠 harness（假版本号调纯函数，看双块替换 + 摘瓶）。
+   ——上线当天上游就发了 1.18.28，检查器真链路一次跑通（双段 url/sha 与源文件
+   逐字节一致、摘瓶、emit 全对），比 harness 更硬的 proof，没有之一。
 4. ARM 侧无法在本机验证（无 ARM 硬件）：arm 段 url/sha 与源文件逐字节核对 +
    结构照抄源文件；`post_install`/`test` 用 `Hardware::CPU.arm?` 双分支，
    Intel 侧全绿即发。

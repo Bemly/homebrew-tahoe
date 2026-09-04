@@ -1,17 +1,17 @@
 class Opencode < Formula
   desc "AI coding agent built for the terminal"
   homepage "https://opencode.ai"
-  # 取自 anomalyco/homebrew-tap 的 opencode.rb（GoReleaser 产物，取 mac 双架构段，
-  # 结构照抄源文件：on_macos 内套 if Hardware::CPU.intel?/arm?）。
+  # 取自 anomalyco/homebrew-tap 的 opencode.rb（GoReleaser 产物，取 mac 双架构段）。
   # 上游是 anomalyco/opencode fork 的官方发布包，非 homebrew/core 的 npm 版。
+  # 主 url/sha 是 Intel 段（放顶层：brew readall 会在 Linux 下验公式，
+  # 顶层无 url 直接报 requires at least a URL；on_macos 包不住 Linux）。
+  # ARM 段在 on_macos 内覆盖（结构照源文件）。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 11.3）。
   # 实测本系列 URL（v 前缀 + darwin-x64/mac-x86_64 尾部）能正确扫出版本，与 node 的 x64 坑不同。
+  url "https://github.com/anomalyco/opencode/releases/download/v1.18.28/opencode-darwin-x64.zip"
+  sha256 "9e3443c5c57d32a93a4f401e2afa377ff46817053e1050fcbd9d2362816f4cd0"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
-    sha256 cellar: :any_skip_relocation, tahoe: "ee6ad4657705928ac2909c62478fb0f5060a0077526a7db54dd87844aa7e3006"
-  end
   # 瓶是 x86_64 的（macos-26-intel 制出）；ARM 安装回退到上游直链（同版本 arm64 包）。
 
   # 本 tap 只收录 macOS 26(Tahoe) 及以上可用的二进制。
@@ -22,13 +22,9 @@ class Opencode < Formula
   depends_on macos: :tahoe
 
   on_macos do
-    if Hardware::CPU.intel?
-      url "https://github.com/anomalyco/opencode/releases/download/v1.18.27/opencode-darwin-x64.zip"
-      sha256 "e182eab3a6bf095ff773d303bbc7938d3551a636eab00625b599ad6383fabd88"
-    end
     if Hardware::CPU.arm?
-      url "https://github.com/anomalyco/opencode/releases/download/v1.18.27/opencode-darwin-arm64.zip"
-      sha256 "149b0c6d272d0059b8b5ffcd18c84b24f1d6cbf585942b10e60c601211992eb1"
+      url "https://github.com/anomalyco/opencode/releases/download/v1.18.28/opencode-darwin-arm64.zip"
+      sha256 "405bda35587a0d140f2b691ba77b0e22492e34c822ed1de6869adfa344f50f47"
     end
   end
 

@@ -649,11 +649,12 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
     emit("bottle_stale=\(bottleStale)")
 }
 
-/// 改写双架构 raw 公式：`on_macos` 内 `if Hardware::CPU.intel?/arm?` 双块
-/// 各自的 url/sha256 行整条替换为源文件值，并摘除失效的 bottle 块。
+/// 改写双架构 raw 公式：顶层 url/sha（Intel 段）与 `on_macos` 内
+/// `if Hardware::CPU.arm?` 块的 url/sha 整条替换为源文件值，并摘除失效的 bottle 块。
 /// 块作用域用缩进判定（标记行缩进为界，`end` 缩进 ≤ 标记才出块——块内
-/// `def install...end` 缩进更深，不会误出）。
-/// url/sha 按"块内第一次出现"替换（每块一组）；找不到对应行直接 fail。
+/// `def install...end` 缩进更深，不会误出块）。
+/// url/sha 按"槽位内第一次出现"替换（intel 槽含顶层，arm 槽只在 arm 块内）；
+/// 找不到对应行直接 fail。
 func rewriteFormulaRawDual(_ content: String,
                            intelURL: String, intelSHA: String,
                            armURL: String, armSHA: String) -> (content: String, bottleStale: Bool) {
@@ -666,7 +667,10 @@ func rewriteFormulaRawDual(_ content: String,
     var result: [String] = []
     var bottleStale = false
     var skipping = false
-    // nil = 块外，"intel"/"arm" = 块内；附标记行缩进用于出块判定
+    // nil = 块外，"intel"/"arm" = 块内；附标记行缩进用于出块判定。
+    // 槽位规则：arm 块内归 arm，其余（顶层 url/sha、intel 块内）归 intel——
+    // 顶层必须是 Intel 段（brew readall 在 Linux 下验公式，顶层无 url 直接
+    // 报 requires at least a URL；on_macos 包不住 Linux）。
     var mode: String? = nil
     var modeIndent = 0
     var doneURL = Set<String>()
@@ -694,16 +698,19 @@ func rewriteFormulaRawDual(_ content: String,
         } else if mode != nil, blockEnd.firstMatch(in: replaced, range: fullRange(replaced)) != nil,
                   indentOf(replaced) <= modeIndent {
             mode = nil
-        } else if let md = mode, !doneURL.contains(md),
-                  let m = urlLine.firstMatch(in: replaced, range: fullRange(replaced)) {
-            let indent = (replaced as NSString).substring(with: m.range(at: 1))
-            replaced = "\(indent)url \"\(md == "intel" ? intelURL : armURL)\""
-            doneURL.insert(md)
-        } else if let md = mode, !doneSHA.contains(md),
-                  let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
-            let indent = (replaced as NSString).substring(with: m.range(at: 1))
-            replaced = "\(indent)sha256 \"\(md == "intel" ? intelSHA : armSHA)\""
-            doneSHA.insert(md)
+        } else {
+            let slot = (mode == "arm") ? "arm" : "intel"
+            if !doneURL.contains(slot),
+               let m = urlLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+                let indent = (replaced as NSString).substring(with: m.range(at: 1))
+                replaced = "\(indent)url \"\(slot == "intel" ? intelURL : armURL)\""
+                doneURL.insert(slot)
+            } else if !doneSHA.contains(slot),
+                      let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+                let indent = (replaced as NSString).substring(with: m.range(at: 1))
+                replaced = "\(indent)sha256 \"\(slot == "intel" ? intelSHA : armSHA)\""
+                doneSHA.insert(slot)
+            }
         }
         result.append(replaced)
     }
