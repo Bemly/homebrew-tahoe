@@ -19,6 +19,11 @@ class Curl3 < Formula
     regex(/href=.*?curl[._-]v?(.*?)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any, tahoe: "1682413b1bfde5ec95027b052f480ef4e368febf0396eefe74dea6683c9d73d1"
+  end
+
   head do
     url "https://github.com/curl/curl.git", branch: "master"
 
