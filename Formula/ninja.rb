@@ -8,6 +8,11 @@ class Ninja < Formula
   sha256 "c99048673aa765960a99cf10c6ddb9f1fad506099ff0a0e137ad8960a88f321b"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "44caf1ce672f7e09009b5738654b54164470ea9178e041e0f71389412f6bced3"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe

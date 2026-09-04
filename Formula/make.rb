@@ -7,6 +7,11 @@ class Make < Formula
   license "GPL-3.0-only"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 tahoe: "a6bb00e54259a13ad5e26ac96eb00a1bca8cc35a6813df783e83ff8ab2bc006a"
+  end
+
   head do
     url "https://git.savannah.gnu.org/git/make.git", branch: "master"
 

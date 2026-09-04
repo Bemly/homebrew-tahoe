@@ -7,6 +7,11 @@ class H2spec < Formula
   sha256 "981cb9f90a6f5e36300063022bd4eb7438d3dcf66d63a146a8541359697d1601"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any_skip_relocation, tahoe: "93429801238fc73f8fe2a83ccd0b0249e891c8f36575a99eeb56cbded9a1b203"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe

@@ -12,6 +12,11 @@ class Socat < Formula
     regex(/href=.*?socat[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any, tahoe: "d199936f0761a27d6805ae260c2cdda54e94d283b7ef290701608fe65955d013"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
   depends_on "openssl@3"
