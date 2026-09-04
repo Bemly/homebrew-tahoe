@@ -69,6 +69,12 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `brewui` | Homebrew 官方图形界面，cask 取其 GitHub release（`Homebrew-<ver>.zip`）；版本经 release 跳转跟踪 |
 | `winstart` | Metro 风应用启动器，cask 镜像到本仓 Release（无公开上游链接）；锁定版本不检查更新 |
 | `docker-compose` | Docker Compose 插件，官方 `docker-compose-darwin-x86_64` 裸二进制；版本跟随 core 的 docker-compose |
+| `qemu` | 通用模拟器/虚拟机，Intel 现编译出瓶（core 无 Intel 瓶） |
+| `capstone` | 反汇编框架，`qemu` 的出瓶依赖 |
+| `dtc` | 设备树编译器，`qemu` 的出瓶依赖 |
+| `libslirp` | 用户态网络库，`qemu` 的出瓶依赖 |
+| `vde` | 虚拟分布式以太网，`qemu` 的出瓶依赖 |
+| `neofetch` | 系统信息脚本（上游已归档，最后一版）；不检查更新 |
 
 ## 注意事项（同名冲突）
 

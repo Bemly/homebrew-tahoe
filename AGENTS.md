@@ -877,6 +877,11 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    checksums.txt 只有 freebsd/linux/netbsd/openbsd 条目、**无 darwin**——两者检查器
    `checksumsURL` 皆置 nil，有更新时回退下载实算（fish ~25MB / buildx ~68MB，
    仅检测到新版本时发生）。
+4. **fish 4.9.0 的两个 helper 是纯 arm64**（`fish_indent`/`fish_key_reader` 无
+   x86_64 切片，主 `fish` 才是 universal）——在 Intel 上跑不起来，公式只装主
+   fish（man 页保留）。教训：universal 包不能只验主二进制，`bin/*` 要逐个
+   `file`；明知跑不起来的文件**不要**用 audit 豁免硬保（那是给"用不到才无害"
+   的文件准备的，见 11.25），直接不装。
 
 ### 11.20 越狱系 cask 三则（2026-09-04 实测，checkra1n/palera1n/TSKMGR）
 
@@ -966,6 +971,28 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
 修法：重下实物算 sha，再核对 checksums.txt **当下**值，三方
 （下载实物/当下 checksums/公式）一致才改公式，改完重跑 bottle。
 教训：checksums.txt 不是不可变快照，同版本重切只认三方一致，不认"watcher 当时看到的值"。
+
+### 11.25 全仓扫手滑：装后审计 + 豁免回归 + 风格腐化（2026-09-04 实测）
+
+1. **架构审计只查已安装的 keg**：`audit --strict` 的异架构检查在公式未安装时
+   直接跳过——收录时"audit 全过"不代表二进制没问题。fish（11.19.4）与
+   deepseek-harness 都是装完重审才暴露。结论：新包 SOP 的 audit 必须在
+   `install` **之后**再跑一遍（`fetch` 前跑的那遍只审文本）。
+2. **dsh 的 arm64 预编译件走 tap 豁免**：`node-pty/prebuilds/darwin-arm64/`
+   （随包附带、Intel 运行时用不到，WorkBuddy 公式时代同款，见 11.9.4）——
+   `audit_exceptions/` 机制随 workbuddy 转 cask 被删过，本次为公式加回：
+   `audit_exceptions/mismatched_binary_allowlist.json`，格式
+   `{"<formula>": ["<相对 prefix 的 glob>", ...]}`，多级目录必须用
+   `/**/*` 结尾（FNM_PATHNAME 下 `**` 不跨目录，实测）。豁免只给"用不到才
+   无害"的文件，明知跑不起来的（fish 那俩 helper）不许进豁免，直接不装。
+3. **风格会腐化**：本机 brew 会自动更新（只有 CI 锁了 `HOMEBREW_NO_AUTO_UPDATE`），
+   rubocop cops 会变严——qemu 链 5 个公式（core 拷入 + 门禁改写）攒了几十个
+   `DependencyOrder`/`ComponentsOrder`/`EmptyLines` 才被发现。修法就
+   `brew style --fix`，但必须 review diff：本次它顺手删了 qemu.rb 从 core 带回的
+   两行注释（`bison # >= 3.0`、`python@3.14 # keep aligned with meson`），
+   已手动补回——autocorrect 的 diff 要逐行看，不能无脑提交。
+4. **README 会漏行**：AGENTS §6 全，但 README 中英都漏了 qemu 链 5 包 + neofetch
+   （早期合并时没同步）。以后新增软件顺手把三处表格（AGENTS/中/英）一次填齐。
 
 ## 12. 待办 / 后续演进
 

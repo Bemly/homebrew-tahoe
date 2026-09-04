@@ -1,0 +1,5 @@
+{
+  "deepseek-harness": [
+    "libexec/lib/node_modules/@deepseek-ai/dsh/node_modules/node-pty/prebuilds/darwin-arm64/**/*"
+  ]
+}

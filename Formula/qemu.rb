@@ -5,13 +5,8 @@ class Qemu < Formula
   sha256 "079ffbff8a7111bbc89022107cbabf3bbfd614d5fc9d7cc675991196aca12482"
   license "GPL-2.0-only"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
-    sha256 tahoe: "bf5277fca805b5c9711decb01e25968ace6e6bf1e963f46c6b91e573a96762cb"
-  end
-  depends_on arch: :x86_64
-  depends_on macos: :tahoe
   compatibility_version 1
+
   head "https://gitlab.com/qemu-project/qemu.git", branch: "master"
 
   livecheck do
@@ -19,7 +14,10 @@ class Qemu < Formula
     regex(/href=.*?qemu[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 tahoe: "bf5277fca805b5c9711decb01e25968ace6e6bf1e963f46c6b91e573a96762cb"
+  end
   depends_on "bison" => :build # >= 3.0
   depends_on "libtool" => :build
   depends_on "meson" => :build
@@ -28,21 +26,22 @@ class Qemu < Formula
   depends_on "python-setuptools" => :build
   depends_on "python@3.14" => :build # keep aligned with meson
   depends_on "spice-protocol" => :build
-
+  depends_on arch: :x86_64
   depends_on "bemly/tahoe-intel/capstone"
   depends_on "bemly/tahoe-intel/dtc"
+  depends_on "bemly/tahoe-intel/libslirp"
+  depends_on "bemly/tahoe-intel/vde"
   depends_on "glib"
   depends_on "gnutls"
   depends_on "jpeg-turbo"
   depends_on "libpng"
-  depends_on "bemly/tahoe-intel/libslirp"
   depends_on "libssh"
   depends_on "libusb"
   depends_on "lzo"
+  depends_on macos: :tahoe
   depends_on "ncurses"
   depends_on "pixman"
   depends_on "snappy"
-  depends_on "bemly/tahoe-intel/vde"
   depends_on "zstd"
 
   uses_from_macos "flex" => :build

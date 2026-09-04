@@ -5,13 +5,8 @@ class Dtc < Formula
   sha256 "23526015a6f1550e0541a53fe7acea1b5a11e3697cdf3a3bdc076abc38f6045d"
   license any_of: ["GPL-2.0-or-later", "BSD-2-Clause"]
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
-    sha256 cellar: :any, tahoe: "f4d28a5663b1fe7d66505e5e6170f183f47979fa88133e0c3e6148d962673719"
-  end
-  depends_on arch: :x86_64
-  depends_on macos: :tahoe
   compatibility_version 1
+
   head "https://git.kernel.org/pub/scm/utils/dtc/dtc.git", branch: "master"
 
   livecheck do
@@ -19,12 +14,16 @@ class Dtc < Formula
     regex(/href=.*?dtc[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    sha256 cellar: :any, tahoe: "f4d28a5663b1fe7d66505e5e6170f183f47979fa88133e0c3e6148d962673719"
+  end
   depends_on "meson" => :build
   depends_on "ninja" => :build
   depends_on "pkgconf" => :build
-
+  depends_on arch: :x86_64
   depends_on "libyaml"
+  depends_on macos: :tahoe
 
   uses_from_macos "bison" => :build
   uses_from_macos "flex" => :build

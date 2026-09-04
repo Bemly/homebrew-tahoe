@@ -53,11 +53,14 @@ class Fish < Formula
     # 实测：brew 解压后会下降进 zip 内唯一的顶层目录（fish-4.9.0.app/），
     # 故用 ** 通配定位 base/，无论是否下降都能命中（见 11.1）。
     # base/ 即官方 install.sh 要 ditto 的 unix 树，原样装进 prefix；
-    # 例外：etc/fish 下 completions/functions/conf.d 三个子目录上游就是
+    # 例外有二：① etc/fish 下 completions/functions/conf.d 三个子目录上游就是
     # 空占位（无文件），整树装会触发 brew 空数组告警——只装 config.fish，
-    # 空目录用 mkpath 原样建出（与上游 ditto 落盘布局一致）。
+    # 空目录用 mkpath 原样建出（与上游 ditto 落盘布局一致）；
+    # ② fish_indent/fish_key_reader 在 4.9.0 包里是纯 arm64（无 x86_64 切片），
+    # 在 Intel 上根本跑不起来——只装主 fish（universal，x86_64 切片原生），
+    # 不装这两个坏件（man 页保留，等上游修好再加回；见 11.19）。
     base = Dir["**/base"].fetch(0)
-    bin.install Dir["#{base}/usr/local/bin/*"]
+    bin.install "#{base}/usr/local/bin/fish"
     (etc/"fish").install "#{base}/usr/local/etc/fish/config.fish"
     %w[functions completions conf.d].each { |d| (etc/"fish"/d).mkpath }
     share.install Dir["#{base}/usr/local/share/*"]
@@ -89,6 +92,9 @@ class Fish < Formula
     <<~EOS
       fish 已安装为 Intel(x86_64) 原生二进制，直接取自 fish-shell 官方 .app.zip
       内含的 unix 树（与官方 install.sh 落盘内容一致）。
+
+      注意：4.9.0 包里的 fish_indent/fish_key_reader 是纯 arm64（上游打包问题），
+      在 Intel 上无法运行，本公式暂不安装这两个（主 fish 不受影响）。
 
       设为默认 shell（brew 不能代写 /etc/shells，需手动执行）：
         sudo sh -c 'echo #{opt_bin}/fish >> /etc/shells'

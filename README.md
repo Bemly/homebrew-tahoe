@@ -76,6 +76,12 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `brewui` | Official Homebrew graphical interface, cask from its GitHub release (`Homebrew-<ver>.zip`); version tracked via the release redirect |
 | `winstart` | Metro-style app launcher, cask mirrored to this repo's releases (no public upstream link); pinned, no update checks |
 | `docker-compose` | Docker Compose plugin, official `docker-compose-darwin-x86_64` bare binary; version follows homebrew/core's docker-compose |
+| `qemu` | Generic machine emulator and virtualizer, compiled from source on Intel (core has no Intel bottles) |
+| `capstone` | Disassembly framework, bottled dependency of `qemu` |
+| `dtc` | Device tree compiler, bottled dependency of `qemu` |
+| `libslirp` | User-mode networking library, bottled dependency of `qemu` |
+| `vde` | Virtual distributed Ethernet, bottled dependency of `qemu` |
+| `neofetch` | System info script (archived upstream, last release); no update checks |
 
 ## Switching sources (same-name conflict)
 
