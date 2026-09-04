@@ -1055,6 +1055,9 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
 4. ARM 侧无法在本机验证（无 ARM 硬件）：arm 段 url/sha 与源文件逐字节核对 +
    结构照抄源文件；`post_install`/`test` 用 `Hardware::CPU.arm?` 双分支，
    Intel 侧全绿即发。
+   ——后续用户在 ARM Mac mini（macOS 27）上实测通过：arm64 段走直链 2 秒装完、
+   `post_install` 架构校验过；代价是 ripgrep 无 arm 瓶、源码编译一次性拉起
+   13 个编译期依赖（rust/llvm/ruby 三栈约 2.5GB，见下）。
 
 ## 12. 待办 / 后续演进
 
