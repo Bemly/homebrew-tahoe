@@ -181,6 +181,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `brewui` | 0.2.1 | cask——上游 GitHub release 的 universal zip 直引（单包双架构；直引不镜像 Release）；检查器走 UpdaterCore 新增的 `github` 流（releases/latest 跳转判新，不耗 API 限额，见 11.21） | 已收录 |
 | `winstart` | 0.13.6 | cask——本地包一次性镜像到本仓 Release（`winstart-<ver>` tag，上游无公开链接，人工 `gh release create` 发版）；universal 双切片；**不检查更新**（无 updater/winstart.swift）；cask homepage 必填，取开发者 B 站主页 | 已收录 |
 | `docker-compose` | 5.5.1 | 官方裸二进制 `docker-compose-darwin-x86_64`（文件名无版本、路径段可扫，无需 version 行，见 11.21）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 文件名带 `*` 前缀、核心精确匹配对不上） | 已收录 |
+| `go` | 1.27.1 | Go 官方 `go<ver>.darwin-amd64.tar.gz`（完整工具链，只链系统库，零依赖；不用同版本 `.pkg`——要 root 写 /usr/local；`go1.27.1.darwin-amd64` 会扫成 `"64"`，需显式 version 行，见下） | 已收录 |
 | `heliport` | 2.0.0-alpha | cask——上游 dmg 直引（url 用 `#{version}` 插值，tag 带 v 前缀而文件名无版本；包内 x86_64 thin）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
 | `konsole` | 5277 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支，每月手动跑一次（不设 cron，见 11.26） | 已收录 |
 
@@ -888,6 +889,11 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    checksums.txt 只有 freebsd/linux/netbsd/openbsd 条目、**无 darwin**——两者检查器
    `checksumsURL` 皆置 nil，有更新时回退下载实算（fish ~25MB / buildx ~68MB，
    仅检测到新版本时发生）。
+4. **同是 darwin-amd64 尾缀，go 会致盲而 buildx 不会**：`go1.27.1.darwin-amd64`
+   被扫成 `"64"`（显式 version 才过），`buildx-v0.37.0.darwin-amd64` 却能扫对——
+   差在有无 `v` 前缀/版本号位置等细节，规律不可靠。结论不变：是否显式声明
+   一律以 `audit --strict` + `brew info` 显示的 stable 为准（go 是 node 之后的
+   第二个显式声明例）。
 4. **fish 4.9.0 的两个 helper 是纯 arm64**（`fish_indent`/`fish_key_reader` 无
    x86_64 切片，主 `fish` 才是 universal）——在 Intel 上跑不起来，公式只装主
    fish（man 页保留）。教训：universal 包不能只验主二进制，`bin/*` 要逐个

@@ -76,6 +76,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `brewui` | Official Homebrew graphical interface, cask from its GitHub release (`Homebrew-<ver>.zip`); version tracked via the release redirect |
 | `winstart` | Metro-style app launcher, cask mirrored to this repo's releases (no public upstream link); pinned, no update checks |
 | `docker-compose` | Docker Compose plugin, official `docker-compose-darwin-x86_64` bare binary; version follows homebrew/core's docker-compose |
+| `go` | Go toolchain, official `go<ver>.darwin-amd64.tar.gz` (self-contained, zero dependencies); version follows homebrew/core's go |
 | `heliport` | Intel Wi-Fi client app, cask from its GitHub release; pinned, no update checks |
 | `konsole` | KDE terminal, dual-arch builds mirrored to this repo's releases; version is the CI build number, checked manually each month |
 | `qemu` | Generic machine emulator and virtualizer, compiled from source on Intel (core has no Intel bottles) |
