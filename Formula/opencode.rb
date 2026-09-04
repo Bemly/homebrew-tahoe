@@ -1,24 +1,36 @@
 class Opencode < Formula
   desc "AI coding agent built for the terminal"
   homepage "https://opencode.ai"
-  # 取自 anomalyco/homebrew-tap 的 opencode.rb（GoReleaser 产物，只留 Intel mac 段）。
+  # 取自 anomalyco/homebrew-tap 的 opencode.rb（GoReleaser 产物，取 mac 双架构段，
+  # 结构照抄源文件：on_macos 内套 if Hardware::CPU.intel?/arm?）。
   # 上游是 anomalyco/opencode fork 的官方发布包，非 homebrew/core 的 npm 版。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 11.3）。
   # 实测本系列 URL（v 前缀 + darwin-x64/mac-x86_64 尾部）能正确扫出版本，与 node 的 x64 坑不同。
-  url "https://github.com/anomalyco/opencode/releases/download/v1.18.27/opencode-darwin-x64.zip"
-  sha256 "e182eab3a6bf095ff773d303bbc7938d3551a636eab00625b599ad6383fabd88"
   license "MIT"
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe-intel"
     sha256 cellar: :any_skip_relocation, tahoe: "ee6ad4657705928ac2909c62478fb0f5060a0077526a7db54dd87844aa7e3006"
   end
+  # 瓶是 x86_64 的（macos-26-intel 制出）；ARM 安装回退到上游直链（同版本 arm64 包）。
 
-  # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
-  # ripgrep 走本 tap 的 GHCR 瓶（core 的 ripgrep 无 x86_64_tahoe 瓶，会回退源码编译）。
-  depends_on arch: :x86_64
+  # 本 tap 只收录 macOS 26(Tahoe) 及以上可用的二进制。
+  # arch 门槛已摘（opencode 双架构，Intel/ARM 各取各的包；摘门槛是例外，见 11.27）。
+  # ripgrep 走本 tap 的瓶（Intel 上是 GHCR 瓶；ARM 上 core 无瓶则源码编译，
+  # ripgrep 同样摘了 arch 门槛，否则 ARM 装 opencode 会被依赖挡住）。
   depends_on "bemly/tahoe-intel/ripgrep"
   depends_on macos: :tahoe
+
+  on_macos do
+    if Hardware::CPU.intel?
+      url "https://github.com/anomalyco/opencode/releases/download/v1.18.27/opencode-darwin-x64.zip"
+      sha256 "e182eab3a6bf095ff773d303bbc7938d3551a636eab00625b599ad6383fabd88"
+    end
+    if Hardware::CPU.arm?
+      url "https://github.com/anomalyco/opencode/releases/download/v1.18.27/opencode-darwin-arm64.zip"
+      sha256 "149b0c6d272d0059b8b5ffcd18c84b24f1d6cbf585942b10e60c601211992eb1"
+    end
+  end
 
   # 与 homebrew/core 的 opencode 同名（core 是 npm 版），二者共用 Cellar/opencode，
   # 不能同时安装。安装后如需切换见 caveats。
@@ -34,7 +46,7 @@ class Opencode < Formula
       EOS
     end
 
-    ohai "安装 opencode #{version}（Intel x86_64）"
+    ohai "安装 opencode #{version}（#{Hardware::CPU.arch}）"
 
     # 若已存在其他来源的 opencode，提前告知同名冲突的处理方式
     other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/opencode/*"].map { |keg| File.basename(keg) }
@@ -56,11 +68,12 @@ class Opencode < Formula
   def post_install
     oc = bin/"opencode"
 
-    # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包
+    # 1) 必须是本机架构原生二进制（Intel 取 x64 段，ARM 取 arm64 段）
+    expected = Hardware::CPU.arm? ? "arm64" : "x86_64"
     file_out = Utils.safe_popen_read("/usr/bin/file", "-b", oc.to_s)
-    unless file_out.include?("x86_64")
+    unless file_out.include?(expected)
       odie <<~EOS
-        架构校验失败：#{oc} 不是 x86_64 二进制。
+        架构校验失败：#{oc} 不是 #{expected} 二进制。
         file(1) 报告：#{file_out.strip}
       EOS
     end
@@ -71,12 +84,14 @@ class Opencode < Formula
       opoo "版本自检未通过：期望 #{version}，实际 #{version_out.lines.first.to_s.strip}"
     end
 
-    ohai "opencode #{version} 安装完成（x86_64 原生）"
+    ohai "opencode #{version} 安装完成（#{expected} 原生）"
   end
 
   def caveats
     <<~EOS
-      opencode 已安装为 Intel(x86_64) 原生二进制，取自 anomalyco/opencode 的官方发布包。
+      opencode 已安装为本机架构原生二进制，取自 anomalyco/opencode 的官方发布包
+      （Intel 取 darwin-x64 段走 GHCR 瓶；ARM 取 darwin-arm64 段走上游直链，
+      本 tap 不出 arm64 瓶）。
 
       与 homebrew/core 的 opencode（npm 版）同名，二者不能同时安装。切换来源：
         用本 tap：brew uninstall opencode && brew install #{full_name}
@@ -85,7 +100,8 @@ class Opencode < Formula
   end
 
   test do
+    expected = Hardware::CPU.arm? ? "arm64" : "x86_64"
     assert_match version.to_s, shell_output("#{bin}/opencode --version")
-    assert_match "x86_64", shell_output("/usr/bin/file -b #{bin}/opencode")
+    assert_match expected, shell_output("/usr/bin/file -b #{bin}/opencode")
   end
 end

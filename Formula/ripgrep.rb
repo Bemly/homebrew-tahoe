@@ -21,7 +21,8 @@ class Ripgrep < Formula
   depends_on "asciidoctor" => :build
   depends_on "pkgconf" => :build
   depends_on "rust" => :build
-  depends_on arch: :x86_64
+  # arch 门槛已摘：opencode 双架构后，ARM 装 opencode 会依赖到它
+  # （源码编译，Intel 上走 GHCR 瓶；摘门槛是例外，见 AGENTS 11.27）。
   depends_on macos: :tahoe
   depends_on "pcre2"
 

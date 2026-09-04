@@ -22,6 +22,8 @@
 //     <name>.rb），核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256
 //     （opencode / sst / torpedo，2026-09-04 起）。不消耗 GitHub API 限额
 //     （走 raw.githubusercontent.com），sha 直接取自源文件，无需下载。
+//     置 rawDualArch 即双架构 raw（opencode）：mac 的 intel/arm 双块各取各的
+//     url/sha，走 runRawDualCheck（改写公式内双 `if Hardware::CPU` 块）。
 //   - github 流：直接跟踪 GitHub release（不在 brew core、又无自有更新接口的
 //     软件，如 BrewUI）。版本判据是 releases/latest 的跳转目标 tag（HEAD 取
 //     Location，不跟随、不消耗 GitHub API 限额）；剥离 tag 前缀（默认 "v"，
@@ -98,6 +100,10 @@ struct CheckConfig {
     ///（arm64/aarch64→arm，x64/x86_64/amd64→intel），未知 token 直接 fail。
     let downloadURLForArch: ((String, String) -> String)?
 
+    /// raw 流：是否按双架构解析（mac 的 intel/arm 双块各取 url/sha，
+    /// 改写公式内双 `if Hardware::CPU` 块）。默认单架构（只取 intel 段）。
+    let rawDualArch: Bool
+
     init(formula: String,
          formulaPath: String = "Formula",
          isCask: Bool = false,
@@ -112,7 +118,8 @@ struct CheckConfig {
          githubRepo: String? = nil,
          githubTagPrefix: String? = "v",
          archArtifacts: [String]? = nil,
-         downloadURLForArch: ((String, String) -> String)? = nil) {
+         downloadURLForArch: ((String, String) -> String)? = nil,
+         rawDualArch: Bool = false) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -128,6 +135,7 @@ struct CheckConfig {
         self.githubTagPrefix = githubTagPrefix
         self.archArtifacts = archArtifacts
         self.downloadURLForArch = downloadURLForArch
+        self.rawDualArch = rawDualArch
     }
 }
 
@@ -347,6 +355,33 @@ func parseGoReleaserRaw(_ text: String) -> UpstreamRelease? {
     return UpstreamRelease(version: version,
                            downloadURL: String(macScope[ur]),
                            sha256: String(macScope[sr]).lowercased())
+}
+
+/// 双架构 raw 解析：version + mac 的 intel/arm 双块各取 url/sha256。
+/// 约束与单架构流一致（先截 on_linux；intel 块与 arm 块各取标记后第一组；
+/// sha 校验 64 位 hex），任一取不到返回 nil。
+func parseGoReleaserRawDual(_ text: String) -> (
+    version: String, intelURL: String, intelSHA: String,
+    armURL: String, armSHA: String)? {
+    guard let vm = firstMatch(#"(?m)^[ \t]*version\s+"([^"]+)""#, in: text),
+          let vr = Range(vm.range(at: 1), in: text) else {
+        return nil
+    }
+    let version = String(text[vr])
+    let macScope = text.components(separatedBy: "on_linux").first ?? text
+    func block(_ cpu: String) -> (String, String)? {
+        let pattern = #"Hardware::CPU\."# + cpu + #"\?.*?url\s+"([^"]+)".*?sha256\s+"([0-9a-fA-F]{64})""#
+        guard let regex = try? NSRegularExpression(pattern: pattern,
+                                                   options: [.dotMatchesLineSeparators]),
+              let m = regex.firstMatch(in: macScope, range: fullRange(macScope)),
+              let ur = Range(m.range(at: 1), in: macScope),
+              let sr = Range(m.range(at: 2), in: macScope) else {
+            return nil
+        }
+        return (String(macScope[ur]), String(macScope[sr]).lowercased())
+    }
+    guard let intel = block("intel"), let arm = block("arm") else { return nil }
+    return (version, intel.0, intel.1, arm.0, arm.1)
 }
 
 // MARK: - 公式改写
@@ -614,6 +649,132 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
     emit("bottle_stale=\(bottleStale)")
 }
 
+/// 改写双架构 raw 公式：`on_macos` 内 `if Hardware::CPU.intel?/arm?` 双块
+/// 各自的 url/sha256 行整条替换为源文件值，并摘除失效的 bottle 块。
+/// 块作用域用缩进判定（标记行缩进为界，`end` 缩进 ≤ 标记才出块——块内
+/// `def install...end` 缩进更深，不会误出）。
+/// url/sha 按"块内第一次出现"替换（每块一组）；找不到对应行直接 fail。
+func rewriteFormulaRawDual(_ content: String,
+                           intelURL: String, intelSHA: String,
+                           armURL: String, armSHA: String) -> (content: String, bottleStale: Bool) {
+    let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
+    let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
+    let marker = try! NSRegularExpression(pattern: #"^([ \t]*)if Hardware::CPU\.(intel|arm)\?"#)
+    let urlLine = try! NSRegularExpression(pattern: #"^([ \t]*)url "[^"]+""#)
+    let shaLine = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 "[0-9a-f]{64}""#)
+
+    var result: [String] = []
+    var bottleStale = false
+    var skipping = false
+    // nil = 块外，"intel"/"arm" = 块内；附标记行缩进用于出块判定
+    var mode: String? = nil
+    var modeIndent = 0
+    var doneURL = Set<String>()
+    var doneSHA = Set<String>()
+
+    func indentOf(_ line: String) -> Int {
+        line.prefix(while: { $0 == " " || $0 == "\t" }).count
+    }
+
+    for line in content.components(separatedBy: "\n") {
+        if skipping {
+            if blockEnd.firstMatch(in: line, range: fullRange(line)) != nil { skipping = false }
+            continue
+        }
+        if bottleStart.firstMatch(in: line, range: fullRange(line)) != nil {
+            skipping = true
+            bottleStale = true
+            continue
+        }
+
+        var replaced = line
+        if let m = marker.firstMatch(in: replaced, range: fullRange(replaced)) {
+            mode = (replaced as NSString).substring(with: m.range(at: 2))
+            modeIndent = indentOf(replaced)
+        } else if mode != nil, blockEnd.firstMatch(in: replaced, range: fullRange(replaced)) != nil,
+                  indentOf(replaced) <= modeIndent {
+            mode = nil
+        } else if let md = mode, !doneURL.contains(md),
+                  let m = urlLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+            let indent = (replaced as NSString).substring(with: m.range(at: 1))
+            replaced = "\(indent)url \"\(md == "intel" ? intelURL : armURL)\""
+            doneURL.insert(md)
+        } else if let md = mode, !doneSHA.contains(md),
+                  let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+            let indent = (replaced as NSString).substring(with: m.range(at: 1))
+            replaced = "\(indent)sha256 \"\(md == "intel" ? intelSHA : armSHA)\""
+            doneSHA.insert(md)
+        }
+        result.append(replaced)
+    }
+    let missingURL = ["intel", "arm"].filter { !doneURL.contains($0) }
+    let missingSHA = ["intel", "arm"].filter { !doneSHA.contains($0) }
+    if !missingURL.isEmpty || !missingSHA.isEmpty {
+        fail("改写失败：未找到 \(missingURL.map { $0 + " url" }.joined(separator: ", "))"
+            + "\(missingSHA.map { $0 + " sha256" }.joined(separator: ", ")) 行")
+    }
+    return (result.joined(separator: "\n"), bottleStale)
+}
+
+/// 双架构 raw 检查主流程（opencode）：版本已定，双 url 逐个 HEAD 探测 →
+/// 改写公式内双块 → 自检。sha 直接取自源文件（已校验归属，无需下载）。
+func runRawDualCheck(config: CheckConfig, content: String, formulaFile: String,
+                     current: String,
+                     dual: (version: String, intelURL: String, intelSHA: String,
+                            armURL: String, armSHA: String)) {
+    let stable = dual.version
+    if current == stable {
+        print("已是最新，无需更新。")
+        emit("status=up-to-date")
+        emit("current_version=\(current)")
+        return
+    }
+    if compareVersions(current, stable) > 0 {
+        print("本地版本(\(current)) 比 上游版本(\(stable)) 更新，保持不动。")
+        emit("status=newer-than-brew")
+        emit("current_version=\(current)")
+        return
+    }
+    print("发现新版本 : \(current) -> \(stable)")
+
+    for u in [dual.intelURL, dual.armURL] {
+        if !curlHeadOK(u) {
+            print("::warning::新版本资源不可下载：\(u)")
+            emit("status=upstream-missing")
+            emit("current_version=\(current)")
+            emit("new_version=\(stable)")
+            return
+        }
+    }
+
+    let (newContent, bottleStale) = rewriteFormulaRawDual(
+        content, intelURL: dual.intelURL, intelSHA: dual.intelSHA,
+        armURL: dual.armURL, armSHA: dual.armSHA)
+    do {
+        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
+    } catch {
+        fail("写回 \(formulaFile) 失败：\(error)")
+    }
+    if bottleStale {
+        print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
+    }
+
+    guard newContent.contains("url \"\(dual.intelURL)\""),
+          newContent.contains("url \"\(dual.armURL)\""),
+          newContent.contains("sha256 \"\(dual.intelSHA)\""),
+          newContent.contains("sha256 \"\(dual.armSHA)\"") else {
+        fail("双架构 url/sha 未成功更新")
+    }
+
+    print("公式已更新：\(current) -> \(stable)")
+    emit("status=updated")
+    emit("current_version=\(current)")
+    emit("new_version=\(stable)")
+    emit("sha256_intel=\(dual.intelSHA)")
+    emit("sha256_arm=\(dual.armSHA)")
+    emit("bottle_stale=\(bottleStale)")
+}
+
 func runCheck(_ config: CheckConfig) {
     let formulaFile = "\(config.formulaPath)/\(config.formula).rb"
     guard let content = try? String(contentsOfFile: formulaFile, encoding: .utf8) else {
@@ -636,8 +797,20 @@ func runCheck(_ config: CheckConfig) {
         print("上游版本 : \(upstream.version)（自定义更新接口）")
     } else if let rawURL = config.rawFormulaURL {
         let (status, body) = curlText(rawURL)
-        guard status == 0, !body.isEmpty,
-              let release = parseGoReleaserRaw(body) else {
+        guard status == 0, !body.isEmpty else {
+            fail("无法从源仓库 raw 获取 \(config.formula) 的版本信息：\(rawURL)")
+        }
+        // 双架构 raw（opencode）：双块解析后分流，全程不再走单产物路径
+        if config.rawDualArch {
+            guard let dual = parseGoReleaserRawDual(body) else {
+                fail("无法从源仓库 raw 解析 \(config.formula) 的双架构版本信息：\(rawURL)")
+            }
+            print("上游版本 : \(dual.version)（源仓库 raw，双架构）")
+            runRawDualCheck(config: config, content: content, formulaFile: formulaFile,
+                            current: current, dual: dual)
+            return
+        }
+        guard let release = parseGoReleaserRaw(body) else {
             fail("无法从源仓库 raw 获取 \(config.formula) 的版本信息：\(rawURL)")
         }
         upstream = release

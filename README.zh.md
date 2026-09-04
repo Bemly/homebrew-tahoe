@@ -49,7 +49,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `node` | Node.js 运行时，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
-| `opencode` | AI 编程 agent，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`opencode-darwin-x64.zip`）；与 core 的 npm 版同名，装前须先卸载另一方 |
+| `opencode` | AI 编程 agent，取 `anomalyco/homebrew-tap` GoReleaser 公式的 mac 双架构段（`opencode-darwin-x64/arm64.zip`；Intel 走瓶、ARM 走直链）；与 core 的 npm 版同名，装前须先卸载另一方 |
 | `sst` | SST 开发框架，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`sst-mac-x86_64.tar.gz`） |
 | `torpedo` | sst/torpedo VPC 数据库访问工具，取 `anomalyco/homebrew-tap` GoReleaser 公式的 Intel 段（`torpedo-mac-x86_64.tar.gz`） |
 | `ripgrep` | grep 类搜索工具，`opencode` 的依赖（随本 tap 出瓶） |

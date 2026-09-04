@@ -161,7 +161,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `dtc` | 1.8.1 | 代编译模式：qemu 专属依赖（扇入 1） | 已收录 |
 | `libslirp` | 4.9.4 | 代编译模式：qemu 专属依赖（扇入 4） | 已收录 |
 | `vde` | 2.3.3 | 代编译模式：qemu 专属依赖（扇入 2）；2016 年旧代码需 `-std=gnu17` 编译开关（见 11.13） | 已收录 |
-| `opencode` | 1.18.27 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`opencode-darwin-x64.zip`）；与 core 的 npm 版同名，`depends_on "bemly/tahoe-intel/ripgrep"` 走自家 GHCR | 已收录 |
+| `opencode` | 1.18.27 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，取 mac 双架构段（`opencode-darwin-x64/arm64.zip`，结构照抄源文件；Intel 走 GHCR 瓶、ARM 走直链，见 11.27）；与 core 的 npm 版同名，`depends_on "bemly/tahoe-intel/ripgrep"` 走自家源 | 已收录 |
 | `sst` | 4.17.1 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`sst-mac-x86_64.tar.gz`）；`sst version` 子命令取版本（不支持 `--version`） | 已收录 |
 | `torpedo` | 0.0.13 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`torpedo-mac-x86_64.tar.gz`，上游 `sst/torpedo`）；无任何版本命令，不做版本自检 | 已收录 |
 | `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
@@ -470,6 +470,8 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
    - **raw 流**（软件来自其他 tap 仓库，如 `anomalyco/homebrew-tap` 的三包）：
      照抄 `opencode.swift`，只配 `formula` + `rawFormulaURL`（源公式 raw 地址），
      核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256；
+     要双架构（opencode 取 mac 双段）再加 `rawDualArch: true`，核心解析双块、
+     改写公式内双 `if Hardware::CPU` 块（见 11.27）；
    - **自定义流**（brew 未收录）：照抄 `workbuddy.swift`，实现 `customRelease` 闭包调
      上游自有更新接口，返回 `UpstreamRelease(version:downloadURL:sha256:)`
      （sha 仅在实测确认归属时才给，否则置 nil 由核心下载实算）。
@@ -1035,6 +1037,24 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
    已手动补回——autocorrect 的 diff 要逐行看，不能无脑提交。
 4. **README 会漏行**：AGENTS §6 全，但 README 中英都漏了 qemu 链 5 包 + neofetch
    （早期合并时没同步）。以后新增软件顺手把三处表格（AGENTS/中/英）一次填齐。
+
+### 11.27 opencode 双架构：摘 arch 门槛的例外（2026-09-04 实测）
+
+1. 本 tap 唯一摘 `arch` 门槛的公式：`opencode`（加回 `darwin-arm64` 段，结构照抄
+   源文件 `on_macos` 内套双 `if Hardware::CPU`）+ 它的依赖 `ripgrep`
+   （ARM 装 opencode 会依赖到它，不摘则 ARM 直接被拒；ripgrep 是源码编译，
+   ARM 上现编即可）。`macos: :tahoe` 门槛保留。sst/torpedo 暂不动（同系列但
+   无人要 ARM 版，要了再按此套路加）。
+2. 瓶仍只有 x86_64（macos-26-intel 制出，无 ARM runner 可出 arm 瓶）——ARM 安装
+   回退上游直链（同版本 arm64 包，无需制瓶）。公式只改门槛/加段、不动安装产物
+   时，旧瓶继续有效，不必重制（本次即如此）。
+3. 检查器走 raw 双架构分支（`rawDualArch: true`）：`parseGoReleaserRawDual`
+   取双块 url/sha，`rewriteFormulaRawDual` 按缩进判定块作用域改写双块
+   （块内 `def install...end` 缩进更深，不会误出块；找不到对应行直接 fail）。
+   双改写的端到端验证靠 harness（假版本号调纯函数，看双块替换 + 摘瓶）。
+4. ARM 侧无法在本机验证（无 ARM 硬件）：arm 段 url/sha 与源文件逐字节核对 +
+   结构照抄源文件；`post_install`/`test` 用 `Hardware::CPU.arm?` 双分支，
+   Intel 侧全绿即发。
 
 ## 12. 待办 / 后续演进
 

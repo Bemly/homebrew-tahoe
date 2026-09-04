@@ -56,7 +56,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@24` | Node.js 24 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@22` | Node.js 22 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
-| `opencode` | AI coding agent, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`opencode-darwin-x64.zip`); shares its name with core's npm build — uninstall one before installing the other |
+| `opencode` | AI coding agent, mac builds (`opencode-darwin-x64/arm64.zip`) from `anomalyco/homebrew-tap`'s GoReleaser formula (Intel bottled, ARM via direct link); shares its name with core's npm build — uninstall one before installing the other |
 | `sst` | SST framework, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`sst-mac-x86_64.tar.gz`) |
 | `torpedo` | sst/torpedo VPC database access tool, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`torpedo-mac-x86_64.tar.gz`) |
 | `ripgrep` | Search tool like grep, bottled dependency of `opencode` (from homebrew/core sources) |
