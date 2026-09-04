@@ -77,6 +77,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `winstart` | Metro-style app launcher, cask mirrored to this repo's releases (no public upstream link); pinned, no update checks |
 | `docker-compose` | Docker Compose plugin, official `docker-compose-darwin-x86_64` bare binary; version follows homebrew/core's docker-compose |
 | `heliport` | Intel Wi-Fi client app, cask from its GitHub release; pinned, no update checks |
+| `konsole` | KDE terminal, dual-arch builds mirrored to this repo's releases; version is the CI build number, checked manually each month |
 | `qemu` | Generic machine emulator and virtualizer, compiled from source on Intel (core has no Intel bottles) |
 | `capstone` | Disassembly framework, bottled dependency of `qemu` |
 | `dtc` | Device tree compiler, bottled dependency of `qemu` |

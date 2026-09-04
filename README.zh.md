@@ -70,6 +70,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `winstart` | Metro 风应用启动器，cask 镜像到本仓 Release（无公开上游链接）；锁定版本不检查更新 |
 | `docker-compose` | Docker Compose 插件，官方 `docker-compose-darwin-x86_64` 裸二进制；版本跟随 core 的 docker-compose |
 | `heliport` | Intel 无线网卡客户端，cask 取其 GitHub release；锁定版本不检查更新 |
+| `konsole` | KDE 终端，双架构包镜像到本仓 Release；版本即 CI 构建号，每月手动检查一次 |
 | `qemu` | 通用模拟器/虚拟机，Intel 现编译出瓶（core 无 Intel 瓶） |
 | `capstone` | 反汇编框架，`qemu` 的出瓶依赖 |
 | `dtc` | 设备树编译器，`qemu` 的出瓶依赖 |

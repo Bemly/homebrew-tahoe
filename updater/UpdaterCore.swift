@@ -375,7 +375,11 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
                     archShas: [(key: String, sha: String)]? = nil,
                     replaceURLLine: Bool = true) -> (content: String, bottleStale: Bool) {
     let shaLine = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 "[0-9a-f]{64}""#)
-    let archShaLine = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 ([A-Za-z0-9_]+): "[0-9a-f]{64}""#)
+    // 双架构 sha 行：首行 `sha256 arm: "..."` + 可能的换行延续 `intel: "..."`
+    //（core 通行写法，sha256 只出现一次；注意延续行没有 sha256 前缀，
+    // 且 key 与引号之间可能有多个对齐空格）。
+    let archShaFirst = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 ([A-Za-z0-9_]+):\s+"[0-9a-f]{64}""#)
+    let archShaCont = try! NSRegularExpression(pattern: #"^([ \t]+)([A-Za-z0-9_]+):\s+"[0-9a-f]{64}""#)
     let versionLine = try! NSRegularExpression(pattern: #"^([ \t]*)version "[^"]+""#)
     let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
     let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
@@ -389,6 +393,7 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     var urlReplaced = false
     var versionReplaced = false
     var archMatched = Set<String>()
+    var inArchSha = false
 
     for line in content.components(separatedBy: "\n") {
         if skipping {
@@ -403,15 +408,29 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
         }
 
         var replaced = line
-        // 双架构 sha 行（`sha256 arm: "..."` 形态与单 sha 行互斥）
+        // 双架构 sha 行（与单 sha 行互斥）：首行匹配，或缩进延续行且上一行
+        // 也是 sha 行（防 `arch arm: "arm64"` 这类 DSL 行误伤——它的值不是 64 位 hex）。
+        // 行内已知 key 逐个替换，`:\s+` 原样保留（不对齐空格不动，免得触发布局检查）。
         if let archShas = archShas {
-            if let m = archShaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
-                let indent = (replaced as NSString).substring(with: m.range(at: 1))
-                let key = (replaced as NSString).substring(with: m.range(at: 2))
-                if let entry = archShas.first(where: { $0.key == key }) {
-                    replaced = "\(indent)sha256 \(key): \"\(entry.sha)\""
-                    archMatched.insert(key)
+            let isFirst = archShaFirst.firstMatch(in: replaced, range: fullRange(replaced)) != nil
+            let isCont = inArchSha
+                && archShaCont.firstMatch(in: replaced, range: fullRange(replaced)) != nil
+            if isFirst || isCont {
+                inArchSha = true
+                for e in archShas {
+                    let pat = try! NSRegularExpression(
+                        pattern: "(?<![A-Za-z0-9_])("
+                            + NSRegularExpression.escapedPattern(for: e.key)
+                            + #")(:\s+)("[0-9a-f]{64}")"#)
+                    let r = fullRange(replaced)
+                    if pat.firstMatch(in: replaced, range: r) != nil {
+                        replaced = pat.stringByReplacingMatches(
+                            in: replaced, range: r, withTemplate: "$1$2\"\(e.sha)\"")
+                        archMatched.insert(e.key)
+                    }
                 }
+            } else {
+                inArchSha = false
             }
         } else if let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
             // 主 sha256 行（瓶块行是 sha256 cellar: ... 形态，天然不匹配）
@@ -465,18 +484,18 @@ private func caskArchKey(for token: String) -> String {
 }
 
 /// 双架构检查主流程（zcode / konsole）：版本已定（stable），逐个产物
-/// HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行。
-/// url 行不动（#{version}/#{arch} 插值已覆盖新版本）。
-/// 与 uploadRelease 镜像流不可同用。
+/// HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行 + url 行版本子串替换。
+/// url 行不动结构（#{version}/#{arch} 插值或字面版本号只换版本部分）；
+/// 镜像模式（uploadRelease=true，konsole）下先把双包上传本仓 Release
+///（tag `<formula>-<stable>`，资产名沿用上游 basename，旧快照清理），
+/// 再改写——Release tag 与资产名都含字面版本号，子串替换即跟随。
 func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
                       current: String, stable: String) {
     guard let tokens = config.archArtifacts, !tokens.isEmpty,
           let tmpl = config.downloadURLForArch else {
         fail("双架构产物（\(config.formula)）必须提供 archArtifacts + downloadURLForArch")
     }
-    if config.uploadRelease {
-        fail("双架构产物（\(config.formula)）暂不支持 uploadRelease 同用")
-    }
+    let mirroring = config.uploadRelease
 
     // 4. 逐个 HEAD 探测（任一缺失即 upstream-missing，不误改公式）
     var urls: [(token: String, url: String)] = []
@@ -492,26 +511,79 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
         }
     }
 
-    // 5. 逐个下载实算（双产物无 checksums 模板，始终实算；仅新版本时发生）
-    var keyed: [(key: String, sha: String)] = []
+    // 5. 逐个下载实算（双产物无 checksums 模板，始终实算；仅新版本时发生。
+    //    暂存文件统一留到最后删——镜像模式上传要用，直引模式算完即无用。）
+    var dls: [(key: String, url: String, sha: String, tmp: String)] = []
     for (t, u) in urls {
         let key = caskArchKey(for: t)
         print("下载 \(t) 发布包后本地计算 sha256")
         guard let tmp = curlDownload(u), let h = sha256(ofFile: tmp) else {
             fail("无法获取 \(u) 的 sha256")
         }
-        try? FileManager.default.removeItem(atPath: tmp)
         guard h.range(of: #"^[0-9a-f]{64}$"#, options: .regularExpression) != nil else {
             fail("得到的 sha256 不合法：\(h)")
         }
         print("sha256（\(t) 实算）：\(h)")
-        keyed.append((key: key, sha: h))
+        dls.append((key: key, url: u, sha: h, tmp: tmp))
+    }
+    let keyed = dls.map { (key: $0.key, sha: $0.sha) }
+
+    // 5b. 双架构 + 镜像（konsole）：双包上传本仓 Release（tag `<formula>-<stable>`，
+    //     资产名沿用上游 basename；旧快照按 workbuddy 模式清理）。
+    //     url 行随后走版本子串替换——Release tag 与资产名都含字面版本号。
+    if mirroring {
+        let tagName = "\(config.formula)-\(stable)"
+        let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe-intel"
+        guard let gh = which("gh") else {
+            fail("双架构 + 镜像（\(config.formula)）需要 gh CLI 上传 Release")
+        }
+        var created = false
+        for d in dls {
+            // gh 以本地文件名做资产名：改成上游 basename（单包镜像流同例，见 11.16）
+            let assetName = URL(fileURLWithPath: d.url).lastPathComponent
+            let namedPath = FileManager.default.temporaryDirectory
+                .appendingPathComponent("updater-\(UUID().uuidString)")
+                .appendingPathComponent(assetName).path
+            do {
+                try FileManager.default.createDirectory(
+                    atPath: (namedPath as NSString).deletingLastPathComponent,
+                    withIntermediateDirectories: true)
+                try FileManager.default.moveItem(atPath: d.tmp, toPath: namedPath)
+            } catch {
+                fail("重命名待上传文件失败：\(error)")
+            }
+            if !created {
+                let (cStatus, cOut) = run(gh, ["release", "create", tagName, namedPath,
+                                               "--repo", repo, "--generate-notes",
+                                               "--title", "\(config.formula) \(stable)"])
+                if cStatus != 0 {
+                    // 同名 tag 已存在（重复运行）→ 改为覆盖上传资产
+                    let (uStatus, uOut) = run(gh, ["release", "upload", tagName, namedPath,
+                                                   "--repo", repo, "--clobber"])
+                    if uStatus != 0 { fail("上传 Release 失败：\(cOut)\n\(uOut)") }
+                }
+                created = true
+            } else {
+                let (uStatus, uOut) = run(gh, ["release", "upload", tagName, namedPath,
+                                               "--repo", repo, "--clobber"])
+                if uStatus != 0 { fail("上传 Release 失败：\(uOut)") }
+            }
+            print("已上传 Release 资产：\(assetName)")
+            try? FileManager.default.removeItem(
+                atPath: (namedPath as NSString).deletingLastPathComponent)
+        }
+        // 旧快照清理：只保留本次 tag（月度快照会堆积，不清不行；单包流同例）
+        deleteOldCaskReleases(repo: repo, formula: config.formula, keepTag: tagName)
+    } else {
+        for d in dls { try? FileManager.default.removeItem(atPath: d.tmp) }
     }
 
-    // 6. 改写 cask（version 行 + 双 sha 行；url 行不动）
-    let (newContent, bottleStale) = rewriteFormula(content, newURL: "", newVersion: stable,
-                                                   oldVersion: current, sha: "",
-                                                   archShas: keyed, replaceURLLine: false)
+    // 6. 改写 cask（version 行 + 双 sha 行 + url 行版本子串替换；
+    //    镜像模式 url 行同样只换版本——Release tag 与资产名含字面版本号）
+    let (newContent, bottleStale) = rewriteFormula(content, newURL: "",
+                                                   newVersion: stable, oldVersion: current,
+                                                   sha: "", archShas: keyed,
+                                                   replaceURLLine: false)
     do {
         try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
     } catch {
@@ -522,9 +594,14 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
     }
 
     // 7. 改后自检：arch 插值保留、双 sha 就位
+    // （sha 行 key 与引号间的对齐空格原样保留；首行 `sha256 <key>:` 与换行延续
+    // `<key>:` 两种形态都认，只验 key/sha 落位）
     guard newContent.contains("#{arch}") else { fail("url 的 arch 插值丢失") }
     for (k, h) in keyed {
-        guard newContent.contains("sha256 \(k): \"\(h)\"") else {
+        let pat = try! NSRegularExpression(
+            pattern: "(?:sha256\\s+)?" + NSRegularExpression.escapedPattern(for: k)
+                + ":\\s+\"" + h + "\"")
+        guard pat.firstMatch(in: newContent, range: fullRange(newContent)) != nil else {
             fail("sha256 \(k) 未成功更新")
         }
     }

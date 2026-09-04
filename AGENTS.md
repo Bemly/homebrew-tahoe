@@ -182,6 +182,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `winstart` | 0.13.6 | cask——本地包一次性镜像到本仓 Release（`winstart-<ver>` tag，上游无公开链接，人工 `gh release create` 发版）；universal 双切片；**不检查更新**（无 updater/winstart.swift）；cask homepage 必填，取开发者 B 站主页 | 已收录 |
 | `docker-compose` | 5.5.1 | 官方裸二进制 `docker-compose-darwin-x86_64`（文件名无版本、路径段可扫，无需 version 行，见 11.21）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 文件名带 `*` 前缀、核心精确匹配对不上） | 已收录 |
 | `heliport` | 2.0.0-alpha | cask——上游 dmg 直引（url 用 `#{version}` 插值，tag 带 v 前缀而文件名无版本；包内 x86_64 thin）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
+| `konsole` | 5277 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支，每月手动跑一次（不设 cron，见 11.26） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -472,6 +473,13 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
    - **自定义流**（brew 未收录）：照抄 `workbuddy.swift`，实现 `customRelease` 闭包调
      上游自有更新接口，返回 `UpstreamRelease(version:downloadURL:sha256:)`
      （sha 仅在实测确认归属时才给，否则置 nil 由核心下载实算）。
+   - **双架构产物**（上游按架构分包的 cask，如 zcode / konsole）：在版本来源
+     （brewCask / customRelease 任选其一）之外再配 `archArtifacts: [token]` +
+     `downloadURLForArch: (version, arch) -> url`，核心走双分支（逐个探测下载、
+     各算各的 sha，改写 version + `sha256 arm:/intel:` 行；url 行不动）。
+     要镜像到本仓 Release（konsole 这类直链几天即坏的）再加 `uploadRelease: true`
+     （tag `<name>-<ver>`、资产名沿用上游 basename、旧快照自动清理）。
+     token→key 由核心 `caskArchKey` 显式映射，未知 token 直接 fail。
    ⚠️ **公式与 swift 文件没有 push 进远端之前，CI checkout 拿不到它们**（见 11.7）。
 
 ### 9.4 本地验证
@@ -985,6 +993,17 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    才需要 `arch` 插值。
 4. **StanzaGrouping 别手调**：`arch`/`version` 的空行布局 cop 说了算——本次手删
    空行反而新报两条，`--fix` 一键复原（复原即最初写法）。以后只管 --fix + 看 diff。
+5. **双架构改写有两个连环坑，都是实测抓的**：① core 通行写法里 `sha256` 只出现
+   一次，第二段写成换行延续（`intel: "..."` 无前缀）——只认 `^sha256 <key>:` 的
+   解析会漏整段，改写完报"未找到 sha256 行"；修法是首行/延续行双正则 + 行内
+   key 逐个换；② 自检不能要求字面 `sha256 <key>: "<sha>"`（单空格）——对齐空格
+   原样保留后是多空格，自检也要认 `:\s+`。两者都是拿 `/tmp` 摆拍文件（zz1/zz2，
+   版本调低一位触发真更新链路）实测定位的——双分支的端到端验证就靠这招，
+   外加 review 真 Release 资产后删掉摆拍 tag。
+6. **konsole 这类"只留最新"上游必须镜像**：KDE CI 目录单文件（5276 当天即 404），
+   直链 cask 出生几天即坏——`customRelease` 抓双 listing 交集最大构建号判新，
+   双包镜像到本仓 Release（`konsole-<构建号>`，旧快照自动清理），cask 永远指
+   Release。按月手动跑 watcher（不设 cron，见 §5）。
 
 ### 11.24 上游会重切同版本包：sha 可能出生即过期（2026-09-04 实测，gh 2.100.0）
 
