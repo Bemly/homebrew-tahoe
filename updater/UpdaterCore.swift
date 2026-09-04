@@ -247,8 +247,14 @@ private func githubLatestTag(repo: String) -> String? {
                 guard line.lowercased().hasPrefix("location:") else { continue }
                 let loc = line.dropFirst("location:".count)
                     .trimmingCharacters(in: .whitespacesAndNewlines)
-                if let tag = loc.split(separator: "/").last, !tag.isEmpty {
-                    return String(tag)
+                // 只认 .../releases/tag/<tag> 形态：某些仓库（如 rust-lang/rustup）
+                // 的 releases/latest 跳到 /releases 列表页，末段是 "releases"——
+                // 这种 Location 没有 tag，继续重试而不是拿垃圾版本去误报
+                // （2026-09-05 实测；rustup-init 已改走 release-stable.toml）。
+                if let tagRange = loc.range(of: "/tag/") {
+                    let tag = loc[tagRange.upperBound...].split(separator: "/").first
+                        .map(String.init) ?? ""
+                    if !tag.isEmpty { return tag }
                 }
             }
         }
@@ -288,13 +294,31 @@ private func firstMatch(_ pattern: String, in string: String) -> NSTextCheckingR
     return regex.firstMatch(in: string, range: NSRange(string.startIndex..<string.endIndex, in: string))
 }
 
-/// 公式当前版本：优先 version 行（本 tap 公式不写，保留兼容），
+/// 公式当前版本：优先公式级 version 行（本 tap 公式不写，保留兼容），
 /// 回退 url 行内第一处 [^0-9]点分段数字（与 brew 从 URL 扫描版本对应）。
 /// 支持任意段数：2.99.0（gh）、2.68.1（fastfetch）、5.4.7.37521366（workbuddy）。
+/// 注意：必须跳过 fails_with 块内的 version 行——那是编译器版本号
+/// （如 nghttp2 的 `fails_with :gcc do version "13"`），误取会导致恒判
+/// newer-than-brew 而静默跳过更新（2026-09-05 实测）。
 func currentVersion(in content: String) -> String? {
-    if let m = firstMatch(#"(?m)^[ \t]*version "([^"]+)""#, in: content),
-       let r = Range(m.range(at: 1), in: content) {
-        return String(content[r])
+    let failsStart = try! NSRegularExpression(pattern: #"^[ \t]*fails_with\b.*\bdo[ \t]*$"#)
+    let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
+    let versionLine = try! NSRegularExpression(pattern: #"^[ \t]*version "([^"]+)""#)
+    var failsDepth = 0
+    for line in content.components(separatedBy: "\n") {
+        let r = fullRange(line)
+        if failsStart.firstMatch(in: line, range: r) != nil {
+            failsDepth += 1
+            continue
+        }
+        if failsDepth > 0 {
+            if blockEnd.firstMatch(in: line, range: r) != nil { failsDepth -= 1 }
+            continue
+        }
+        if let m = versionLine.firstMatch(in: line, range: r),
+           let vr = Range(m.range(at: 1), in: line) {
+            return String(line[vr])
+        }
     }
     for line in content.components(separatedBy: "\n") {
         let trimmed = line.drop(while: { $0 == " " || $0 == "\t" })
@@ -394,6 +418,10 @@ private func isURLDefinitionLine(_ line: String) -> Bool {
     line.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix(#"url ""#)
 }
 
+private func isMirrorDefinitionLine(_ line: String) -> Bool {
+    line.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix(#"mirror ""#)
+}
+
 /// 改写公式：version 行（如有）同步为新版本、sha256 行替换、
 /// 摘除失效的 bottle do...end 块。url 行两种处理：
 ///   - replaceURLLine=true（cask 镜像流：每次部署文件名都变，如 workbuddy）→
@@ -486,6 +514,17 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
                 // 行内无旧版本号（纯 #{version}/#{arch} 插值）：不动，插值已覆盖新版本
             }
             urlReplaced = true
+        }
+        // 镜像行（audit --strict 强制要求至少一个，见 11.28）：与 url 行同步做
+        // 版本子串替换，保持可下载。只处理点分段格式（下划线变体如 curl 的
+        // curl-8_22_0 不在此列——这类公式只保留点分段镜像，见各公式头注）；
+        // 镜像流（replaceURLLine）下不动（cask 镜像 url 已整条换新）。
+        if !replaceURLLine, isMirrorDefinitionLine(replaced) {
+            let range = fullRange(replaced)
+            if oldVerPattern.firstMatch(in: replaced, range: range) != nil {
+                replaced = oldVerPattern.stringByReplacingMatches(
+                    in: replaced, range: range, withTemplate: newVersion)
+            }
         }
         // 顶层 version 行同步（公式级唯一 version；resource 块内 version 行不会被
         // 该正则命中，因为 resource 的 version 缩进在块内但正则只认行首空白+version，

@@ -78,6 +78,21 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `libslirp` | 用户态网络库，`qemu` 的出瓶依赖 |
 | `vde` | 虚拟分布式以太网，`qemu` 的出瓶依赖 |
 | `neofetch` | 系统信息脚本（上游已归档，最后一版）；不检查更新 |
+| `curl3` | 独立 HTTP/3 客户端（含 MASQUE/CONNECT-UDP 的 `--enable-proxy-http3`，core 没开）；改名与 core 的 curl 共存 |
+| `libnghttp3` | HTTP/3 C 库，`curl3` 的出瓶依赖 |
+| `libngtcp2` | QUIC 协议实现，`curl3` 的出瓶依赖 |
+| `nghttp2` | H2 客户端（`nghttp`/`h2load`/`nghttpx`，`--enable-app`）；H3 开关 Phase 4 再补 |
+| `socat` | SOcket CAT 中继工具，源码现编出瓶 |
+| `make` | GNU make（装成 `gmake`）；core 虽有 tahoe 瓶仍镜像 |
+| `graphviz` | 图形可视化软件，源码现编出瓶 |
+| `protobuf` | 完整版源码现编：libprotobuf + `protoc` + 全套测试 |
+| `caddy` | 可扩展服务平台，上游 Intel 静态构建（`caddy_<ver>_mac_amd64.tar.gz`）；H2/H3 基线服务 |
+| `h2spec` | H2 一致性测试器，Phase 2 用 |
+| `hyperfine` | 命令行基准工具，Phase 4 重复基准用 |
+| `iperf3` | 静态构建（无 `openssl@4` 依赖），Phase 4 裸网络吞吐基线用 |
+| `ninja` | 小而快的构建系统，上游 universal 包（Intel 切片） |
+| `rustup-init` | 官方静态 Rust 工具链安装器；与 core 源码现编的 `rustup` 可共存 |
+| `wireshark` | 网络协议分析器，cask 取官方 Intel dmg（Intel 构建停在 4.4 系）；附 `tshark`/`editcap` 命令垫片 |
 
 ## 注意事项（同名冲突）
 

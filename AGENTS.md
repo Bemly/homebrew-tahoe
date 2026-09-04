@@ -184,6 +184,21 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `go` | 1.27.1 | Go 官方 `go<ver>.darwin-amd64.tar.gz`（完整工具链，只链系统库，零依赖；不用同版本 `.pkg`——要 root 写 /usr/local；`go1.27.1.darwin-amd64` 会扫成 `"64"`，需显式 version 行，见下） | 已收录 |
 | `heliport` | 2.0.0-alpha | cask——上游 dmg 直引（url 用 `#{version}` 插值，tag 带 v 前缀而文件名无版本；包内 x86_64 thin）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
 | `konsole` | 5277 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支，每月手动跑一次（不设 cron，见 11.26） | 已收录 |
+| `curl3` | 8.22.0 | **改名代编译**：与 core curl 同源同参数 + 独家 `--enable-proxy-http3`（MASQUE/CONNECT-UDP 实验开关，core 没开）；改名避与 core curl 同 Cellar 冲突；`libnghttp3/libngtcp2` 走本 tap 全名叶子依赖，`libnghttp2` 等枢纽留 core 裸名（扇入 19，见 11.31） | 已收录 |
+| `libnghttp3` | 1.18.0 | 代编译叶子：curl3 专属 H3 依赖（扇入 5），core 拷入 | 已收录 |
+| `libngtcp2` | 1.25.0 | 代编译叶子：curl3 专属 QUIC 依赖（扇入 4），core 拷入 | 已收录 |
+| `nghttp2` | 1.70.0 | 代编译：`--enable-app`（H2 的 nghttp/h2load/nghttpx），H3 开关 Phase 4 再补；依赖全是枢纽（c-ares/jemalloc/libev/openssl@3），裸名留 core | 已收录 |
+| `socat` | 1.8.1.3 | 代编译：core 拷入；test 改回环（公网用例沙箱必挂，见 11.30） | 已收录 |
+| `make` | 4.4.1 | 代编译：core 拷入（core 虽有 tahoe 瓶仍镜像，gmake 形态不变） | 已收录 |
+| `graphviz` | 15.1.1 | 代编译：core 拷入（依赖全枢纽，裸名留 core） | 已收录 |
+| `protobuf` | 36.0 | 代编译完整版：core 拷入（lib + protoc + ctest 全跑，abseil 留 core） | 已收录 |
+| `caddy` | 2.11.4 | 官方 `caddy_<ver>_mac_amd64.tar.gz`（扁平包；H2/H3 基线服务）；检查器 brew 模板流，sha 走 `caddy_<ver>_checksums.txt` | 已收录 |
+| `h2spec` | 2.6.0 | 官方 `h2spec_darwin_amd64.tar.gz`（单二进制；Phase 2 一致性测试）；检查器 `checksumsURL: nil` | 已收录 |
+| `hyperfine` | 1.20.0 | 官方 `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz`（单顶层目录，带 man/补全；Phase 4 基准）；test 不锁 "Mean" 字样（1.20 改版，见 11.30） | 已收录 |
+| `iperf3` | 3.21 | userdocs 静态构建 `iperf3-amd64-osx-15`（openssl 静态链接，零依赖，绕开 openssl@4 树）；资产名后缀随 runner 世代变化，检查器 customRelease 抓 expanded_assets 取最大世代（见 11.31） | 已收录 |
+| `ninja` | 1.13.2 | 官方 `ninja-mac.zip`（universal 双切片；core 虽有 tahoe 瓶仍镜像） | 已收录 |
+| `rustup-init` | 1.29.1 | 公式：static.rust-lang.org 版本化归档的裸二进制（自包含，零依赖）；版本走 release-stable.toml（releases/latest 跳列表页无 tag，见 11.29）；与 core `rustup` 不同名可共存 | 已收录 |
+| `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31）；`tshark`/`editcap` binary 垫片 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1067,9 +1082,72 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
 4. ARM 侧无法在本机验证（无 ARM 硬件）：arm 段 url/sha 与源文件逐字节核对 +
    结构照抄源文件；`post_install`/`test` 用 `Hardware::CPU.arm?` 双分支，
    Intel 侧全绿即发。
-   ——后续用户在 ARM Mac mini（macOS 27）上实测通过：arm64 段走直链 2 秒装完、
-   `post_install` 架构校验过；代价是 ripgrep 无 arm 瓶、源码编译一次性拉起
-   13 个编译期依赖（rust/llvm/ruby 三栈约 2.5GB，见下）。
+    ——后续用户在 ARM Mac mini（macOS 27）上实测通过：arm64 段走直链 2 秒装完、
+    `post_install` 架构校验过；代价是 ripgrep 无 arm 瓶、源码编译一次性拉起
+    13 个编译期依赖（rust/llvm/ruby 三栈约 2.5GB，见下）。
+
+### 11.28 audit 强制要镜像；镜像行必须同步改写（2026-09-05 实测）
+
+1. `audit --strict` 对这批代编译公式报 `Stable: Should always include at least one
+   HTTP mirror`（直接套 gh 模板不写 mirror 的在 core 拷入公式上过不了）——
+   结论：core 拷入的公式**镜像行必须保留**（只留点分段格式的，下条解释）。
+2. 但 watcher 原来只改写第一条 url 行，镜像会留旧版本 → 本次给
+   `UpdaterCore.rewriteFormula` 加了镜像同步：非镜像流下所有 `mirror "` 行
+   同做旧版本号子串替换（点分段格式才命中）。
+3. curl3 是例外：core 的 GitHub 镜像 tag 用下划线（`curl-8_22_0`），子串替换
+   够不着——只留 fresh-center 两行（点分段），GitHub 镜像行不保留；
+   install 里 core 那段 `stable.mirrors` tag 校验同步删除（无镜像可检）。
+
+### 11.29 版本解析两则：fails_with 块与 github 跳转（2026-09-05 实测）
+
+1. **`fails_with` 块内的 version 不是公式版本**。nghttp2 的
+   `fails_with :gcc do version "13"` 被 `currentVersion` 的全文件正则命中，
+   本地版本误解析成 `13` → 恒判 newer-than-brew 静默跳过。修法：
+   `currentVersion` 改逐行扫描，跳过 `fails_with...do/end` 块内的 version 行
+   （protobuf 的 `version "12"` 同病，一并覆盖；已有公式无此结构，回归全绿）。
+2. **github 流只认 `/tag/` 跳转**。rust-lang/rustup 的 `releases/latest` 跳到
+   `/releases` 列表页（末段 "releases"），旧逻辑取末段即得垃圾版本 → 误报
+   upstream-missing。修法：`githubLatestTag` 只接受含 `/tag/` 的 Location，
+   否则继续重试直至 check-failed 明示。rustup-init 改走官方自更新通道清单
+   `release-stable.toml`（`version = 'x.y.z'`，单引号）做 customRelease，
+   原料取版本化归档 `/archive/<ver>/...`（不用 floating 的 dist 直链）。
+
+### 11.30 沙箱网络与单测三则（2026-09-05 实测）
+
+1. **socat 公网用例沙箱必挂**：本机出口经 MITM 代理（TCP 建连被接到
+   198.18.x 后无回包），core 的 `tcp:www.google.com:80` 用例 hang 到
+   `Timeout.timeout`。改走本机回环（`TCP-LISTEN` + `EXEC:cat` 回显断言往返），
+   不依赖公网，CI/本地双绿。教训：单测涉网一律回环。
+2. **curl 的 H3 连通性用例同样**：沙箱禁 UDP，`--http3-only` 冲 cloudflare
+   秒挂（exit 7）。改成存在性断言（`--help all` 含 `proxy-http3` +
+   `curl-config --features` 含 HTTP3）致命、连通性 `begin/rescue` 只告警——
+   CI 干净网络下真跑，沙箱下不红。
+3. **新版裸 `--help` 只打分类列表**：curl 8.22 的 `--help` 输出 23 行分类，
+   查选项必须 `--help all`（`proxy-http3` 在 all 里）；hyperfine 1.20 输出
+   改版（`Time (mean ± σ)`），test 只锁 `Benchmark 1` 这种稳定锚点。
+
+### 11.31 本轮链路备忘（curl3 栈 / iperf3 / wireshark）
+
+1. **libnghttp2 是枢纽（扇入 19：node 家族/curl/wget2…），不能自瓶**：
+   初版照抄进 tap，装完才发现 bare 依赖永远解析到 core、自家瓶永用不上——
+   已删公式+检查器+本地 keg，nghttp2/curl3 的 `libnghttp2` 保持裸名（core
+   源码现编约 30 秒，一次性）。`brew uses --eval-all` 是分流判据，
+   不要凭感觉（libnghttp3 扇入 5、libngtcp2 扇入 4，叶子自瓶保留）。
+2. **`--enable-proxy-http3` 真实存在**：curl 官方 EXPERIMENTAL.md 明确要
+   autotools 传该开关（CMake 传 `-DUSE_PROXY_HTTP3=ON`）才有
+   `--proxy-http3`/CONNECT-UDP，core 没开——这就是 curl3 相对 core 的实质
+   改动（改名只是避冲突）。test 用 `--help all` 断言存在性。
+3. **iperf3 资产名后缀跟 runner 走**：3.20 及之前是 `iperf3-amd64-osx-13`，
+   3.21 变成 `osx-15`。检查器 customRelease：版本走 brew stable，
+   `expanded_assets/<ver>` 片段抓 `iperf3-amd64-osx-NN` 取最大世代；
+   静态仓滞后（片段 404）则回退猜 `osx-15`，由核心 HEAD 探测报
+   upstream-missing（ffprobe 同例）。公式 install 用
+   `Dir["iperf3-amd64-osx-*"]` 通配，不写死后缀。
+4. **wireshark Intel 停在 4.4 系**：4.6+ 无 Intel dmg，版本不能跟 brew
+   （core stable 4.6.8）。检查器走官方 Sparkle appcast，取 enclosure url
+   含 `Intel%2064.dmg` 的项：版本取 `shortVersionString`，sha 取同项注释
+   的官方值（免 66MB 实算）；enclosure 的 dl 镜像 host 归一化到 www 主站
+   同路径（实测同文件，content-length 一致）。
 
 ## 12. 待办 / 后续演进
 

@@ -85,6 +85,21 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `libslirp` | User-mode networking library, bottled dependency of `qemu` |
 | `vde` | Virtual distributed Ethernet, bottled dependency of `qemu` |
 | `neofetch` | System info script (archived upstream, last release); no update checks |
+| `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl |
+| `libnghttp3` | HTTP/3 C library, bottled dependency of `curl3` |
+| `libngtcp2` | QUIC implementation, bottled dependency of `curl3` |
+| `nghttp2` | H2 clients (`nghttp`/`h2load`/`nghttpx`) with `--enable-app`; H3 flag deferred to Phase 4 |
+| `socat` | SOcket CAT relay tool, compiled from source |
+| `make` | GNU make (installed as `gmake`), mirrored even though core has a tahoe bottle |
+| `graphviz` | Graph visualization software, compiled from source |
+| `protobuf` | Full build from source: libprotobuf + `protoc` + test suite |
+| `caddy` | Extensible server platform, Intel static build from upstream (`caddy_<ver>_mac_amd64.tar.gz`); H2/H3 baseline service |
+| `h2spec` | HTTP/2 conformance tester for Phase 2 H2 tests |
+| `hyperfine` | Command-line benchmarking tool for Phase 4 repeated benchmarks |
+| `iperf3` | Static build (no `openssl@4` dependency) for Phase 4 bare-metal throughput baselines |
+| `ninja` | Small build system, upstream universal binary (Intel slice) |
+| `rustup-init` | Official static Rust toolchain installer; coexists with core's source-built `rustup` |
+| `wireshark` | Network protocol analyzer, cask from the official Intel dmg (Intel builds stop at 4.4.x); ships `tshark`/`editcap` shims |
 
 ## Switching sources (same-name conflict)
 
