@@ -55,7 +55,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `ripgrep` | grep 类搜索工具，`opencode` 的依赖（随本 tap 出瓶） |
 | `mufetch` | 系统信息工具，取 release 的 `mufetch_darwin_x86_64.tar.gz` |
 | `cmd` | 终端 AI 编程 agent，npm 包 `command-code`（只暴露 `cmd` 命令）；依赖本 tap 的 node 瓶；不检查更新 |
-| `zcode` | 智谱 z.ai 的 AI 辅助开发环境，cask 取上游 CDN 的 x64 dmg（core 的 zcode cask 只有 arm64）；版本跟随 core 的 cask |
+| `zcode` | 智谱 z.ai 的 AI 辅助开发环境，cask 取上游 CDN（x64/arm64 双架构）；版本跟随 core 的 cask |
 | `deepseek-harness` | DeepSeek agent harness，npm 包 `@deepseek-ai/dsh`（只暴露 `dsh` 命令，`dsh web` 起浏览器 UI）；依赖本 tap 的 node 瓶；不检查更新 |
 | `ffmpeg` | FFmpeg 本体，evermeet 的 Intel x86_64 静态构建（`ffmpeg-<ver>.zip`）；版本跟随 core 的 ffmpeg |
 | `ffprobe` | FFmpeg 流分析器，evermeet 静态构建，与本 tap 的 ffmpeg 同版本；core 无此公式 |
@@ -69,6 +69,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `brewui` | Homebrew 官方图形界面，cask 取其 GitHub release（`Homebrew-<ver>.zip`）；版本经 release 跳转跟踪 |
 | `winstart` | Metro 风应用启动器，cask 镜像到本仓 Release（无公开上游链接）；锁定版本不检查更新 |
 | `docker-compose` | Docker Compose 插件，官方 `docker-compose-darwin-x86_64` 裸二进制；版本跟随 core 的 docker-compose |
+| `heliport` | Intel 无线网卡客户端，cask 取其 GitHub release；锁定版本不检查更新 |
 | `qemu` | 通用模拟器/虚拟机，Intel 现编译出瓶（core 无 Intel 瓶） |
 | `capstone` | 反汇编框架，`qemu` 的出瓶依赖 |
 | `dtc` | 设备树编译器，`qemu` 的出瓶依赖 |

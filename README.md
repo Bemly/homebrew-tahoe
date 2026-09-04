@@ -62,7 +62,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `ripgrep` | Search tool like grep, bottled dependency of `opencode` (from homebrew/core sources) |
 | `mufetch` | System info tool, from the release `mufetch_darwin_x86_64.tar.gz` |
 | `cmd` | Terminal AI coding agent, npm package `command-code` (exposes the `cmd` command only); depends on this tap's node bottle; no update checks |
-| `zcode` | z.ai AI-assisted development environment, cask from the upstream CDN x64 dmg (core's zcode cask is arm64 only); version follows homebrew/core's cask |
+| `zcode` | z.ai AI-assisted development environment, cask from the upstream CDN (both x64 and arm64); version follows homebrew/core's cask |
 | `deepseek-harness` | DeepSeek agent harness, npm package `@deepseek-ai/dsh` (exposes the `dsh` command only, `dsh web` serves the browser UI); depends on this tap's node bottle; no update checks |
 | `ffmpeg` | FFmpeg itself, Intel x86_64 static build from evermeet (`ffmpeg-<ver>.zip`); version follows homebrew/core's ffmpeg |
 | `ffprobe` | FFmpeg stream analyzer, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
@@ -76,6 +76,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `brewui` | Official Homebrew graphical interface, cask from its GitHub release (`Homebrew-<ver>.zip`); version tracked via the release redirect |
 | `winstart` | Metro-style app launcher, cask mirrored to this repo's releases (no public upstream link); pinned, no update checks |
 | `docker-compose` | Docker Compose plugin, official `docker-compose-darwin-x86_64` bare binary; version follows homebrew/core's docker-compose |
+| `heliport` | Intel Wi-Fi client app, cask from its GitHub release; pinned, no update checks |
 | `qemu` | Generic machine emulator and virtualizer, compiled from source on Intel (core has no Intel bottles) |
 | `capstone` | Disassembly framework, bottled dependency of `qemu` |
 | `dtc` | Device tree compiler, bottled dependency of `qemu` |

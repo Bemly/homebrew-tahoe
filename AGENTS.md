@@ -167,7 +167,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
 | `mufetch` | 0.1.1 | GitHub release 的 `mufetch_darwin_x86_64.tar.gz`（外部直链，tar 无顶层目录，文件直接在 CWD）；brew 流模板式检查器，sha 取自 release 的 `checksums.txt`（约 2KB） | 已收录 |
 | `cmd` | 1.45.0 | npm 包 `command-code` 的 tarball 直引（`npm install` 到 libexec，四入口只暴露 `cmd`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/cmd.swift，同 neofetch） | 已收录 |
-| `zcode` | 3.10.2 | cask——上游 CDN 的 x64 dmg 直引（core 的 zcode cask 是 arm64）；检查器走 UpdaterCore 新增的 `brewCask` 分支（`api/cask/zcode.json` 的 `.version`）；url 用 `#{version}` 插值、直引 CDN 不镜像 Release（`uploadRelease: false`） | 已收录 |
+| `zcode` | 3.10.2 | cask——上游 CDN 按架构分包（`arch` 双插值，`sha256 arm:/intel:` 直给）；检查器走 `brewCask` 版本 + 双架构产物分支（见 11.26） | 已收录 |
 | `deepseek-harness` | 0.1.1-rc.2 | npm 包 `@deepseek-ai/dsh` 的 tarball 直引（`npm install` 到 libexec，只暴露 `dsh`，`dsh web` 起 Web UI，默认 `http://127.0.0.1:3080`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/deepseek-harness.swift，同 cmd/neofetch）；与 core 的 `dsh`（Dancer's shell）无关但共享 `bin/dsh` 链接，同时安装时以后 link 的为准 | 已收录 |
 | `ffmpeg` | 9.0.1 | evermeet 静态发行版 `ffmpeg-<ver>.zip`（单 x86_64 二进制；不用 getrelease 的 7z——brew 解 7z 需 p7zip，core 无 Intel Tahoe 瓶，见 11.18）；检查器 brew 流模板式（`brewName: ffmpeg`，`checksumsURL: nil` 回退下载实算） | 已收录 |
 | `ffprobe` | 9.0.1 | 同上（`ffprobe-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffprobe 公式）；core 无同名公式 | 已收录 |
@@ -181,6 +181,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `brewui` | 0.2.1 | cask——上游 GitHub release 的 universal zip 直引（单包双架构；直引不镜像 Release）；检查器走 UpdaterCore 新增的 `github` 流（releases/latest 跳转判新，不耗 API 限额，见 11.21） | 已收录 |
 | `winstart` | 0.13.6 | cask——本地包一次性镜像到本仓 Release（`winstart-<ver>` tag，上游无公开链接，人工 `gh release create` 发版）；universal 双切片；**不检查更新**（无 updater/winstart.swift）；cask homepage 必填，取开发者 B 站主页 | 已收录 |
 | `docker-compose` | 5.5.1 | 官方裸二进制 `docker-compose-darwin-x86_64`（文件名无版本、路径段可扫，无需 version 行，见 11.21）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 文件名带 `*` 前缀、核心精确匹配对不上） | 已收录 |
+| `heliport` | 2.0.0-alpha | cask——上游 dmg 直引（url 用 `#{version}` 插值，tag 带 v 前缀而文件名无版本；包内 x86_64 thin）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -962,6 +963,28 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    `status=check-failed`（exit 0），`watch-updates.yml` 收集公示（不开 issue，
    下次自动恢复）。顺带给该路径加过 GH_TOKEN 认证（已 revert：限流就等下次，
    反复跑只会更限——保持匿名）。
+
+### 11.26 双架构产物分支 + url 改写语义修正（2026-09-04 实测，zcode 双架构化）
+
+1. **UpdaterCore 新增双架构维度**（版本来源正交）：`archArtifacts: [token]`
+   + `downloadURLForArch: (version, arch) -> url`，置上即走 `runDualArchCheck`
+   （逐个 HEAD 探测 → 下载实算 → 改写 version 行 + `sha256 arm:/intel:` 行；
+   url 行不动，`#{version}/#{arch}` 插值已覆盖新版本）。token→key 由
+   `caskArchKey` 显式映射（未知 token 直接 fail，绝不静默错配）；双产物无
+   checksums 模板（有更新逐个实算）；与 `uploadRelease` 镜像流不可同用（fail 明示）。
+2. **旧改写语义有个潜 bug**：`rewriteFormula` 原来整条替换 url 行——对插值 url
+   （zcode/brewui 的 `#{version}`）第一次更新就会把插值写死成字面，顺带破坏
+   audit 的版本判定。现改为：镜像流（`uploadRelease`）仍整条换；其余只做
+   旧版本号子串替换（数字边界，与 check-updates.sh 时代一致），纯插值行不动；
+   自检同步放宽（字面一致或插值保留均可）。单产物公式在模板与文件一致时，
+   子串替换的结果与原来整条替换逐字节相同（本地 harness 实测：
+   gh 2.100.0→2.101.0 的 url 行精确变成模板实例化结果；
+   brewui 0.2.1→0.2.2 的插值 url 行原样保留、version 行同步）。
+3. **palera1n 这类 universal 单包什么都不用做**：无 arch 门槛的 cask 天然双架构，
+   "允许双架构" = 不加门槛、不分包——只有上游按架构分包（zcode/TSKMGR/konsole）
+   才需要 `arch` 插值。
+4. **StanzaGrouping 别手调**：`arch`/`version` 的空行布局 cop 说了算——本次手删
+   空行反而新报两条，`--fix` 一键复原（复原即最初写法）。以后只管 --fix + 看 diff。
 
 ### 11.24 上游会重切同版本包：sha 可能出生即过期（2026-09-04 实测，gh 2.100.0）
 

@@ -29,6 +29,12 @@
 //   - 自定义流 customRelease：brew 未收录软件的上游自有更新接口（WorkBuddy），
 //     接口直接给版本号、下载直链、sha256。
 //
+// 产物维度（与版本来源正交）：默认单产物；置 archArtifacts 即双架构产物
+// （zcode / konsole），同一版本多份产物、各算各的 sha，走 runDualArchCheck
+// （逐个 HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行；url 行不动，
+// 靠 #{version}/#{arch} 插值覆盖新版本）。双产物无 checksums 模板，
+// 有更新时逐个下载实算；与 uploadRelease 镜像流不可同用。
+//
 // 输出契约与旧版 scripts/check-updates.sh 一致（GITHUB_OUTPUT 键名不变）；
 // brew 流查不到软件（API 404）时输出 status=brew-missing 并停（TODO 见 runCheck）。
 
@@ -83,6 +89,14 @@ struct CheckConfig {
     /// github 流：tag 前缀（默认 "v"：tag v0.2.1 → 版本 0.2.1）。
     /// 剥离后即版本号（downloadURL 模板收版本号）；tag 无此前缀则原样作版本。
     let githubTagPrefix: String?
+    /// 双架构产物：URL token 列表（如 zcode ["arm64", "x64"]、
+    /// konsole ["arm64", "x86_64"]），与 downloadURLForArch 配合。
+    /// 置空 = 单产物（现有行为）。
+    let archArtifacts: [String]?
+    /// 双架构产物：(version, archToken) -> 下载直链。archArtifacts 非空时必填。
+    /// token → cask sha 行 key 由 caskArchKey 显式映射
+    ///（arm64/aarch64→arm，x64/x86_64/amd64→intel），未知 token 直接 fail。
+    let downloadURLForArch: ((String, String) -> String)?
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -96,7 +110,9 @@ struct CheckConfig {
          brewCask: Bool = false,
          uploadRelease: Bool = false,
          githubRepo: String? = nil,
-         githubTagPrefix: String? = "v") {
+         githubTagPrefix: String? = "v",
+         archArtifacts: [String]? = nil,
+         downloadURLForArch: ((String, String) -> String)? = nil) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -110,6 +126,8 @@ struct CheckConfig {
         self.uploadRelease = uploadRelease
         self.githubRepo = githubRepo
         self.githubTagPrefix = githubTagPrefix
+        self.archArtifacts = archArtifacts
+        self.downloadURLForArch = downloadURLForArch
     }
 }
 
@@ -341,24 +359,36 @@ private func isURLDefinitionLine(_ line: String) -> Bool {
     line.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix(#"url ""#)
 }
 
-/// 改写公式：第一条 url 行整条替换为 newURL、version 行（如有）同步为新版本、
-/// 主 sha256 行替换、摘除失效的 bottle do...end 块。
-/// url 必须整条替换而非替换版本号子串——部分上游产物文件名带构建哈希
-/// （如 WorkBuddy-darwin-x64-<ver>-<hash>.dmg），哈希每次部署都变。
+/// 改写公式：version 行（如有）同步为新版本、sha256 行替换、
+/// 摘除失效的 bottle do...end 块。url 行两种处理：
+///   - replaceURLLine=true（cask 镜像流：每次部署文件名都变，如 workbuddy）→
+///     第一条 url 行整条替换为 newURL；
+///   - replaceURLLine=false（默认：公式与直引 cask）→ 只在第一条 url 行内把
+///     旧版本号替换为新版本（数字边界防误伤），保留 #{version}/#{arch} 插值；
+///     行内本就没有旧版本号（纯插值 url）则不动该行——插值已覆盖新版本。
+/// 双架构（archShas 非空）：额外按 key 改写 `sha256 arm:/intel:` 行，
+/// 此时单 sha 参数忽略、url 行不动。找不到对应 key 的行直接 fail。
 /// version 行只有部分公式需要显式声明（brew 从 URL 扫不出正确版本时，如 node 的
 /// darwin-x64.tar.gz 会扫出 "64"），有则必须同步，否则 url 与 version 脱节。
 func rewriteFormula(_ content: String, newURL: String, newVersion: String,
-                    sha: String) -> (content: String, bottleStale: Bool) {
+                    oldVersion: String, sha: String,
+                    archShas: [(key: String, sha: String)]? = nil,
+                    replaceURLLine: Bool = true) -> (content: String, bottleStale: Bool) {
     let shaLine = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 "[0-9a-f]{64}""#)
+    let archShaLine = try! NSRegularExpression(pattern: #"^([ \t]*)sha256 ([A-Za-z0-9_]+): "[0-9a-f]{64}""#)
     let versionLine = try! NSRegularExpression(pattern: #"^([ \t]*)version "[^"]+""#)
     let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
     let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
+    // 旧版本号子串替换（数字边界，与 check-updates.sh 时代一致）
+    let oldVerPattern = try! NSRegularExpression(
+        pattern: "(?<![0-9.])" + NSRegularExpression.escapedPattern(for: oldVersion) + "(?![0-9.])")
 
     var result: [String] = []
     var bottleStale = false
     var skipping = false
     var urlReplaced = false
     var versionReplaced = false
+    var archMatched = Set<String>()
 
     for line in content.components(separatedBy: "\n") {
         if skipping {
@@ -373,15 +403,34 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
         }
 
         var replaced = line
-        // 主 sha256 行（瓶块行是 sha256 cellar: ... 形态，天然不匹配）
-        if let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+        // 双架构 sha 行（`sha256 arm: "..."` 形态与单 sha 行互斥）
+        if let archShas = archShas {
+            if let m = archShaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+                let indent = (replaced as NSString).substring(with: m.range(at: 1))
+                let key = (replaced as NSString).substring(with: m.range(at: 2))
+                if let entry = archShas.first(where: { $0.key == key }) {
+                    replaced = "\(indent)sha256 \(key): \"\(entry.sha)\""
+                    archMatched.insert(key)
+                }
+            }
+        } else if let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+            // 主 sha256 行（瓶块行是 sha256 cellar: ... 形态，天然不匹配）
             let indent = (replaced as NSString).substring(with: m.range(at: 1))
             replaced = "\(indent)sha256 \"\(sha)\""
         }
-        // 只替换第一条 url 定义行（resource 块若有自己的 url 不受影响）
+        // 只处理第一条 url 定义行（resource 块若有自己的 url 不受影响）
         if !urlReplaced, isURLDefinitionLine(replaced) {
-            let indent = String(replaced.prefix(while: { $0 == " " || $0 == "\t" }))
-            replaced = "\(indent)url \"\(newURL)\""
+            if replaceURLLine {
+                let indent = String(replaced.prefix(while: { $0 == " " || $0 == "\t" }))
+                replaced = "\(indent)url \"\(newURL)\""
+            } else {
+                let range = fullRange(replaced)
+                if oldVerPattern.firstMatch(in: replaced, range: range) != nil {
+                    replaced = oldVerPattern.stringByReplacingMatches(
+                        in: replaced, range: range, withTemplate: newVersion)
+                }
+                // 行内无旧版本号（纯 #{version}/#{arch} 插值）：不动，插值已覆盖新版本
+            }
             urlReplaced = true
         }
         // 顶层 version 行同步（公式级唯一 version；resource 块内 version 行不会被
@@ -394,10 +443,99 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
         }
         result.append(replaced)
     }
+    if let archShas = archShas {
+        let missing = archShas.map { $0.key }.filter { !archMatched.contains($0) }
+        if !missing.isEmpty {
+            fail("改写失败：未找到 sha256 行 \(missing.joined(separator: ", "))")
+        }
+    }
     return (result.joined(separator: "\n"), bottleStale)
 }
 
 // MARK: - 单包检查主流程
+
+/// cask arch token → sha256 行的 key（`sha256 arm:/intel:`）。
+/// 未知 token 直接 fail（绝不静默错配）。
+private func caskArchKey(for token: String) -> String {
+    switch token {
+    case "arm64", "aarch64": return "arm"
+    case "x64", "x86_64", "amd64": return "intel"
+    default: fail("未知架构 token：\(token)（caskArchKey 需显式登记）")
+    }
+}
+
+/// 双架构检查主流程（zcode / konsole）：版本已定（stable），逐个产物
+/// HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行。
+/// url 行不动（#{version}/#{arch} 插值已覆盖新版本）。
+/// 与 uploadRelease 镜像流不可同用。
+func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
+                      current: String, stable: String) {
+    guard let tokens = config.archArtifacts, !tokens.isEmpty,
+          let tmpl = config.downloadURLForArch else {
+        fail("双架构产物（\(config.formula)）必须提供 archArtifacts + downloadURLForArch")
+    }
+    if config.uploadRelease {
+        fail("双架构产物（\(config.formula)）暂不支持 uploadRelease 同用")
+    }
+
+    // 4. 逐个 HEAD 探测（任一缺失即 upstream-missing，不误改公式）
+    var urls: [(token: String, url: String)] = []
+    for t in tokens {
+        let u = tmpl(stable, t)
+        urls.append((token: t, url: u))
+        if !curlHeadOK(u) {
+            print("::warning::新版本资源不可下载：\(u)")
+            emit("status=upstream-missing")
+            emit("current_version=\(current)")
+            emit("new_version=\(stable)")
+            return
+        }
+    }
+
+    // 5. 逐个下载实算（双产物无 checksums 模板，始终实算；仅新版本时发生）
+    var keyed: [(key: String, sha: String)] = []
+    for (t, u) in urls {
+        let key = caskArchKey(for: t)
+        print("下载 \(t) 发布包后本地计算 sha256")
+        guard let tmp = curlDownload(u), let h = sha256(ofFile: tmp) else {
+            fail("无法获取 \(u) 的 sha256")
+        }
+        try? FileManager.default.removeItem(atPath: tmp)
+        guard h.range(of: #"^[0-9a-f]{64}$"#, options: .regularExpression) != nil else {
+            fail("得到的 sha256 不合法：\(h)")
+        }
+        print("sha256（\(t) 实算）：\(h)")
+        keyed.append((key: key, sha: h))
+    }
+
+    // 6. 改写 cask（version 行 + 双 sha 行；url 行不动）
+    let (newContent, bottleStale) = rewriteFormula(content, newURL: "", newVersion: stable,
+                                                   oldVersion: current, sha: "",
+                                                   archShas: keyed, replaceURLLine: false)
+    do {
+        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
+    } catch {
+        fail("写回 \(formulaFile) 失败：\(error)")
+    }
+    if bottleStale {
+        print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
+    }
+
+    // 7. 改后自检：arch 插值保留、双 sha 就位
+    guard newContent.contains("#{arch}") else { fail("url 的 arch 插值丢失") }
+    for (k, h) in keyed {
+        guard newContent.contains("sha256 \(k): \"\(h)\"") else {
+            fail("sha256 \(k) 未成功更新")
+        }
+    }
+
+    print("公式已更新：\(current) -> \(stable)")
+    emit("status=updated")
+    emit("current_version=\(current)")
+    emit("new_version=\(stable)")
+    for (k, h) in keyed { emit("sha256_\(k)=\(h)") }
+    emit("bottle_stale=\(bottleStale)")
+}
 
 func runCheck(_ config: CheckConfig) {
     let formulaFile = "\(config.formulaPath)/\(config.formula).rb"
@@ -477,12 +615,19 @@ func runCheck(_ config: CheckConfig) {
                   let caskVersion = json["version"] as? String, !caskVersion.isEmpty else {
                 fail("无法从 formulae.brew.sh 获取 cask \(brewName) 的版本（HTTP \(httpCode.map(String.init) ?? "请求失败")）")
             }
-            guard let template = config.downloadURL else {
-                fail("cask 流（\(brewName)）必须提供 downloadURL 模板：core 的 url 是 arm64 的，不能直接使用")
-            }
             print("brew cask 版本 : \(caskVersion)")
-            resolvedVersion = caskVersion
-            resolvedURL = template(caskVersion)
+            if config.archArtifacts != nil {
+                // 双架构：逐个 url 由 downloadURLForArch 给（见 runDualArchCheck），
+                // 此处只需版本，单 downloadURL 模板不需要（resolvedURL 会被双分支忽略）
+                resolvedVersion = caskVersion
+                resolvedURL = ""
+            } else {
+                guard let template = config.downloadURL else {
+                    fail("cask 流（\(brewName)）必须提供 downloadURL 模板：core 的 url 是 arm64 的，不能直接使用")
+                }
+                resolvedVersion = caskVersion
+                resolvedURL = template(caskVersion)
+            }
             hintSHA = nil
         } else {
             // brew 的 versions.stable 是判据：这是 brew 上的版本号，不是上游 GitHub 的最新版
@@ -539,6 +684,13 @@ func runCheck(_ config: CheckConfig) {
         return
     }
     print("发现新版本 : \(current) -> \(stable)")
+
+    // 双架构产物（zcode / konsole）：同一版本多份产物，分流处理后返回
+    if config.archArtifacts != nil {
+        runDualArchCheck(config: config, content: content, formulaFile: formulaFile,
+                         current: current, stable: stable)
+        return
+    }
 
     // 4. HEAD 探测新版本资源是否可下载（几乎不产生流量）
     let downloadURL = upstream.downloadURL
@@ -641,9 +793,11 @@ func runCheck(_ config: CheckConfig) {
         deleteOldCaskReleases(repo: repo, formula: config.formula, keepTag: tagName)
     }
 
-    // 6. 改写公式/cask
+    // 6. 改写公式/cask（镜像流整条换 url；其余只做版本子串替换，保插值）
     let (newContent, bottleStale) = rewriteFormula(content, newURL: finalURL,
-                                                   newVersion: stable, sha: sha)
+                                                   newVersion: stable, oldVersion: current,
+                                                   sha: sha,
+                                                   replaceURLLine: config.uploadRelease)
     do {
         try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
     } catch {
@@ -654,7 +808,15 @@ func runCheck(_ config: CheckConfig) {
     }
 
     // 7. 改后自检（注意：原始字符串 #"..."# 里 \(...) 不是插值，这里必须用普通字符串）
-    guard newContent.contains("url \"\(finalURL)\"") else { fail("url 未成功更新到 \(finalURL)") }
+    if config.uploadRelease {
+        guard newContent.contains("url \"\(finalURL)\"") else { fail("url 未成功更新到 \(finalURL)") }
+    } else {
+        // 字面 url（版本号替换后应与 finalURL 一致），或插值 url（#{version}，
+        // version 行已同步则自动指向新版）
+        let literalOK = newContent.contains("url \"\(finalURL)\"")
+        let interpOK = newContent.contains("#{version}")
+        guard literalOK || interpOK else { fail("url 未成功更新到 \(finalURL)") }
+    }
     guard newContent.contains("sha256 \"\(sha)\"") else { fail("sha256 未成功更新") }
 
     print("公式已更新：\(current) -> \(stable)")
