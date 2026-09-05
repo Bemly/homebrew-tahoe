@@ -184,7 +184,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `go` | 1.27.1 | Go 官方 `go<ver>.darwin-amd64.tar.gz`（完整工具链，只链系统库，零依赖；不用同版本 `.pkg`——要 root 写 /usr/local；`go1.27.1.darwin-amd64` 会扫成 `"64"`，需显式 version 行，见下） | 已收录 |
 | `heliport` | 2.0.0-alpha | cask——上游 dmg 直引（url 用 `#{version}` 插值，tag 带 v 前缀而文件名无版本；包内 x86_64 thin）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
 | `konsole` | 5277 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支，每月手动跑一次（不设 cron，见 11.26） | 已收录 |
-| `curl3` | 8.22.0 | **改名代编译**：与 core curl 同源同参数 + 独家 `--enable-proxy-http3`（MASQUE/CONNECT-UDP 实验开关，core 没开）；改名避与 core curl 同 Cellar 冲突；`libnghttp3/libngtcp2` 走本 tap 全名叶子依赖，`libnghttp2` 等枢纽留 core 裸名（扇入 19，见 11.31） | 已收录 |
+| `curl3` | 8.22.0 | **改名代编译**：与 core curl 同源 + 独家 `--enable-proxy-http3`（MASQUE/CONNECT-UDP 实验开关，core 没开）；改名避与 core curl 同 Cellar 冲突；主二进制同步改名 `curl3` 正常 link（系统 curl 不动）；`--disable-shared` 纯客户端形态，开发件全裁（避 SDK 头 shadowing，见 11.33）；`libnghttp3/libngtcp2` 走本 tap 全名叶子依赖，`libnghttp2` 等枢纽留 core 裸名（扇入 19，见 11.31） | 已收录 |
 | `libnghttp3` | 1.18.0 | 代编译叶子：curl3 专属 H3 依赖（扇入 5），core 拷入 | 已收录 |
 | `libngtcp2` | 1.25.0 | 代编译叶子：curl3 专属 QUIC 依赖（扇入 4），core 拷入 | 已收录 |
 | `nghttp2` | 1.70.0 | 代编译：`--enable-app`（H2 的 nghttp/h2load/nghttpx），H3 开关 Phase 4 再补；依赖全是枢纽（c-ares/jemalloc/libev/openssl@3），裸名留 core | 已收录 |
@@ -197,7 +197,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `hyperfine` | 1.20.0 | 官方 `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz`（单顶层目录，带 man/补全；Phase 4 基准）；test 不锁 "Mean" 字样（1.20 改版，见 11.30） | 已收录 |
 | `iperf3` | 3.21 | userdocs 静态构建 `iperf3-amd64-osx-15`（openssl 静态链接，零依赖，绕开 openssl@4 树）；资产名后缀随 runner 世代变化，检查器 customRelease 抓 expanded_assets 取最大世代（见 11.31） | 已收录 |
 | `ninja` | 1.13.2 | 官方 `ninja-mac.zip`（universal 双切片；core 虽有 tahoe 瓶仍镜像） | 已收录 |
-| `rustup-init` | 1.29.1 | 公式：static.rust-lang.org 版本化归档的裸二进制（自包含，零依赖）；版本走 release-stable.toml（releases/latest 跳列表页无 tag，见 11.29）；与 core `rustup` 不同名可共存 | 已收录 |
+| `rustup` | 1.29.1 | 公式：static.rust-lang.org 版本化归档的裸二进制（自包含，零依赖），装成 `rustup` + 照抄 core 的 cargo/rustc 代理垫片；与 core 同名，本机卸 core `rust`/`rustup` 后完整接管，工具链走 `rustup toolchain install stable`（见 11.32）；版本走 release-stable.toml（releases/latest 跳列表页无 tag，见 11.29） | 已收录 |
 | `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31）；`tshark`/`editcap` binary 垫片 | 已收录 |
 
 ### gh 发布包结构（已实测）
@@ -1148,6 +1148,41 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
    含 `Intel%2064.dmg` 的项：版本取 `shortVersionString`，sha 取同项注释
    的官方值（免 66MB 实算）；enclosure 的 dl 镜像 host 归一化到 www 主站
    同路径（实测同文件，content-length 一致）。
+
+### 11.32 rustup 命名三连跳：别名全局生效，同名接管才是正解（2026-09-05 实测）
+
+1. **core 的改名别名是全局的**。core 曾把 `rustup-init` 改名成 `rustup`，
+   这个 old→new 映射对所有 tap 生效——本 tap 建 `rustup-init.rb` 当天，
+   任何操作都报 `old name rustup-init was installed from bemly/tahoe-intel`
+   并要求 `brew migrate`。结论：公式名**绝不能撞 core 的改名别名**，
+   查名时连旧名一起查，不只查现名。
+2. **改名 rustup-bin 是错的**（已 revert）：本 tap 定位是 x64 备用源，
+   命名应与上游保持一致。正解是与 core **同名 `rustup`**（标准同名流程：
+   先卸 core 版再装本 tap 版），rustup-init 只是上游发布物的文件名，
+   不是公式名——它和 rustup 是同一个二进制（argv[0] 决定行为），
+   不是谁依赖谁。
+3. **完整接管形态**：公式装 `rustup` + 照抄 core 的 cargo/rustc 代理垫片；
+   本机卸 core `rust`/`rustup`（事先 `brew uses --installed` 确认无依赖链），
+   工具链改走 `rustup toolchain install stable`（`~/.rustup`，与 brew 无关）。
+   附带效果：autoremove 顺手清掉 core rust 拉来的 llvm@22（1.6GB）。
+   约束写进 caveats：升级走 brew，勿 `rustup self update`（静态包自带该功能，
+   会绕开 brew 改 Cellar）。
+
+### 11.33 curl3 纯客户端化 + 同版本改布局必须源码重装（2026-09-05 实测）
+
+1. **公式名改了，二进制名也要跟上**。初版 curl3 装的还是 `bin/curl`
+   （且 keg-only 未 link），用户敲 `curl3` 直接 command not found——
+   改名避冲突只做一半等于没做。修法：install 里 `mv bin/curl → bin/curl3`
+  （man 页同步），wcurl 的 CMD 指到 `opt_bin/curl3`，test 全换 `bin/"curl3"`。
+2. **link 出来的头文件撞 macOS SDK**：macOS SDK 自带 `usr/include/curl/*.h`，
+   去掉 keg-only 正常 link 后 audit 报 shadowing。修法：`--disable-shared`
+   纯客户端形态——二进制静态链接 libcurl 自包含，开发件
+   （include/curl-config/pkgconfig/man3）全部裁掉；互操作测试只要客户端，
+   不需要 lib。注意 `rm_rf` 被 style 禁，用 `rm_r`（+ exist? 守卫）。
+3. **同版本改 install 布局，`brew reinstall` 会倒回旧瓶**：版本号没变 +
+   瓶块 sha 有效 → brew 直接倒旧瓶，新布局根本不生效（本地一度"修了个寂寞"：
+   bin/curl3 不存在、头文件又回来了）。验证布局改动必须
+   `brew install --build-from-source`；GHCR 侧靠重跑 bottle 覆盖。
 
 ## 12. 待办 / 后续演进
 

@@ -1,6 +1,6 @@
-// updater/rustup-init.swift —— 与 Formula/rustup-init.rb 一一同名的检查器入口
+// updater/rustup.swift —— 与 Formula/rustup.rb 一一同名的检查器入口
 //
-// 运行：swiftc updater/UpdaterCore.swift updater/rustup-init.swift -o /tmp/check-rustup-init && /tmp/check-rustup-init
+// 运行：swiftc updater/UpdaterCore.swift updater/rustup.swift -o /tmp/check-rustup && /tmp/check-rustup
 // （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
 // 注意：swiftc 只允许 main.swift 含顶层代码，所以入口用 @main 而不是裸语句。
 //
@@ -13,10 +13,10 @@
 import Foundation
 
 @main
-struct RustupInitCheck {
+struct RustupCheck {
     static func main() {
         let config = CheckConfig(
-            formula: "rustup-init",
+            formula: "rustup",
             customRelease: {
                 let (status, toml) = curlText(
                     "https://static.rust-lang.org/rustup/release-stable.toml")

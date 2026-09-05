@@ -85,7 +85,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `libslirp` | User-mode networking library, bottled dependency of `qemu` |
 | `vde` | Virtual distributed Ethernet, bottled dependency of `qemu` |
 | `neofetch` | System info script (archived upstream, last release); no update checks |
-| `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl |
+| `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl, ships the `curl3` command (system `curl` untouched), client-only static build with no dev files |
 | `libnghttp3` | HTTP/3 C library, bottled dependency of `curl3` |
 | `libngtcp2` | QUIC implementation, bottled dependency of `curl3` |
 | `nghttp2` | H2 clients (`nghttp`/`h2load`/`nghttpx`) with `--enable-app`; H3 flag deferred to Phase 4 |
@@ -98,7 +98,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `hyperfine` | Command-line benchmarking tool for Phase 4 repeated benchmarks |
 | `iperf3` | Static build (no `openssl@4` dependency) for Phase 4 bare-metal throughput baselines |
 | `ninja` | Small build system, upstream universal binary (Intel slice) |
-| `rustup-init` | Official static Rust toolchain installer; coexists with core's source-built `rustup` |
+| `rustup` | Official static Rust toolchain installer, same name as core (uninstall core's first); ships `rustup` plus core's cargo/rustc proxy shims, toolchains managed via `rustup toolchain install stable` |
 | `wireshark` | Network protocol analyzer, cask from the official Intel dmg (Intel builds stop at 4.4.x); ships `tshark`/`editcap` shims |
 
 ## Switching sources (same-name conflict)
