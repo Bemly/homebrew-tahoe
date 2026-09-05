@@ -36,11 +36,11 @@ cask "wireshark" do
             pkgutil:   "org.wireshark.ChmodBPF.pkg"
 
   caveats <<~EOS
-    抓包权限（ChmodBPF 已随本 cask 安装）：
-      安装包把你加进了 access_bpf 组，但组身份要重新登录才生效——
-      注销重登一次（或重启），再跑：
+    抓包权限（ChmodBPF 已随本 cask 安装，装时弹密码属正常）：
+      装完即生效，无需注销重登，直接验证：
         tshark -i lo0 -c 3
-      还报 Permission denied 就再登出登入一次；管理员之外的用户需手动
-      `sudo dseditgroup -o edit -a <用户名> -t user access_bpf`。
+      macOS 对本地组的成员判定是动态查目录服务的，组建好即对所有会话
+      生效（旧 shell 不用关）。还报 denied 就查 `id` 是否含 access_bpf；
+      非 admin 用户需手动 `sudo dseditgroup -o edit -a <用户名> -t user access_bpf`。
   EOS
 end
