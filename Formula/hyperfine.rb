@@ -8,7 +8,7 @@ class Hyperfine < Formula
   license any_of: ["Apache-2.0", "MIT"]
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "f06f971f7a56111f8a27e7c5ce16f7e572fdff02c8eadabd5e39f92fc5542be8"
   end
 

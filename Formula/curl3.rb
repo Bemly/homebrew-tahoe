@@ -25,7 +25,7 @@ class Curl3 < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "8d53ed4599c79037e537aee06271db3741792cf4b09b4dd3c5dd60ee6aa3f31b"
   end
 
@@ -43,8 +43,8 @@ class Curl3 < Formula
 
   depends_on "pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe-intel/libnghttp3"
-  depends_on "bemly/tahoe-intel/libngtcp2"
+  depends_on "bemly/tahoe/libnghttp3"
+  depends_on "bemly/tahoe/libngtcp2"
   depends_on "brotli"
   depends_on "libnghttp2"
   depends_on "libpsl"

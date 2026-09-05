@@ -11,7 +11,7 @@ cask "wireshark" do
   # audit 会因"URL 无版本"要求 sha256 :no_check。
   sha256 "84140b6014fb53da2d285482796283e583bf25b0c1d4ed7faee65f1f338a8570"
 
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/wireshark-#{version}/Wireshark.#{version}.Intel.64.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/wireshark-#{version}/Wireshark.#{version}.Intel.64.dmg"
   name "Wireshark"
   desc "Network protocol analyzer"
   homepage "https://www.wireshark.org/"

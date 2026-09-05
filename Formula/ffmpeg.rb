@@ -10,7 +10,7 @@ class Ffmpeg < Formula
   license "GPL-3.0-or-later"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "cda0a60b52564cd45541dbd5e9957f65b239a47f93ce5bc2abaec8af3864d098"
   end
 

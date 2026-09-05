@@ -1,4 +1,4 @@
-# bemly/tahoe-intel
+# bemly/tahoe
 
 A third-party Homebrew tap that provides directly installable software for
 **Intel (x86_64) Macs running macOS 26 (Tahoe)**.
@@ -11,7 +11,7 @@ number of `x86_64_tahoe` bottles in the `homebrew/core` tap is 0, so software li
 
 This tap pulls the upstream **official macOS amd64 prebuilt packages** (no recompilation),
 packages them as Homebrew bottles, and distributes them through **GHCR**:
-`ghcr.io/v2/bemly/tahoe-intel`.
+`ghcr.io/v2/bemly/tahoe`.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ are not met.
 ## Installation
 
 ```bash
-brew tap bemly/tahoe-intel
+brew tap bemly/tahoe
 
 # If you previously installed the homebrew/core build, uninstall it first:
 # formulae with the same name across taps cannot coexist — brew refuses to install.
@@ -33,16 +33,16 @@ brew uninstall gh
 brew uninstall fastfetch
 brew uninstall opencode # core ships an npm-based opencode under the same name
 
-brew install bemly/tahoe-intel/gh
-brew install bemly/tahoe-intel/fastfetch
-brew install bemly/tahoe-intel/opencode # pulls bemly/tahoe-intel/ripgrep as a dependency
+brew install bemly/tahoe/gh
+brew install bemly/tahoe/fastfetch
+brew install bemly/tahoe/opencode # pulls bemly/tahoe/ripgrep as a dependency
 
 # workbuddy is a desktop app, delivered as a cask (installed into /Applications,
 # visible in Launchpad/Spotlight)
-brew install --cask bemly/tahoe-intel/workbuddy
+brew install --cask bemly/tahoe/workbuddy
 # doubao-ime is an input method, delivered as a cask (auto-runs the official
 # installer into /Library/Input Methods, requires sudo password)
-brew install --cask bemly/tahoe-intel/doubao-ime
+brew install --cask bemly/tahoe/doubao-ime
 ```
 
 ## Packages
@@ -109,17 +109,17 @@ cannot be linked at the same time. To switch:
 
 ```bash
 # Use this tap's build
-brew unlink gh && brew link --overwrite bemly/tahoe-intel/gh
-brew unlink fastfetch && brew link --overwrite bemly/tahoe-intel/fastfetch
+brew unlink gh && brew link --overwrite bemly/tahoe/gh
+brew unlink fastfetch && brew link --overwrite bemly/tahoe/fastfetch
 
 # Use the core build
-brew unlink bemly/tahoe-intel/gh && brew link gh
-brew unlink bemly/tahoe-intel/fastfetch && brew link fastfetch
+brew unlink bemly/tahoe/gh && brew link gh
+brew unlink bemly/tahoe/fastfetch && brew link fastfetch
 ```
 
 ## GHCR bottles
 
-Packages are distributed from **GHCR**: `ghcr.io/v2/bemly/tahoe-intel`
+Packages are distributed from **GHCR**: `ghcr.io/v2/bemly/tahoe`
 (Homebrew strips the `homebrew-` prefix from the repository name, mirroring the
 structure of `ghcr.io/v2/homebrew/core`).
 

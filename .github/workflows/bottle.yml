@@ -31,8 +31,8 @@ concurrency:
 
 env:
   # GitHubPackages.root_url 会剥掉仓库名的 homebrew- 前缀：
-  #   bemly/homebrew-tahoe-intel -> https://ghcr.io/v2/bemly/tahoe-intel
-  ROOT_URL: https://ghcr.io/v2/${{ github.repository_owner }}/tahoe-intel
+  #   bemly/homebrew-tahoe -> https://ghcr.io/v2/bemly/tahoe
+  ROOT_URL: https://ghcr.io/v2/${{ github.repository_owner }}/tahoe
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   HOMEBREW_NO_ENV_HINTS: 1
@@ -75,19 +75,19 @@ jobs:
           set -euo pipefail
           taps_dir="$(brew --repository)/Library/Taps/${{ github.repository_owner }}"
           mkdir -p "$taps_dir"
-          ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe-intel"
-          brew tap-info bemly/tahoe-intel
+          ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe"
+          brew tap-info bemly/tahoe
 
       # 新版本 Homebrew 要求显式信任 tap，否则会忽略公式、制瓶拿不到公式。
       # 软链进来的 tap 默认不受信任，这里整体信任本 tap。
       - name: 信任本 tap
-        run: brew trust bemly/tahoe-intel
+        run: brew trust bemly/tahoe
 
       # 秒级体检：开编之前先把 tap 内所有公式过一遍 brew readall。
       # 代编译模式一次构建可达数小时，公式若有语法/引用/门禁问题，
       # 必须在这里就红掉，而不是编译几小时后才发现（见 AGENTS.md 11.10）。
       - name: 公式体检（防白跑）
-        run: brew readall bemly/tahoe-intel
+        run: brew readall bemly/tahoe
 
       - name: 安装 skopeo（推 GHCR 的依赖）
         run: brew install skopeo
@@ -142,8 +142,8 @@ jobs:
             # 只有确定可被卸载、不会被生态其他包依赖的包才自己制瓶，
             # 生态枢纽包（openssl@3 / glib / gettext 等）一律走 core 不进本 tap。
             brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
-            brew install --build-bottle "bemly/tahoe-intel/$f"
-            brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe-intel/$f"
+            brew install --build-bottle "bemly/tahoe/$f"
+            brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe/$f"
             # GHCR 镜像名不允许 @：node@22 → node/22（与 brew image_formula_name 一致）
             ghcr_name="${f//@//}"
             # 版本号以 brew 实际安装结果为准，不从公式文本 grep 数字——
@@ -164,14 +164,14 @@ jobs:
             #   新建的包默认私有，随后的「设为公开」步骤会再处理。
             # 其余实测踩坑（2026-09-03）：
             #   1. owner 是普通用户 → 端点必须 users/，orgs/ 恒 404；
-            #   2. 包名必须带 tap 前缀并编码：tahoe-intel%2Fnode（漏了则 404）；
+            #   2. 包名必须带 tap 前缀并编码：tahoe%2Fnode（漏了则 404）；
             #   3. gh CLI 需要 GH_TOKEN 环境变量——Actions 不会自动把
             #      secrets.GITHUB_TOKEN 注入环境，不传则完全无凭据、stdout 为空，
             #      清理静默失效（本机测不出：gh 会回落 keyring 的个人 token）；
             #   4. 判断「有无旧瓶」只看带标签的版本；无标签版本是 image index
             #      引用的子清单，不是孤儿（见 8.5），不参与判断、也无需清理。
             owner="${GITHUB_REPOSITORY_OWNER}"
-            pkg_encoded="tahoe-intel%2F${ghcr_name//\//%2F}"
+            pkg_encoded="tahoe%2F${ghcr_name//\//%2F}"
             tagged_vids=""
             del_scope="users/${owner}"
             for scope in "users/${owner}" "orgs/${owner}"; do
@@ -222,11 +222,11 @@ jobs:
             [[ -n "$f" ]] || continue
             ghcr_name="${f//@//}"
             anon_token="$(curl -fsSL --max-time 30 \
-              "https://ghcr.io/token?scope=repository:${owner}/tahoe-intel/${ghcr_name}:pull" \
+              "https://ghcr.io/token?scope=repository:${owner}/tahoe/${ghcr_name}:pull" \
               | jq -r '.token // empty' || true)"
             if [[ -n "$anon_token" ]] && curl -fsSL --max-time 30 \
                  -H "Authorization: Bearer ${anon_token}" \
-                 "https://ghcr.io/v2/${owner}/tahoe-intel/${ghcr_name}/tags/list" \
+                 "https://ghcr.io/v2/${owner}/tahoe/${ghcr_name}/tags/list" \
                  | jq -e '(.tags // []) | length > 0' >/dev/null 2>&1; then
               echo "✓ ${ghcr_name} 可匿名拉取（公开），brew install 无需认证。"
             else

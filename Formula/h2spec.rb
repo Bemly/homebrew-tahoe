@@ -8,7 +8,7 @@ class H2spec < Formula
   license "Apache-2.0"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "93429801238fc73f8fe2a83ccd0b0249e891c8f36575a99eeb56cbded9a1b203"
   end
 

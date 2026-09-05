@@ -10,7 +10,7 @@ class Ffplay < Formula
   license "GPL-3.0-or-later"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "63e45995db926f1a662a033f39561d65770e2b36ea07a788ee426d4cff62a3b2"
   end
 

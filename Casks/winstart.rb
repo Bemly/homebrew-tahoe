@@ -7,7 +7,7 @@ cask "winstart" do
   # url 用 #{version} 插值，否则 audit 会因"URL 无版本"要求 sha256 :no_check）。
   # Universal 包（x86_64+arm64 双切片，实测），单包覆盖双架构，无需 arch 分包。
   # 永不检查更新（无 updater/winstart.swift）。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/winstart-#{version}/WinStart.#{version}.zip"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/winstart-#{version}/WinStart.#{version}.zip"
   name "WinStart"
   desc "Metro-style app launcher"
   homepage "https://space.bilibili.com/3690976784681729"

@@ -8,7 +8,7 @@ class Caddy < Formula
   license "Apache-2.0"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "d9e56d07ecfdf9e3bc9e39a525f8fea0b1759481e04f9c47d116af66aa095aa7"
   end
 

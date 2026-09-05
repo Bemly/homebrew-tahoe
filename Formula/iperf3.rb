@@ -12,7 +12,7 @@ class Iperf3 < Formula
   license "BSD-3-Clause"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "927c2873423933e15451fbf79856b4cda7b04b7118aa4729536d1c4aaed2ff74"
   end
 

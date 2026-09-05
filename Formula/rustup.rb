@@ -16,7 +16,7 @@ class Rustup < Formula
   license any_of: ["Apache-2.0", "MIT"]
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "ae4932eb6b6343934bd97e257aceeaaffb989aadf8c144f2edf258abfe183732"
   end
 

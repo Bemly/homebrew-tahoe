@@ -6,7 +6,7 @@ class Mufetch < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "05f0e4712d9a2b332ba2dbec4acc3bb16063c7805f1b75f2ff2a461eb3119ac2"
   end
 

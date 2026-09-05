@@ -14,7 +14,7 @@ class Ripgrep < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "1ce904c130b0d22c0ca94f4fae85afe30da7531c1eb0ada4e345c48d50bceaa3"
   end
 

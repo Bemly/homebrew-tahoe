@@ -15,7 +15,7 @@ class Qemu < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 tahoe: "bf5277fca805b5c9711decb01e25968ace6e6bf1e963f46c6b91e573a96762cb"
   end
   depends_on "bison" => :build # >= 3.0
@@ -27,10 +27,10 @@ class Qemu < Formula
   depends_on "python@3.14" => :build # keep aligned with meson
   depends_on "spice-protocol" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe-intel/capstone"
-  depends_on "bemly/tahoe-intel/dtc"
-  depends_on "bemly/tahoe-intel/libslirp"
-  depends_on "bemly/tahoe-intel/vde"
+  depends_on "bemly/tahoe/capstone"
+  depends_on "bemly/tahoe/dtc"
+  depends_on "bemly/tahoe/libslirp"
+  depends_on "bemly/tahoe/vde"
   depends_on "glib"
   depends_on "gnutls"
   depends_on "jpeg-turbo"

@@ -9,7 +9,7 @@ class Libngtcp2 < Formula
   head "https://github.com/ngtcp2/ngtcp2.git", branch: "main"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "2ebe6c89fa47953b7c4de906667a86261fe3d78e0e867fc88ff5c33f081c327f"
   end
 

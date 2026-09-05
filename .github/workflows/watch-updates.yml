@@ -124,7 +124,7 @@ jobs:
           if [[ ${#updated_formulae[@]} -gt 0 ]]; then
             echo "已提交更新，触发单次批量制瓶（formula=${list}）"
             gh workflow run "Build bottle and publish to GHCR" \
-              --repo bemly/homebrew-tahoe-intel \
+              --repo bemly/homebrew-tahoe \
               -f formula="$list"
           else
             echo "已提交更新（仅 cask，无需制瓶）"
@@ -155,7 +155,7 @@ jobs:
 
           - 软件：\`${f}\`
           - 目标版本：\`${ver}\`
-          - 瓶根地址：\`https://ghcr.io/v2/${{ github.repository_owner }}/tahoe-intel\`
+          - 瓶根地址：\`https://ghcr.io/v2/${{ github.repository_owner }}/tahoe\`
 
           影响：公式无法升级，\`bottle.yml\` 也无法制瓶。
           请确认上游发布资产是否改名或被删除，或暂时保持当前版本。

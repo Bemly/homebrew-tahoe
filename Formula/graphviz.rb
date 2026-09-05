@@ -13,7 +13,7 @@ class Graphviz < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 tahoe: "b240e4c02ceefec472355d4cbf73adc8aaac67907fa4cd2f3f1434b7ee87e911"
   end
 

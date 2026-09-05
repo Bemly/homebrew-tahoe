@@ -9,7 +9,7 @@ class Ninja < Formula
   license "Apache-2.0"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "44caf1ce672f7e09009b5738654b54164470ea9178e041e0f71389412f6bced3"
   end
 

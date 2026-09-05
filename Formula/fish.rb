@@ -13,7 +13,7 @@ class Fish < Formula
   license "GPL-2.0-only"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "321031bcff7df57fa4d3a0cff1db32d9332255098e7bf3b2e9f517f26a698017"
   end
 

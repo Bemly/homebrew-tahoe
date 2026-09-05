@@ -13,7 +13,7 @@ class Libslirp < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "63d4f7ff5a8b7358b2c7b2111da6b55f018d60428cf2a59103b64e497f672873"
   end
   depends_on "meson" => :build

@@ -11,7 +11,7 @@ cask "konsole" do
   # 由 updater/konsole.swift 抓取双架构 listing 交集最大构建号，下载双包、
   # 上传 Release、改写本文件；旧快照自动清理。
   # url 用 #{version} 插值，否则 audit 会因"URL 无版本"要求 sha256 :no_check。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/konsole-#{version}/konsole-master-#{version}-macos-clang-#{arch}.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/konsole-#{version}/konsole-master-#{version}-macos-clang-#{arch}.dmg"
   name "Konsole"
   desc "KDE terminal emulator"
   homepage "https://konsole.kde.org/"

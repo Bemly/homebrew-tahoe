@@ -7,7 +7,7 @@ cask "heliport" do
   # 插值（tag 带版本；文件名无版本但 tag 已覆盖），否则 audit 会因
   # "URL 无版本"要求 sha256 :no_check。
   # 本 cask 锁定该版本、永不检查更新（无 updater/heliport.swift）。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/heliport-#{version}/HeliPort.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/heliport-#{version}/HeliPort.dmg"
   name "HeliPort"
   desc "Wi-Fi client for Intel wireless adapters"
   homepage "https://github.com/OpenIntelWireless/HeliPort"

@@ -8,12 +8,12 @@ class Cmd < Formula
   # 声明会被 audit 判无效 SPDX —— 不声明则 audit 跳过 license 检查。
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "7fa924d9d06989e9fe56876b29650940a0447168f6a334b3952b15586bec28c3"
   end
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe-intel/node"
+  depends_on "bemly/tahoe/node"
   depends_on macos: :tahoe
   # core 的 node 在 Intel Tahoe 没有 x86_64 瓶（装它要从源码编译数小时），
   # 故依赖本 tap 出瓶的 node。与 core 的 node 同名，二者不能共存。
@@ -28,14 +28,14 @@ class Cmd < Formula
 
   def caveats
     <<~EOS
-      cmd 由 npm 包 command-code 提供，是本 tap 的 node 上运行（#{formula_opt_bin("bemly/tahoe-intel/node")}/node）。
+      cmd 由 npm 包 command-code 提供，是本 tap 的 node 上运行（#{formula_opt_bin("bemly/tahoe/node")}/node）。
 
       与 homebrew/core 的 node 同名冲突：若你用的是 core 的 node，
       需先 `brew uninstall node` 再装本 tap 的 node。
 
       若敲 `cmd` 仍是旧版本（此前用 `npm i -g command-code` 装过的话，
       /usr/local/bin/cmd 会残留指向旧包的链接，把本公式的版本遮蔽掉），执行：
-        brew link --overwrite bemly/tahoe-intel/cmd
+        brew link --overwrite bemly/tahoe/cmd
 
       本公式不检查更新（上游版本随 npm 频繁变动），需要升级请手动改 url + sha256。
     EOS

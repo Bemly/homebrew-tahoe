@@ -9,7 +9,7 @@ class Neofetch < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "9349dbdf49f3be597e427c0e1374d2f7b7db93881dbd24a344f770e940a0fe6e"
   end
 

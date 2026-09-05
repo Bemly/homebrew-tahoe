@@ -14,7 +14,7 @@ cask "zcode" do
   sha256 arm:   "cfa43b90ec74732ee3ee1262803d775658a3c954cc4cc0a9a1bec0f9c6dcbf98",
          intel: "12cf306271a6bfb5f4100b9c735e07a22912051d27af845f98064495e41fd736"
 
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/zcode-#{version}/ZCode-#{version}-mac-#{arch}.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/zcode-#{version}/ZCode-#{version}-mac-#{arch}.dmg"
   name "ZCode"
   desc "AI-assisted development environment"
   homepage "https://zcode.z.ai/en/"

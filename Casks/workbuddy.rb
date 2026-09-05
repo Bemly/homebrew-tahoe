@@ -6,7 +6,7 @@ cask "workbuddy" do
   # 由 watcher 检测新版本后下载并上传到此，URL 即指向 Release 资产）。
   # 文件名含构建哈希（-b148bd1d），每次部署都变——故不用 #{version} 插值，
   # 而由 watcher 在每次更新时整条改写。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/workbuddy-5.4.7.37521366/WorkBuddy-darwin-x64-5.4.7.37521366-b148bd1d.zip"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/workbuddy-5.4.7.37521366/WorkBuddy-darwin-x64-5.4.7.37521366-b148bd1d.zip"
   name "WorkBuddy"
   desc "Tencent WorkBuddy AI office workspace app"
   homepage "https://www.workbuddy.cn/"

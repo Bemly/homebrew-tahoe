@@ -12,7 +12,7 @@ class Protobuf < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "76a14e21d9948f1f4440bca2183c66f112a50d5b866545b7e5d4ce113f5cc6eb"
   end
 

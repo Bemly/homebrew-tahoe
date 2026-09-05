@@ -1,11 +1,11 @@
 # AGENTS.md
 
-> 本文件是 `bemly/tahoe-intel` 仓库的开发约定与执行计划。
+> 本文件是 `bemly/tahoe` 仓库的开发约定与执行计划。
 > 任何人（或 Agent）改动本仓库前，先读完这份文档。
 
 ## 1. 项目定位
 
-`bemly/tahoe-intel` 是一个 Homebrew 第三方 tap，只解决一件事：
+`bemly/tahoe` 是一个 Homebrew 第三方 tap，只解决一件事：
 
 **给 Intel（x86_64）Mac 上的 macOS 26（Tahoe）提供可直接安装的软件。**
 
@@ -43,18 +43,18 @@ Homebrew 官方已不再为 macOS 26 构建 x86_64 的 bottle。
 
 | 项 | 值 | 说明 |
 | --- | --- | --- |
-| tap 名 | `bemly/tahoe-intel` | 用户使用时的名字，**不得改写** |
-| 仓库名 | `bemly/homebrew-tahoe-intel` | GitHub 仓库名必须带 `homebrew-` 前缀，`brew tap bemly/tahoe-intel` 才能简写解析 |
+| tap 名 | `bemly/tahoe` | 用户使用时的名字，**不得改写** |
+| 仓库名 | `bemly/homebrew-tahoe` | GitHub 仓库名必须带 `homebrew-` 前缀，`brew tap bemly/tahoe` 才能简写解析 |
 | 公式目录 | `Formula/` | 标准 Homebrew 布局 |
-| 公式全名 | `bemly/tahoe-intel/<name>` | 安装时必须写全名 |
+| 公式全名 | `bemly/tahoe/<name>` | 安装时必须写全名 |
 
-> 仓库名里的 `homebrew-` 是 Homebrew 的强制前缀，不是给 `tahoe-intel` 加料。
-> tap 名保持 `bemly/tahoe-intel` 原样。
+> 仓库名里的 `homebrew-` 是 Homebrew 的强制前缀，不是给 `tahoe` 加料。
+> tap 名保持 `bemly/tahoe` 原样。
 
 ## 3. 目录结构
 
 ```
-homebrew-tahoe-intel/
+homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：约定 + 计划
 ├── README.md                          # 面向用户的使用说明
 ├── Formula/
@@ -161,7 +161,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `dtc` | 1.8.1 | 代编译模式：qemu 专属依赖（扇入 1） | 已收录 |
 | `libslirp` | 4.9.4 | 代编译模式：qemu 专属依赖（扇入 4） | 已收录 |
 | `vde` | 2.3.3 | 代编译模式：qemu 专属依赖（扇入 2）；2016 年旧代码需 `-std=gnu17` 编译开关（见 11.13） | 已收录 |
-| `opencode` | 1.18.28 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，取 mac 双架构段（`opencode-darwin-x64/arm64.zip`，主段放顶层、ARM 段在 `on_macos` 内覆盖；Intel 走 GHCR 瓶、ARM 走直链，见 11.27）；与 core 的 npm 版同名，`depends_on "bemly/tahoe-intel/ripgrep"` 走自家源 | 已收录 |
+| `opencode` | 1.18.28 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，取 mac 双架构段（`opencode-darwin-x64/arm64.zip`，主段放顶层、ARM 段在 `on_macos` 内覆盖；Intel 走 GHCR 瓶、ARM 走直链，见 11.27）；与 core 的 npm 版同名，`depends_on "bemly/tahoe/ripgrep"` 走自家源 | 已收录 |
 | `sst` | 4.17.1 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`sst-mac-x86_64.tar.gz`）；`sst version` 子命令取版本（不支持 `--version`） | 已收录 |
 | `torpedo` | 0.0.13 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`torpedo-mac-x86_64.tar.gz`，上游 `sst/torpedo`）；无任何版本命令，不做版本自检 | 已收录 |
 | `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
@@ -307,7 +307,7 @@ brew 的 `Version.parse` 只抓到 `"64"`（实测 `brew info` 显示 `stable 64
 2. **走 core（公式写裸名依赖）**：生态枢纽包（openssl@3 519 / gettext 399 / glib 333 /
    zstd 206 / libpng 214 / gnutls 56…）。特征：多数机器已装、brew 拒绝卸载（被其它包
    依赖）、用户端无需重编。
-3. **自瓶（公式写全名 `bemly/tahoe-intel/<name>`）**：主软件 qemu + qemu 专属叶子
+3. **自瓶（公式写全名 `bemly/tahoe/<name>`）**：主软件 qemu + qemu 专属叶子
    （capstone/dtc/libslirp/vde，扇入 1–8，除 qemu 外无人依赖）——core qemu 卸掉后
    它们就「卸载得掉」。
 4. **Group A（走 core）必须在依赖上闭合**：若某包是 core 包的依赖（gnutls→nettle/
@@ -388,7 +388,7 @@ Homebrew 维护的校验和，上游换镜像自动跟随）。模板式（downl
 
 ```ruby
 bottle do
-  root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+  root_url "https://ghcr.io/v2/bemly/tahoe"
   sha256 cellar: :any_skip_relocation, tahoe: "<由 bottle.yml 生成>"
 end
 ```
@@ -399,7 +399,7 @@ end
 root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-")}"
 ```
 
-所以 `bemly/homebrew-tahoe-intel` → **去掉 `homebrew-` 前缀** → `ghcr.io/v2/bemly/tahoe-intel`
+所以 `bemly/homebrew-tahoe` → **去掉 `homebrew-` 前缀** → `ghcr.io/v2/bemly/tahoe`
 （与核心的 `ghcr.io/v2/homebrew/core` 同构）。
 
 ### 8.3 构建环境：必须是 macos-26-intel
@@ -425,7 +425,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 - **Taps 目录必须软链**。`brew tap` 默认是 clone，`brew bottle --merge --write`
   会改到克隆副本上导致提交丢失。`bottle.yml` 里用
-  `ln -sfn "$GITHUB_WORKSPACE" <Taps>/bemly/homebrew-tahoe-intel`。
+  `ln -sfn "$GITHUB_WORKSPACE" <Taps>/bemly/homebrew-tahoe`。
 - **推 GHCR 用 `brew pr-upload`**：读 CWD 下的 `*.bottle.json`，跑
   `brew bottle --merge --write`（把瓶块写回公式）再上传。需要
   `HOMEBREW_GITHUB_PACKAGES_USER` / `HOMEBREW_GITHUB_PACKAGES_TOKEN` 与 `skopeo`；
@@ -438,7 +438,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
   会同时 `git push main`、删/推 GHCR 标签而互相冲突，排队串行执行。
 - **推送前「删整个包」再由 pr-upload 重建**：`bottle.yml` 在 `pr-upload` **之前**
   检查该包在 GHCR 上有无带标签版本；有则整包删除
-  （`DELETE users/{owner}/packages/container/tahoe-intel%2F<name>`），让
+  （`DELETE users/{owner}/packages/container/tahoe%2F<name>`），让
   `pr-upload` 重新建包推送。这一步同时达成两个目的：清掉历史老瓶，以及让
   同版本可以重复推送（`pr-upload` 撞已存在标签会直接 `odie "already exists!"`，
   所以必须先删再传，见 11.10）。**不能逐个删版本**：GitHub 禁止删除包的
@@ -451,7 +451,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 ## 9. 新增软件的 SOP（端到端 Runbook）
 
-目标：把一个新软件做成「用户 `brew install bemly/tahoe-intel/<name>` 时直接命中 GHCR 瓶」的状态。
+目标：把一个新软件做成「用户 `brew install bemly/tahoe/<name>` 时直接命中 GHCR 瓶」的状态。
 下面每一步都是必做项，**顺序不能跳**——之后每个软件都按这套走。
 
 ### 9.1 调研上游（确定原料）
@@ -518,7 +518,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
    ```bash
    gh workflow run "Build bottle and publish to GHCR" \
-     --repo bemly/homebrew-tahoe-intel \
+     --repo bemly/homebrew-tahoe \
      -f formula=<name>
    ```
 
@@ -528,14 +528,14 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 10. **阻塞等到跑完**（必须看到 `✓ Complete job` 再继续）：
 
     ```bash
-    RUN_ID=$(gh run list --repo bemly/homebrew-tahoe-intel --limit 1 \
+    RUN_ID=$(gh run list --repo bemly/homebrew-tahoe --limit 1 \
               --json databaseId --jq '.[0].databaseId')
-    gh run watch "$RUN_ID" --repo bemly/homebrew-tahoe-intel
+    gh run watch "$RUN_ID" --repo bemly/homebrew-tahoe
     ```
 
     注意：
 
-    - repository 名是 `bemly/homebrew-tahoe-intel`（带 `homebrew-` 前缀），不是 tap 名 `bemly/tahoe-intel`；
+    - repository 名是 `bemly/homebrew-tahoe`（带 `homebrew-` 前缀），不是 tap 名 `bemly/tahoe`；
     - 该 workflow 会依次：软链并信任 tap → build-bottle 安装 → 制瓶 → 删旧 GHCR 标签（支持重复运行覆盖）
       → 推 GHCR → 尝试设公开 → **把瓶块 commit 回公式**。
 
@@ -545,14 +545,14 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
     ```bash
     git pull --ff-only origin main
-    brew reinstall bemly/tahoe-intel/<name>
+    brew reinstall bemly/tahoe/<name>
     ```
 
     成功标志：日志出现
-    `Downloading https://ghcr.io/v2/bemly/tahoe-intel/<name>/manifests/<ver>`
+    `Downloading https://ghcr.io/v2/bemly/tahoe/<name>/manifests/<ver>`
     与 `Pouring <name>--<ver>.tahoe.bottle.tar.gz`。
 
-12. 校验：`brew info bemly/tahoe-intel/<name>` 显示 `stable <ver> (bottled)`，
+12. 校验：`brew info bemly/tahoe/<name>` 显示 `stable <ver> (bottled)`，
     且 `<name> --version` 版本正确、`file -b $(which <name>)` 为 `Mach-O 64-bit executable x86_64`。
 
 ### 9.8 批量更新（watcher 的唯一模式）
@@ -577,14 +577,14 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 ```bash
 # 用本地目录做 tap，避免走网络
-brew tap bemly/tahoe-intel /Users/bemly/Projects/tahoe-intel
+brew tap bemly/tahoe /Users/bemly/Projects/tahoe
 
-brew info      bemly/tahoe-intel/gh      # 看解析结果
-brew style     bemly/tahoe-intel/gh      # RuboCop 规范
-brew audit --strict bemly/tahoe-intel/gh # 公式审计
-brew fetch     bemly/tahoe-intel/gh      # 验证 url + sha256 可下载且一致
-brew install   bemly/tahoe-intel/gh      # 真装一遍，验证 pre/post 脚本
-brew test      bemly/tahoe-intel/gh      # 跑 test do
+brew info      bemly/tahoe/gh      # 看解析结果
+brew style     bemly/tahoe/gh      # RuboCop 规范
+brew audit --strict bemly/tahoe/gh # 公式审计
+brew fetch     bemly/tahoe/gh      # 验证 url + sha256 可下载且一致
+brew install   bemly/tahoe/gh      # 真装一遍，验证 pre/post 脚本
+brew test      bemly/tahoe/gh      # 跑 test do
 ```
 
 手动跑一遍某软件的检查器（本地无 `GITHUB_OUTPUT` 时结果直接打在 stdout）：
@@ -631,7 +631,7 @@ brew 会直接拒绝安装：
 
 ```
 Error: gh was installed from the homebrew/core tap
-but you are trying to install it from the bemly/tahoe-intel tap.
+but you are trying to install it from the bemly/tahoe tap.
 Formulae with the same name from different taps cannot be installed at the same time.
 ```
 
@@ -639,12 +639,12 @@ Formulae with the same name from different taps cannot be installed at the same 
 
 ### 11.5 本地开发：tap 目录要用软链接
 
-`brew tap bemly/tahoe-intel <本地路径>` 是 **clone，不是 symlink**，
+`brew tap bemly/tahoe <本地路径>` 是 **clone，不是 symlink**，
 改了本地文件 brew 读不到，会一直报旧错误。开发时换成软链接：
 
 ```bash
-rm -rf /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe-intel
-ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe-intel
+rm -rf /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe
+ln -s /Users/bemly/Projects/tahoe /usr/local/Homebrew/Library/Taps/bemly/homebrew-tahoe
 ```
 
 ### 11.6 验证结果（2026-09-02，Intel x86_64 / macOS 26.6.2）
@@ -669,10 +669,10 @@ ln -s /Users/bemly/Projects/tahoe-intel /usr/local/Homebrew/Library/Taps/bemly/h
 2. **制瓶后本机要 `git pull` + `brew reinstall` 才换上 GHCR 瓶。**
    `bottle.yml` 在 CI 里把瓶块 commit 回公式并 push；本机不 pull 就读不到瓶块，
    重装时仍会回退到上游直链。`git pull --ff-only` 后 `brew reinstall` 的日志
-   必须出现 `ghcr.io/v2/bemly/tahoe-intel/<name>/manifests/...`
+   必须出现 `ghcr.io/v2/bemly/tahoe/<name>/manifests/...`
    与 `Pouring <name>--<ver>.tahoe.bottle.tar.gz` 才算真正换瓶成功。
-3. 触发用 `gh workflow run ... --repo bemly/homebrew-tahoe-intel`
-   （带 `homebrew-` 前缀的**仓库名**），不是 tap 名 `bemly/tahoe-intel`。
+3. 触发用 `gh workflow run ... --repo bemly/homebrew-tahoe`
+   （带 `homebrew-` 前缀的**仓库名**），不是 tap 名 `bemly/tahoe`。
 
 ### 11.8 WorkBuddy：dmg 做原料会撞 brew 上游 bug，用 zip
 
@@ -735,7 +735,7 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
 1. **端点用错**：owner 是普通用户（不是组织），端点必须是
    `users/{owner}/packages/container/...`，用 `orgs/...` 恒 404。
 2. **包名漏前缀**：`package_name` 必须带 tap 名并 URL 编码，即
-   `tahoe-intel%2Fnode`（`node@22` → `tahoe-intel%2Fnode%2F22`），
+   `tahoe%2Fnode`（`node@22` → `tahoe%2Fnode%2F22`），
    只写 `node` 同样 404。
 3. **CI 里 gh 没有凭据**：Actions 不会自动把 `secrets.GITHUB_TOKEN` 注入环境变量，
    `gh` CLI 只认 `GH_TOKEN`/`GITHUB_TOKEN`——不显式传就完全无凭据，调 API 直接
@@ -826,7 +826,7 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
 3. **raw 解析三约束**（见 `parseGoReleaserRaw`）：先截 `on_linux` 段再找
    （linux 资产也带 x64）；只认 `intel?` 标记后的 url（torpedo 的 arm 块在前）；
    sha 校验 64 位 hex。降级模拟三包改写与源备份逐字节一致。
-4. **依赖必须先制瓶**。`depends_on "bemly/tahoe-intel/ripgrep"` 全限定名强制走自家
+4. **依赖必须先制瓶**。`depends_on "bemly/tahoe/ripgrep"` 全限定名强制走自家
    GHCR；但 `bottle.yml` 内按字母排序（opencode 排在 ripgrep 前），一次跑会让
    opencode 先编。制瓶分两次：先 `-f ripgrep`，再 `-f "opencode,sst,torpedo"`。
 
@@ -1202,7 +1202,7 @@ winstart 早就是这个形态（无公开链接，只能如此）。
 
 1. **core 的改名别名是全局的**。core 曾把 `rustup-init` 改名成 `rustup`，
    这个 old→new 映射对所有 tap 生效——本 tap 建 `rustup-init.rb` 当天，
-   任何操作都报 `old name rustup-init was installed from bemly/tahoe-intel`
+   任何操作都报 `old name rustup-init was installed from bemly/tahoe`
    并要求 `brew migrate`。结论：公式名**绝不能撞 core 的改名别名**，
    查名时连旧名一起查，不只查现名。
 2. **改名 rustup-bin 是错的**（已 revert）：本 tap 定位是 x64 备用源，
@@ -1244,7 +1244,7 @@ winstart 早就是这个形态（无公开链接，只能如此）。
       上的制瓶耗时与 GHCR 推送）。
 - [x] **上游不提供 macOS amd64 包的软件 → 代编译模式已落地（qemu 首例，2026-09-03）**：
       上游源码做原料，`bottle.yml` 在 macos-26-intel 现编译出 GHCR 瓶（root_url 指向
-      `ghcr.io/v2/bemly/tahoe-intel`，不是 GitHub Releases——早期设想已废弃，见 6 节
+      `ghcr.io/v2/bemly/tahoe`，不是 GitHub Releases——早期设想已废弃，见 6 节
       「qemu 代编译模式」）。qemu + capstone/dtc/libslirp/vde 已收录并本机验收。
 - [x] **anomalyco 分支（feat/anomalyco-3）已合并回 main 并逐个制瓶完成**（2026-09-03~04）：
       `ea02f08 Merge branch 'feat/anomalyco-3' into main`；opencode/sst/torpedo/ripgrep 走 raw 流

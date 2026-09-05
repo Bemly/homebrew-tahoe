@@ -8,7 +8,7 @@ class Make < Formula
   compatibility_version 1
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 tahoe: "a6bb00e54259a13ad5e26ac96eb00a1bca8cc35a6813df783e83ff8ab2bc006a"
   end
 

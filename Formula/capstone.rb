@@ -15,7 +15,7 @@ class Capstone < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "bbbe1182552e1b20f5985516fef683a7660ebc9aa37e7b198ecfb43a09ba2a7e"
   end
   depends_on arch: :x86_64

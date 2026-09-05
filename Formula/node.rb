@@ -9,7 +9,7 @@ class Node < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "6d008316edf37932efb8bc9d12527b7570fc5b280408d14497924d53015c7276"
   end
 
@@ -71,8 +71,8 @@ class Node < Formula
 
       与 homebrew/core 的 node 同名，二者不能同时安装（brew 会直接拒绝）。
       切换来源必须先卸载再装另一个：
-        用本 tap：brew uninstall node && brew install bemly/tahoe-intel/node
-        用 core ：brew uninstall bemly/tahoe-intel/node && brew install node
+        用本 tap：brew uninstall node && brew install bemly/tahoe/node
+        用 core ：brew uninstall bemly/tahoe/node && brew install node
       注意：全局包在 $(brew --prefix)/lib/node_modules 下，随所属 keg 存亡。
     EOS
   end

@@ -12,7 +12,7 @@ cask "checkra1n" do
   # `disable! ... because: :fails_gatekeeper_check`），core 装不上——
   # 本 tap 提供可用的安装路径（与 core 同版本同文件同 sha）。
   # 上游归档不再更新，本 cask 永不检查更新（无 updater/checkra1n.swift）。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/checkra1n-#{version}/checkra1n.beta.#{version}.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/checkra1n-#{version}/checkra1n.beta.#{version}.dmg"
   name "checkra1n"
   desc "Jailbreak for iPhone 5s through iPhone X, iOS 12.0 and up"
   homepage "https://checkra.in/"

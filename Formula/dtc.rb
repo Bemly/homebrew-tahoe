@@ -15,7 +15,7 @@ class Dtc < Formula
   end
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "f4d28a5663b1fe7d66505e5e6170f183f47979fa88133e0c3e6148d962673719"
   end
   depends_on "meson" => :build

@@ -9,7 +9,7 @@ class Torpedo < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "ca758c575be1b91f1188bd0fa40565dabd9a0a3a77fd5b922fe4e6f410cb7a73"
   end
 

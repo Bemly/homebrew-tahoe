@@ -13,7 +13,7 @@ class Opencode < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "4187d1649de33bc1100319b1d2f4133c851dff497293903f42fec5a86eba4b72"
   end
 
@@ -23,7 +23,7 @@ class Opencode < Formula
   # arch 门槛已摘（opencode 双架构，Intel/ARM 各取各的包；摘门槛是例外，见 11.27）。
   # ripgrep 走本 tap 的瓶（Intel 上是 GHCR 瓶；ARM 上 core 无瓶则源码编译，
   # ripgrep 同样摘了 arch 门槛，否则 ARM 装 opencode 会被依赖挡住）。
-  depends_on "bemly/tahoe-intel/ripgrep"
+  depends_on "bemly/tahoe/ripgrep"
   depends_on macos: :tahoe
 
   on_macos do

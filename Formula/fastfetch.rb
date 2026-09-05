@@ -7,7 +7,7 @@ class Fastfetch < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "6935b7252969185b62245e89118907eda30e09dec3243582f309aaedfd77f6b6"
   end
 

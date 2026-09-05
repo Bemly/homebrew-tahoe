@@ -11,7 +11,7 @@ cask "macos-tskmgr" do
   sha256 arm:   "9b2685a09a5af5d969106574e4ac88af8e2eb5c7ffa84b17fab32a3366439d3a",
          intel: "ac52d3fea47c47e7e467fe7f7b3fe135c81daf967f62a8485ba5c91ceb21b6f5"
 
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/macos-tskmgr-#{version}/MacOSTSKMGR-#{arch}-runtime.zip"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/macos-tskmgr-#{version}/MacOSTSKMGR-#{arch}-runtime.zip"
   name "MacOS Task Manager"
   desc "Task manager app"
   homepage "https://github.com/JOHN-decm/MacOS-TSKMGR"

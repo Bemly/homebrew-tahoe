@@ -10,7 +10,7 @@ class Ffprobe < Formula
   license "GPL-3.0-or-later"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "6c00b24f0359fb8e15843498357bf8e42c1753d844071375d6243df528b3a44f"
   end
 

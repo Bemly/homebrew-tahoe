@@ -1,0 +1,109 @@
+name: One-off migrate GHCR packages (tap rename)
+
+# 一次性任务（2026-09-05，tap 改名 tahoe-intel → tahoe）：
+# 仓库改名不会搬动 GHCR 包——旧包仍叫 tahoe-intel/<name>，新 root_url
+# ghcr.io/v2/bemly/tahoe 下全是新包。这里用 crane copy 逐包逐 tag 原样搬运：
+# manifest 与 blob 的 digest 不变 → 公式瓶块只改 root_url 行、sha256 原样有效，
+# 不需要重制瓶、不占 macOS runner。跑完确认匿名可拉后即可删除本文件。
+#
+# 旧包成为冗余副本后另行手动删除（删除动作不在本 workflow 内做）。
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: migrate-ghcr
+  cancel-in-progress: false
+
+env:
+  CRANE_VERSION: v0.20.3
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: 安装 crane
+        run: |
+          set -euo pipefail
+          url="https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz"
+          if ! curl -fsSL -o /tmp/crane.tgz "$url"; then
+            # 固定版本 404 时回落 latest（一次性任务，容错优先）
+            latest="$(curl -fsSL https://api.github.com/repos/google/go-containerregistry/releases/latest | jq -r .tag_name)"
+            echo "固定版本 ${CRANE_VERSION} 不可用，回落 ${latest}"
+            url="https://github.com/google/go-containerregistry/releases/download/${latest}/go-containerregistry_Linux_x86_64.tar.gz"
+            curl -fsSL -o /tmp/crane.tgz "$url"
+          fi
+          tar -xzf /tmp/crane.tgz -C /tmp crane
+          sudo install /tmp/crane /usr/local/bin/crane
+          crane version
+
+      - name: 登录 GHCR（GITHUB_TOKEN，公开仓库建的包默认公开，见 AGENTS 11.14）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${GH_TOKEN}" | crane auth login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+
+      - name: 逐包搬运（digest 不变）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          copied=0; skipped=0; failed=0; faillist=""
+          for rb in Formula/*.rb; do
+            f="$(basename "$rb" .rb)"
+            pkg="${f//@//}"   # node@22 → node/22（与 brew image_formula_name 一致）
+            src="ghcr.io/bemly/tahoe-intel/${pkg}"
+            dst="ghcr.io/bemly/tahoe/${pkg}"
+            tags="$(crane ls "$src" 2>/dev/null || true)"
+            if [[ -z "$tags" ]]; then
+              echo "::warning::${src} 无标签（从未出瓶），跳过"
+              skipped=$((skipped+1)); continue
+            fi
+            while IFS= read -r tag; do
+              [[ -n "$tag" ]] || continue
+              echo "搬运 ${src}:${tag} -> ${dst}:${tag}"
+              if crane copy "${src}:${tag}" "${dst}:${tag}"; then
+                copied=$((copied+1))
+              else
+                echo "::error::搬运失败 ${src}:${tag}"
+                failed=$((failed+1)); faillist="$faillist ${pkg}:${tag}"
+              fi
+            done <<< "$tags"
+          done
+          echo "搬运完成：成功 ${copied}，无瓶跳过 ${skipped}，失败 ${failed}"
+          [[ "$failed" -eq 0 ]] || { echo "失败清单：${faillist}"; exit 1; }
+
+      - name: 匿名可拉体检（新路径，镜像 bottle.yml 的检查）
+        run: |
+          set -euo pipefail
+          failed=""
+          for rb in Formula/*.rb; do
+            f="$(basename "$rb" .rb)"
+            pkg="${f//@//}"
+            tok="$(curl -fsSL --max-time 30 \
+              "https://ghcr.io/token?scope=repository:bemly/tahoe/${pkg}:pull" \
+              | jq -r '.token // empty' || true)"
+            if [[ -n "$tok" ]] && curl -fsSL --max-time 30 \
+                 -H "Authorization: Bearer ${tok}" \
+                 "https://ghcr.io/v2/bemly/tahoe/${pkg}/tags/list" \
+                 | jq -e '(.tags // []) | length > 0' >/dev/null 2>&1; then
+              echo "✓ ${pkg} 可匿名拉取（公开）"
+            else
+              failed="$failed ${pkg}"
+              echo "::warning::${pkg} 新路径不可匿名拉取（私有或缺失）。GitHub 没有 API 能改可见性，需到 Packages 页面手动改 Public。"
+            fi
+          done
+          if [[ -n "$failed" ]]; then
+            echo "以下包不可匿名拉取：${failed}"
+          else
+            echo "全部新包匿名可拉。"
+          fi

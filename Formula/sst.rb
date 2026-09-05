@@ -9,7 +9,7 @@ class Sst < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "162710ad8ab13cf6121a841f14f544021aeb99cf7678961f70ef67fa20115c40"
   end
 

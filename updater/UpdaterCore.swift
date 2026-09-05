@@ -608,7 +608,7 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
     //     url 行随后走版本子串替换——Release tag 与资产名都含字面版本号。
     if mirroring {
         let tagName = "\(config.formula)-\(stable)"
-        let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe-intel"
+        let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe"
         guard let gh = which("gh") else {
             fail("双架构 + 镜像（\(config.formula)）需要 gh CLI 上传 Release")
         }
@@ -1051,7 +1051,7 @@ func runCheck(_ config: CheckConfig) {
         let assetName = (URL(fileURLWithPath: downloadURL).lastPathComponent
             .removingPercentEncoding ?? URL(fileURLWithPath: downloadURL).lastPathComponent)
             .replacingOccurrences(of: " ", with: ".")
-        let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe-intel"
+        let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe"
         guard let zipPath = curlDownload(downloadURL) else {
             fail("下载 \(config.formula) 发布包失败，无法上传 Release")
         }

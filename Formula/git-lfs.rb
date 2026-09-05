@@ -10,7 +10,7 @@ class GitLfs < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "a902646b6b4074b5205726a069a3116511d3640a018bb5660a2ea7ecf14a9dbc"
   end
 

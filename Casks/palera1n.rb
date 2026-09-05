@@ -8,7 +8,7 @@ cask "palera1n" do
   # 最新版（直引只做过渡）；url 用 #{version} 插值（tag 带版本），否则
   # audit 会因"URL 无版本"要求 sha256 :no_check。
   # 本 cask 锁定该版本、永不检查更新（无 updater/palera1n.swift）。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/palera1n-#{version}/palera1n-macos-universal.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/palera1n-#{version}/palera1n-macos-universal.dmg"
   name "palera1n"
   desc "Jailbreak tool for checkm8-vulnerable Apple devices"
   homepage "https://palera.in/"

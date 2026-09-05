@@ -7,7 +7,7 @@ cask "brewui" do
   # url 用 #{version} 插值，否则 audit 会因"URL 无版本"要求 sha256 :no_check。
   # 版本更新由 updater/brewui.swift 跟 GitHub release（UpdaterCore github 流），
   # 有更新时下载、上传 Release、改写本文件。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/brewui-#{version}/Homebrew-#{version}.zip"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/brewui-#{version}/Homebrew-#{version}.zip"
   name "BrewUI"
   desc "Official graphical interface for Homebrew"
   homepage "https://github.com/Homebrew/BrewUI"

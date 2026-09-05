@@ -10,7 +10,7 @@ class DockerCompose < Formula
   license "Apache-2.0"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "ba2eec017fbcb1cf660df98b71090ddbfcfe9d4f46e2454e71090aae1fd93f5e"
   end
 

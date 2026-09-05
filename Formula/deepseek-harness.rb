@@ -8,12 +8,12 @@ class DeepseekHarness < Formula
   license "MIT"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "8fdb9b6cf81c2c785da188180a76453083f4bd0b92a2ec56131e17eff0d86f2f"
   end
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe-intel/node"
+  depends_on "bemly/tahoe/node"
   depends_on macos: :tahoe
   # core 的 node 在 Intel Tahoe 没有 x86_64 瓶（装它要从源码编译数小时），
   # 故依赖本 tap 出瓶的 node。与 core 的 dsh（Dancer's shell）不同名公式，
@@ -29,7 +29,7 @@ class DeepseekHarness < Formula
   def caveats
     <<~EOS
       dsh 由 npm 包 @deepseek-ai/dsh 提供，跑在本 tap 的 node 上
-      （#{formula_opt_bin("bemly/tahoe-intel/node")}/node）。
+      （#{formula_opt_bin("bemly/tahoe/node")}/node）。
 
       启动 Web UI（默认 http://127.0.0.1:3080，本地启动会自动打开浏览器）：
         dsh web
@@ -39,8 +39,8 @@ class DeepseekHarness < Formula
       注意：homebrew/core 有个同名但无关的公式 dsh（Dancer's shell），
       双方都提供 bin/dsh。若 core 的 dsh 已安装，本公式会 link 失败，
       二选一：
-        用 DeepSeek Harness：brew uninstall dsh && brew link bemly/tahoe-intel/deepseek-harness
-        用 Dancer's shell：brew unlink bemly/tahoe-intel/deepseek-harness && brew link dsh
+        用 DeepSeek Harness：brew uninstall dsh && brew link bemly/tahoe/deepseek-harness
+        用 Dancer's shell：brew unlink bemly/tahoe/deepseek-harness && brew link dsh
 
       本公式不检查更新（上游处于 developer preview，版本迭代快），
       需要升级请手动改 url + sha256。

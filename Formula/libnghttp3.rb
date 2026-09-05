@@ -9,7 +9,7 @@ class Libnghttp3 < Formula
   head "https://github.com/ngtcp2/nghttp3.git", branch: "main"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "0dbc9ef1a6869be49acd77667f393e671eb72f42230453dd247412744f2e0ffb"
   end
 

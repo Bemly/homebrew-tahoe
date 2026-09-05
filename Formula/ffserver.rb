@@ -10,7 +10,7 @@ class Ffserver < Formula
   license "GPL-3.0-or-later"
 
   bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe-intel"
+    root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "6ea178216cf84bd7910a2bab049a88d60832048cb91546fefbf6f87a8bcd166a"
   end
 

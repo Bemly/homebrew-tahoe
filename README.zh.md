@@ -1,4 +1,4 @@
-# bemly/tahoe-intel
+# bemly/tahoe
 
 一个 Homebrew 第三方 tap，专为 **Intel（x86_64）Mac 上的 macOS 26（Tahoe）** 提供可直接安装的软件。
 
@@ -8,7 +8,7 @@ Homebrew 官方从 macOS 26 起不再为 Intel 构建 bottle。实测 core tap �
 `gh`、`node` 等软件在 Intel Mac 上只能从源码编译。
 
 本 tap 取上游官方的 **macOS amd64 预构建包**（不重新编译），打包成 Homebrew 瓶后
-分发到 **GHCR**：`ghcr.io/v2/bemly/tahoe-intel`。
+分发到 **GHCR**：`ghcr.io/v2/bemly/tahoe`。
 
 ## 要求
 
@@ -20,7 +20,7 @@ Homebrew 官方从 macOS 26 起不再为 Intel 构建 bottle。实测 core tap �
 ## 安装
 
 ```bash
-brew tap bemly/tahoe-intel
+brew tap bemly/tahoe
 
 # 若之前装过 homebrew/core 的 gh / fastfetch / opencode，必须先卸载：
 # 同名公式跨 tap 不能共存，brew 会直接拒绝安装
@@ -28,14 +28,14 @@ brew uninstall gh
 brew uninstall fastfetch
 brew uninstall opencode # core 的 opencode 是 npm 版，同名
 
-brew install bemly/tahoe-intel/gh
-brew install bemly/tahoe-intel/fastfetch
-brew install bemly/tahoe-intel/opencode # 会连带装上本 tap 的 ripgrep 依赖
+brew install bemly/tahoe/gh
+brew install bemly/tahoe/fastfetch
+brew install bemly/tahoe/opencode # 会连带装上本 tap 的 ripgrep 依赖
 
 # workbuddy 是桌面 app，走 cask（装进 /Applications，Launchpad/Spotlight 可见）
-brew install --cask bemly/tahoe-intel/workbuddy
+brew install --cask bemly/tahoe/workbuddy
 # doubao-ime 是输入法，走 cask（自动跑官方安装器装进 /Library/Input Methods，会弹密码框）
-brew install --cask bemly/tahoe-intel/doubao-ime
+brew install --cask bemly/tahoe/doubao-ime
 ```
 
 ## 收录的软件
@@ -102,17 +102,17 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 
 ```bash
 # 用本 tap 的版本
-brew unlink gh && brew link --overwrite bemly/tahoe-intel/gh
-brew unlink fastfetch && brew link --overwrite bemly/tahoe-intel/fastfetch
+brew unlink gh && brew link --overwrite bemly/tahoe/gh
+brew unlink fastfetch && brew link --overwrite bemly/tahoe/fastfetch
 
 # 用 core 的版本
-brew unlink bemly/tahoe-intel/gh && brew link gh
-brew unlink bemly/tahoe-intel/fastfetch && brew link fastfetch
+brew unlink bemly/tahoe/gh && brew link gh
+brew unlink bemly/tahoe/fastfetch && brew link fastfetch
 ```
 
 ## GHCR 瓶
 
-安装包从 **GHCR** 分发：`ghcr.io/v2/bemly/tahoe-intel`
+安装包从 **GHCR** 分发：`ghcr.io/v2/bemly/tahoe`
 （Homebrew 会剥掉仓库名的 `homebrew-` 前缀，与核心的 `ghcr.io/v2/homebrew/core` 同构）。
 
 瓶的内容直接来自上游预构建包，**不重新编译**。瓶标签由构建机的架构与系统决定，

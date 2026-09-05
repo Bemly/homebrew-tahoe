@@ -6,7 +6,7 @@ cask "doubao-ime" do
   # 由 watcher 检测新版本后下载并上传到此，URL 即指向 Release 资产）。
   # 外层安装器文件名含构建号（DoubaoImeInstaller_v90703_release.zip），每次部署都变——
   # 故不用 #{version} 插值，而由 watcher 在每次更新时整条改写。
-  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/doubao-ime-0.9.7/DoubaoImeInstaller_v90703_release.zip"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/doubao-ime-0.9.7/DoubaoImeInstaller_v90703_release.zip"
   name "Doubao IME"
   desc "Doubao AI input method"
   homepage "https://shurufa.doubao.com/"
