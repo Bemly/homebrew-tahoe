@@ -93,6 +93,7 @@ brew install --cask bemly/tahoe-intel/doubao-ime
 | `ninja` | 小而快的构建系统，上游 universal 包（Intel 切片） |
 | `rustup` | 官方静态 Rust 工具链安装器，与 core 同名（先卸 core 版）；提供 `rustup` 及 cargo/rustc 代理垫片，工具链走 `rustup toolchain install stable` |
 | `wireshark` | 网络协议分析器，cask 取官方 Intel dmg（Intel 构建停在 4.4 系）；附 `tshark`/`editcap` 命令垫片 |
+| `git-lfs` | Git 大文件扩展，上游 Intel 构建（带全套 man 页）；装完手动跑一次 `git lfs install` |
 
 ## 注意事项（同名冲突）
 
