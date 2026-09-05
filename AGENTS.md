@@ -148,7 +148,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 
 | 软件 | 版本 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| `gh` | 2.99.0 | GitHub 官方发布包 `gh_2.99.0_macOS_amd64.zip`（外部链接） | 已收录 |
+| `gh` | 2.100.0 | GitHub 官方发布包 `gh_<ver>_macOS_amd64.zip`（外部链接） | 已收录 |
 | `fastfetch` | 2.68.1 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
 | `neofetch` | 7.1.0 | GitHub 归档发布包 `neofetch-7.1.0.tar.gz`（外部链接，纯 bash 脚本、已归档为最后一版）；**不走 updater 检查器**（无更新），`install` 用 `make install PREFIX`，`post_install` 不做 x86_64 文件校验 | 已收录 |
 | `workbuddy` | 5.4.7.37521366 | cask——WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取），镜像到本仓 GitHub Release | 已收录 |
