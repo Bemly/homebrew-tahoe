@@ -200,6 +200,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `rustup` | 1.29.1 | 公式：static.rust-lang.org 版本化归档的裸二进制（自包含，零依赖），装成 `rustup` + 照抄 core 的 cargo/rustc 代理垫片；与 core 同名，本机卸 core `rust`/`rustup` 后完整接管，工具链走 `rustup toolchain install stable`（见 11.32）；版本走 release-stable.toml（releases/latest 跳列表页无 tag，见 11.29） | 已收录 |
 | `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31），镜像到本仓 Release（`wireshark-<ver>`，资产名空格换点，见 11.34）；`tshark`/`editcap` binary 垫片；同 dmg 的 `Install ChmodBPF.pkg` 必装（否则无 BPF 权限抓不了包；装完即生效无需重登，见 11.35） | 已收录 |
 | `git-lfs` | 3.8.0 | 官方 `git-lfs-darwin-amd64-v<ver>.zip`（单顶层目录，带全套 man 页；自带 install.sh 写 /usr/local 不用，直接拆文件）；检查器 brew 模板流（`checksumsURL: nil`，sha256sums.asc 文件名带 `*` 前缀对不上，见 11.21） | 已收录 |
+| `github-copilot-app` | 1.1.15 | cask——GitHub Copilot 桌面 app（github/app 按架构分包，取 `GitHub-Copilot-darwin-x64.dmg`，短链 `gh.io/copilot-app-mac-intel` 是 floating 链接 HEAD 探测不可用）；镜像到本仓 Release（`github-copilot-app-<ver>`）；版本走 core cask API（core 的 url/sha 是 arm64 的不能用，Intel sha 下载实算），检查器 brewCask 流 + 镜像分支 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
