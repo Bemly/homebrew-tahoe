@@ -1233,6 +1233,31 @@ winstart 早就是这个形态（无公开链接，只能如此）。
    bin/curl3 不存在、头文件又回来了）。验证布局改动必须
    `brew install --build-from-source`；GHCR 侧靠重跑 bottle 覆盖。
 
+### 11.36 tap 改名 tahoe-intel → tahoe（2026-09-05 实测）
+
+1. 仓库 `bemly/homebrew-tahoe-intel` → `bemly/homebrew-tahoe`（`homebrew-`
+   前缀是 brew 强制的，去不得），tap 名随之 `bemly/tahoe`；GHCR root_url 按
+   `repo.delete_prefix("homebrew-")` 推导 → `ghcr.io/v2/bemly/tahoe`。全仓
+   `tahoe-intel` → `tahoe` 子串替换一次覆盖（`macos-26-intel`/`x86_64_tahoe`
+   不含该子串不受影响，改前 grep 确认过）。
+2. **仓库改名不会搬 GHCR 包**：旧包仍叫 `tahoe-intel/<name>`，新 root_url 下
+   全是新包。瓶迁移不重制——临时 workflow（ubuntu + `crane copy`）逐包逐 tag
+   原样搬运，manifest/blob digest 不变 → 公式瓶块只改 root_url 行、sha256
+   原样有效，零 macOS runner（40 个 tag 一次跑完约 4 分钟；从未出瓶的 go
+   自动跳过）。
+3. 新包可见性：11.14 的结论对**新建包名**同样成立——CI 里 GITHUB_TOKEN 推的
+   包默认公开，迁移后匿名逐包体检 40/40 全过，无需手动改 Public。
+4. 本机迁移：`brew tap-rename` 在 brew 6.0.21 **不存在**（只有 `tap-new`）。
+   手动三步：`git remote set-url`；`mv Taps/bemly/homebrew-tahoe-intel
+   homebrew-tahoe`（软链改名，目标目录不动）；`grep -rl` 找出 Cellar 里所有
+   含旧名的 `INSTALL_RECEIPT.json` sed 改写（89 个，含 runtime_dependencies
+   全名）。末了 `brew readall bemly/tahoe` + `brew fetch --bottle-tag=tahoe`
+   验证（✔︎ Manifest + ✔︎ Bottle 即成功，见 11.10）。
+5. 旧包 `tahoe-intel/*` 迁移后成冗余副本，手动删：
+   `gh api -X DELETE users/bemly/packages/container/tahoe-intel%2F<name>`
+   （`@` 同 `/` 都要编码成 `%2F`）；改名后的仓库地址 GitHub 会 301 重定向，
+   外部用户须重新 `brew tap bemly/tahoe`。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
