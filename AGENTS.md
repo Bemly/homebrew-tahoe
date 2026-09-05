@@ -198,7 +198,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `iperf3` | 3.21 | userdocs 静态构建 `iperf3-amd64-osx-15`（openssl 静态链接，零依赖，绕开 openssl@4 树）；资产名后缀随 runner 世代变化，检查器 customRelease 抓 expanded_assets 取最大世代（见 11.31） | 已收录 |
 | `ninja` | 1.13.2 | 官方 `ninja-mac.zip`（universal 双切片；core 虽有 tahoe 瓶仍镜像） | 已收录 |
 | `rustup` | 1.29.1 | 公式：static.rust-lang.org 版本化归档的裸二进制（自包含，零依赖），装成 `rustup` + 照抄 core 的 cargo/rustc 代理垫片；与 core 同名，本机卸 core `rust`/`rustup` 后完整接管，工具链走 `rustup toolchain install stable`（见 11.32）；版本走 release-stable.toml（releases/latest 跳列表页无 tag，见 11.29） | 已收录 |
-| `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31），镜像到本仓 Release（`wireshark-<ver>`，资产名空格换点，见 11.34）；`tshark`/`editcap` binary 垫片 | 已收录 |
+| `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31），镜像到本仓 Release（`wireshark-<ver>`，资产名空格换点，见 11.34）；`tshark`/`editcap` binary 垫片；同 dmg 的 `Install ChmodBPF.pkg` 必装（否则无 BPF 权限抓不了包，见 11.35） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1151,6 +1151,20 @@ winstart 早就是这个形态（无公开链接，只能如此）。
    自动清理——双架构 + 镜像全链路一次跑通，比摆拍更硬的 proof。
 3. **旧 release 只留最新**：沿用 workbuddy 机制（`deleteOldCaskReleases`），
    每个 cask 的 Release 永远只有一个，11 个 cask 对 11 个 release。
+
+### 11.35 wireshark 不装 ChmodBPF 就抓不了包（2026-09-05 实测）
+
+1. 现象：`tshark -D` 能列接口（列接口不要权限），但一抓就
+   `cannot open BPF device /dev/bpf0: Permission denied`——`/dev/bpf*`
+   默认 `root:wheel 600`，且根本没有 `access_bpf` 组，本 tap 首版 cask
+   只装了 app，权限链是断的。
+2. 修法：cask 加 `pkg "Install ChmodBPF.pkg"`（同 dmg 内的官方包，已拆包
+   验过 postinstall 实物：建 `access_bpf` 组、把 admin 组 + 当前用户加进去、
+   装 LaunchDaemon 开机改 bpf 设备组归属）+ `uninstall` 配
+   `launchctl`/`pkgutil` + caveats 写明注销重登。装 pkg 要弹密码（写
+   `/Library`），属正常行为。
+3. 时效坑：组身份要**重新登录**才生效——装完立刻抓照样 denied，不是没装好；
+   非 admin 用户还需手动 `dseditgroup` 加组（caveats 里写了）。
 
 ### 11.31 本轮链路备忘（curl3 栈 / iperf3 / wireshark）
 

@@ -21,9 +21,26 @@ cask "wireshark" do
   depends_on macos: :tahoe
 
   app "Wireshark.app"
+  # 不装这个就抓不了包：/dev/bpf* 默认 root:wheel 600，普通用户打不开。
+  # 同 dmg 内的官方包，作用三件套（已拆包验过 postinstall 实物）：
+  # 建 access_bpf 组并把 admin 组 + 当前用户加进去，装 LaunchDaemon
+  # （org.wireshark.ChmodBPF）开机/装完即改 bpf 设备组归属。装它要弹密码
+  # （写 /Library），属正常 cask/pkg 行为。
+  pkg "Install ChmodBPF.pkg"
   # Phase 0 要 tshark / editcap：官方 dmg 里它们在 app 包内，随包附带。
   binary "#{appdir}/Wireshark.app/Contents/MacOS/tshark", target: "tshark"
   binary "#{appdir}/Wireshark.app/Contents/MacOS/editcap", target: "editcap"
 
-  uninstall quit: "org.wireshark.Wireshark"
+  uninstall launchctl: "org.wireshark.ChmodBPF",
+            quit:      "org.wireshark.Wireshark",
+            pkgutil:   "org.wireshark.ChmodBPF.pkg"
+
+  caveats <<~EOS
+    抓包权限（ChmodBPF 已随本 cask 安装）：
+      安装包把你加进了 access_bpf 组，但组身份要重新登录才生效——
+      注销重登一次（或重启），再跑：
+        tshark -i lo0 -c 3
+      还报 Permission denied 就再登出登入一次；管理员之外的用户需手动
+      `sudo dseditgroup -o edit -a <用户名> -t user access_bpf`。
+  EOS
 end
