@@ -1257,6 +1257,16 @@ winstart 早就是这个形态（无公开链接，只能如此）。
    `gh api -X DELETE users/bemly/packages/container/tahoe-intel%2F<name>`
    （`@` 同 `/` 都要编码成 `%2F`）；改名后的仓库地址 GitHub 会 301 重定向，
    外部用户须重新 `brew tap bemly/tahoe`。
+6. **tap 信任按 tap 名记账，改名即失效**：本机重装时报
+   `Refusing to load formula ... from untrusted tap bemly/tahoe`，且会烧在
+   「别的公式」上（依赖闭包/收尾阶段扫到未信任公式，重装目标本身已信任也
+   exit≠0）。修法就一句 `brew trust bemly/tahoe`；CI 不受影响（bottle.yml
+   本来就有 trust 步骤）。同轮实测：本机 39 个公式重装全部命中新 GHCR 瓶；
+   node 家族三条共抢 bin/node|npm|npx|corepack 四个链接，重装会把归属抢成
+   最后重装的那个——装完按原状 `brew unlink` + `brew link --overwrite node`
+   + corepack 单独指回 node@22 恢复。另：graphviz 重装会经 core API 漂移
+   拉进 netpbm（其源码要 svn 检出，本机 subversion 未 link 时报
+   "You must: brew install svn"），与改名无关但同场发生。
 
 ## 12. 待办 / 后续演进
 
