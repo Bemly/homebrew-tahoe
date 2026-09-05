@@ -167,7 +167,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
 | `mufetch` | 0.1.1 | GitHub release 的 `mufetch_darwin_x86_64.tar.gz`（外部直链，tar 无顶层目录，文件直接在 CWD）；brew 流模板式检查器，sha 取自 release 的 `checksums.txt`（约 2KB） | 已收录 |
 | `cmd` | 1.45.0 | npm 包 `command-code` 的 tarball 直引（`npm install` 到 libexec，四入口只暴露 `cmd`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/cmd.swift，同 neofetch） | 已收录 |
-| `zcode` | 3.10.2 | cask——上游 CDN 按架构分包（`arch` 双插值，`sha256 arm:/intel:` 直给）；检查器走 `brewCask` 版本 + 双架构产物分支（见 11.26） | 已收录 |
+| `zcode` | 3.11.2 | cask——上游 CDN 按架构分包，镜像到本仓 Release（`zcode-<ver>` 双资产；`arch` 双插值，`sha256 arm:/intel:` 直给）；检查器走 `brewCask` 版本 + 双架构镜像分支（见 11.26/11.34） | 已收录 |
 | `deepseek-harness` | 0.1.1-rc.2 | npm 包 `@deepseek-ai/dsh` 的 tarball 直引（`npm install` 到 libexec，只暴露 `dsh`，`dsh web` 起 Web UI，默认 `http://127.0.0.1:3080`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/deepseek-harness.swift，同 cmd/neofetch）；与 core 的 `dsh`（Dancer's shell）无关但共享 `bin/dsh` 链接，同时安装时以后 link 的为准 | 已收录 |
 | `ffmpeg` | 9.0.1 | evermeet 静态发行版 `ffmpeg-<ver>.zip`（单 x86_64 二进制；不用 getrelease 的 7z——brew 解 7z 需 p7zip，core 无 Intel Tahoe 瓶，见 11.18）；检查器 brew 流模板式（`brewName: ffmpeg`，`checksumsURL: nil` 回退下载实算） | 已收录 |
 | `ffprobe` | 9.0.1 | 同上（`ffprobe-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffprobe 公式）；core 无同名公式 | 已收录 |
@@ -175,14 +175,14 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `ffserver` | 3.4.2 | 同上（`ffserver-<ver>.zip`，上游 4.0 已移除的最后构建，2018 年二进制仍可在 Tahoe x86_64 原生运行）；**不检查更新**（无 updater/ffserver.swift） | 已收录 |
 | `fish` | 4.9.0 | 官方 `fish-<ver>.app.zip` 内的 unix 树（`base/` 即 install.sh 落盘内容，只装 base/ 不装 .app 本体；universal 含 x86_64 切片，doubao-ime 同例）；检查器 brew 流模板式（`checksumsURL: nil`，上游无 SHA256SUMS，实测 404） | 已收录 |
 | `docker-buildx` | 0.37.0 | 官方裸二进制 `buildx-v<ver>.darwin-amd64`（改名装进 bin；实测 darwin-amd64 尾缀不影响版本扫描，无需 version 行，见 11.19）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 无 darwin 条目） | 已收录 |
-| `checkra1n` | 0.12.4 | cask——上游 dmg 直引（URL 路径即文件 sha256；core 同名 cask 因过不了 Gatekeeper 已被 disable，本 tap 提供可用安装路径）；附 `binary` 垫片出 `checkra1n` 命令；**不检查更新**（无 updater/checkra1n.swift） | 已收录 |
-| `palera1n` | 3.0.0-beta.2 | cask——上游 universal dmg 直引（x86_64+arm64 双切片，单包覆盖双架构，无需 arch 分包；直引不镜像 Release）；**不检查更新**（无 updater/palera1n.swift） | 已收录 |
-| `macos-tskmgr` | 1.1.1 | cask——上游按架构分包（`arch` 插值各取各的，`sha256 arm:/intel:` 直给；直引不镜像 Release）；**不检查更新**（无 updater/macos-tskmgr.swift） | 已收录 |
-| `brewui` | 0.2.1 | cask——上游 GitHub release 的 universal zip 直引（单包双架构；直引不镜像 Release）；检查器走 UpdaterCore 新增的 `github` 流（releases/latest 跳转判新，不耗 API 限额，见 11.21） | 已收录 |
+| `checkra1n` | 0.12.4 | cask——镜像到本仓 Release（`checkra1n-<ver>`；资产名空格换点，见 11.34；core 同名 cask 因过不了 Gatekeeper 已被 disable，本 tap 提供可用安装路径）；附 `binary` 垫片出 `checkra1n` 命令；**不检查更新**（无 updater/checkra1n.swift） | 已收录 |
+| `palera1n` | 3.0.0-beta.2 | cask——上游 universal dmg（x86_64+arm64 双切片，单包覆盖双架构，无需 arch 分包），镜像到本仓 Release（`palera1n-<ver>`）；**不检查更新**（无 updater/palera1n.swift） | 已收录 |
+| `macos-tskmgr` | 1.1.1 | cask——上游按架构分包，镜像到本仓 Release（`macos-tskmgr-<ver>` 双资产；`arch` 插值各取各的，`sha256 arm:/intel:` 直给）；**不检查更新**（无 updater/macos-tskmgr.swift） | 已收录 |
+| `brewui` | 0.2.1 | cask——上游 GitHub release 的 universal zip（单包双架构），镜像到本仓 Release（`brewui-<ver>`）；检查器走 UpdaterCore 新增的 `github` 流（releases/latest 跳转判新，不耗 API 限额，见 11.21） | 已收录 |
 | `winstart` | 0.13.6 | cask——本地包一次性镜像到本仓 Release（`winstart-<ver>` tag，上游无公开链接，人工 `gh release create` 发版）；universal 双切片；**不检查更新**（无 updater/winstart.swift）；cask homepage 必填，取开发者 B 站主页 | 已收录 |
 | `docker-compose` | 5.5.1 | 官方裸二进制 `docker-compose-darwin-x86_64`（文件名无版本、路径段可扫，无需 version 行，见 11.21）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 文件名带 `*` 前缀、核心精确匹配对不上） | 已收录 |
 | `go` | 1.27.1 | Go 官方 `go<ver>.darwin-amd64.tar.gz`（完整工具链，只链系统库，零依赖；不用同版本 `.pkg`——要 root 写 /usr/local；`go1.27.1.darwin-amd64` 会扫成 `"64"`，需显式 version 行，见下） | 已收录 |
-| `heliport` | 2.0.0-alpha | cask——上游 dmg 直引（url 用 `#{version}` 插值，tag 带 v 前缀而文件名无版本；包内 x86_64 thin）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
+| `heliport` | 2.0.0-alpha | cask——上游 dmg（包内 x86_64 thin），镜像到本仓 Release（`heliport-<ver>`）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
 | `konsole` | 5277 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支，每月手动跑一次（不设 cron，见 11.26） | 已收录 |
 | `curl3` | 8.22.0 | **改名代编译**：与 core curl 同源 + 独家 `--enable-proxy-http3`（MASQUE/CONNECT-UDP 实验开关，core 没开）；改名避与 core curl 同 Cellar 冲突；主二进制同步改名 `curl3` 正常 link（系统 curl 不动）；`--disable-shared` 纯客户端形态，开发件全裁（避 SDK 头 shadowing，见 11.33）；`libnghttp3/libngtcp2` 走本 tap 全名叶子依赖，`libnghttp2` 等枢纽留 core 裸名（扇入 19，见 11.31） | 已收录 |
 | `libnghttp3` | 1.18.0 | 代编译叶子：curl3 专属 H3 依赖（扇入 5），core 拷入 | 已收录 |
@@ -198,7 +198,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `iperf3` | 3.21 | userdocs 静态构建 `iperf3-amd64-osx-15`（openssl 静态链接，零依赖，绕开 openssl@4 树）；资产名后缀随 runner 世代变化，检查器 customRelease 抓 expanded_assets 取最大世代（见 11.31） | 已收录 |
 | `ninja` | 1.13.2 | 官方 `ninja-mac.zip`（universal 双切片；core 虽有 tahoe 瓶仍镜像） | 已收录 |
 | `rustup` | 1.29.1 | 公式：static.rust-lang.org 版本化归档的裸二进制（自包含，零依赖），装成 `rustup` + 照抄 core 的 cargo/rustc 代理垫片；与 core 同名，本机卸 core `rust`/`rustup` 后完整接管，工具链走 `rustup toolchain install stable`（见 11.32）；版本走 release-stable.toml（releases/latest 跳列表页无 tag，见 11.29） | 已收录 |
-| `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31）；`tshark`/`editcap` binary 垫片 | 已收录 |
+| `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31），镜像到本仓 Release（`wireshark-<ver>`，资产名空格换点，见 11.34）；`tshark`/`editcap` binary 垫片 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -495,8 +495,9 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
      （brewCask / customRelease 任选其一）之外再配 `archArtifacts: [token]` +
      `downloadURLForArch: (version, arch) -> url`，核心走双分支（逐个探测下载、
      各算各的 sha，改写 version + `sha256 arm:/intel:` 行；url 行不动）。
-     要镜像到本仓 Release（konsole 这类直链几天即坏的）再加 `uploadRelease: true`
-     （tag `<name>-<ver>`、资产名沿用上游 basename、旧快照自动清理）。
+     镜像一律开 `uploadRelease: true`（本 tap 政策：所有 cask 都镜像最新版，
+     见 11.34）：tag `<name>-<ver>`、资产名沿用上游 basename（空格换点，
+     见 11.34）、旧快照自动清理。
      token→key 由核心 `caskArchKey` 显式映射，未知 token 直接 fail。
    ⚠️ **公式与 swift 文件没有 push 进远端之前，CI checkout 拿不到它们**（见 11.7）。
 
@@ -1002,7 +1003,9 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    （逐个 HEAD 探测 → 下载实算 → 改写 version 行 + `sha256 arm:/intel:` 行；
    url 行不动，`#{version}/#{arch}` 插值已覆盖新版本）。token→key 由
    `caskArchKey` 显式映射（未知 token 直接 fail，绝不静默错配）；双产物无
-   checksums 模板（有更新逐个实算）；与 `uploadRelease` 镜像流不可同用（fail 明示）。
+   checksums 模板（有更新逐个实算）。【2026-09-05 修正：本条末句已作废——
+   双架构 + 镜像完全可用（konsole 一直这么跑，zcode 本轮也切过来了），
+   组合语义见 11.34；"fail 明示" 的说法无代码对应，切勿再信。】
 2. **旧改写语义有个潜 bug**：`rewriteFormula` 原来整条替换 url 行——对插值 url
    （zcode/brewui 的 `#{version}`）第一次更新就会把插值写死成字面，顺带破坏
    audit 的版本判定。现改为：镜像流（`uploadRelease`）仍整条换；其余只做
@@ -1125,6 +1128,29 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
 3. **新版裸 `--help` 只打分类列表**：curl 8.22 的 `--help` 输出 23 行分类，
    查选项必须 `--help all`（`proxy-http3` 在 all 里）；hyperfine 1.20 输出
    改版（`Time (mean ± σ)`），test 只锁 `Benchmark 1` 这种稳定锚点。
+
+### 11.34 全 cask 镜像政策 + 空格资产名坑（2026-09-05 定稿，硬规则）
+
+**政策（用户拍板，此后所有 cask 无例外）**：11 个 cask 全部把最新版镜像到
+本仓 GitHub Release（tag `<name>-<ver>`，资产名沿用上游 basename），cask
+url 一律指本仓 Release；上游直引只做新收录时的过渡，首轮即镜像。
+旧政策（"链接稳定的直引即可，如 zcode/brewui"）已废弃。pinned 不检查更新
+的 cask（checkra1n/palera1n/macos-tskmgr/heliport/winstart）同样镜像当前
+锁定版——只是没有检查器，靠人工重做（下载→核 sha→传 Release→改 url）。
+winstart 早就是这个形态（无公开链接，只能如此）。
+
+1. **GitHub 存资产时把空格换成点**：`checkra1n beta 0.12.4.dmg` 存成
+   `checkra1n.beta.0.12.4.dmg`，`Wireshark 4.4.18 Intel 64.dmg` 存成
+   `Wireshark.4.4.18.Intel.64.dmg`——cask url 照抄直引的 `%20` 形态必 404
+   （本轮 checkra1n/wireshark 双双中招，`fetch --cask` 现形）。
+   修法：cask url 写点分隔形态；`UpdaterCore` 单/双架构两条上传链路同步做
+   `空格→点` 替换（`%20` 先解码，wireshark 的 appcast 直链是编码形态），
+   上传用名与 finalURL 保持一致。
+2. **zcode 顺手真升了一次**：翻镜像开关后跑检查器，正撞上游 3.10.2→3.11.2，
+   双包下载实算、上传 `zcode-3.11.2`、改写 version + 双 sha、旧 release
+   自动清理——双架构 + 镜像全链路一次跑通，比摆拍更硬的 proof。
+3. **旧 release 只留最新**：沿用 workbuddy 机制（`deleteOldCaskReleases`），
+   每个 cask 的 Release 永远只有一个，11 个 cask 对 11 个 release。
 
 ### 11.31 本轮链路备忘（curl3 栈 / iperf3 / wireshark）
 

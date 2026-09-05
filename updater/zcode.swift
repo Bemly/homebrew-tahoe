@@ -12,8 +12,12 @@
 //   - 直链：core 的 url 是 arm64 的，必须由 downloadURLForArch 模板拼出双直链；
 //   - sha256：core 那份属于 arm64 包，对 x64 无效 → 双双实算。
 //
-// 直引上游 CDN、链接规律（路径与文件名都随版本变化）→ uploadRelease 保持 false：
-// 不上传本仓 Release，也不把 url 改写为 Release 地址（与 workbuddy/doubao-ime 不同）。
+// 直引上游 CDN、链接规律（路径与文件名都随版本变化）→ 按本 tap 政策
+// （所有 cask 都镜像最新版）走镜像：有更新时双包下载实算、上传本仓 Release
+//（tag zcode-<ver>，资产名沿用上游 basename；旧版自动清理），cask url
+// 永远指 Release（konsole 同机制）。
+// downloadURLForArch 仍指向上游 CDN——它是下载源，cask 的 Release 指向
+// 由 cask 文件内的 #{version}/#{arch} 插值承担，两者各司其职。
 // cask 无 bottle 机制，watcher 更新 cask 后不触发 bottle.yml。
 //
 // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致。
@@ -29,6 +33,7 @@ struct ZcodeCheck {
             isCask: true,
             brewName: "zcode",
             brewCask: true,
+            uploadRelease: true,
             archArtifacts: ["arm64", "x64"],
             downloadURLForArch: { version, arch in
                 "https://cdn-zcode.z.ai/zcode/electron/releases/\(version)/macos-\(arch)/ZCode-\(version)-mac-\(arch).dmg"

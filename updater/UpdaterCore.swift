@@ -35,7 +35,8 @@
 // （zcode / konsole），同一版本多份产物、各算各的 sha，走 runDualArchCheck
 // （逐个 HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行；url 行不动，
 // 靠 #{version}/#{arch} 插值覆盖新版本）。双产物无 checksums 模板，
-// 有更新时逐个下载实算；与 uploadRelease 镜像流不可同用。
+// 有更新时逐个下载实算；镜像（uploadRelease=true，konsole/zcode）下先双包
+// 上传本仓 Release 再改写（url 插值须已指向本仓 Release，见 11.34）。
 //
 // 输出契约与旧版 scripts/check-updates.sh 一致（GITHUB_OUTPUT 键名不变）；
 // brew 流查不到软件（API 404）时输出 status=brew-missing 并停（TODO 见 runCheck）。
@@ -613,8 +614,12 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
         }
         var created = false
         for d in dls {
-            // gh 以本地文件名做资产名：改成上游 basename（单包镜像流同例，见 11.16）
-            let assetName = URL(fileURLWithPath: d.url).lastPathComponent
+            // gh 以本地文件名做资产名：改成上游 basename（单包镜像流同例，见 11.16）。
+            // 空格同步换成点（GitHub 存资产时会这么干，见本文件单包分支注释；
+            // %20 先解码，wireshark 的 appcast 直链是编码形态）。
+            let rawName = URL(fileURLWithPath: d.url).lastPathComponent
+            let assetName = (rawName.removingPercentEncoding ?? rawName)
+                .replacingOccurrences(of: " ", with: ".")
             let namedPath = FileManager.default.temporaryDirectory
                 .appendingPathComponent("updater-\(UUID().uuidString)")
                 .appendingPathComponent(assetName).path
@@ -1038,7 +1043,14 @@ func runCheck(_ config: CheckConfig) {
     var finalURL = downloadURL
     if config.isCask && config.uploadRelease {
         let tagName = "\(config.formula)-\(stable)"
-        let assetName = URL(fileURLWithPath: downloadURL).lastPathComponent
+        // GitHub 会把资产名里的空格改成点（如 "checkra1n beta 0.12.4.dmg" 存成
+        // "checkra1n.beta.0.12.4.dmg"，2026-09-05 实测）：上传用名与 cask URL
+        // 必须同步做这个替换，否则 URL 404。单/双架构两条路都要换；
+        // 先解 %20（appcast/URL 编码形态的下载直链，lastPathComponent 拿到的是
+        // 字面 %20，不解就传上去，资产名就烂了）。
+        let assetName = (URL(fileURLWithPath: downloadURL).lastPathComponent
+            .removingPercentEncoding ?? URL(fileURLWithPath: downloadURL).lastPathComponent)
+            .replacingOccurrences(of: " ", with: ".")
         let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe-intel"
         guard let zipPath = curlDownload(downloadURL) else {
             fail("下载 \(config.formula) 发布包失败，无法上传 Release")

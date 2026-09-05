@@ -3,11 +3,12 @@ cask "palera1n" do
   sha256 "8cfb4c843317c09c43a3fe3edeb7f03e736ff436fff4f3fb4f587d9346168881"
 
   # 上游 universal dmg（x86_64 + arm64 双切片，实测），一个包同时覆盖
-  # Intel 与 Apple Silicon，无需 arch 分包。直引上游版本化链接（稳定），
-  # 不镜像到本仓 Release（zcode 同例）；url 用 #{version} 插值，否则 audit
-  # 会因"URL 无版本"要求 sha256 :no_check。
+  # Intel 与 Apple Silicon，无需 arch 分包。镜像到本仓 Release
+  # （tag palera1n-<ver>，资产名沿用上游）：本 tap 政策是所有 cask 都镜像
+  # 最新版（直引只做过渡）；url 用 #{version} 插值（tag 带版本），否则
+  # audit 会因"URL 无版本"要求 sha256 :no_check。
   # 本 cask 锁定该版本、永不检查更新（无 updater/palera1n.swift）。
-  url "https://github.com/palera1n/palera1n/releases/download/v#{version}/palera1n-macos-universal.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/palera1n-#{version}/palera1n-macos-universal.dmg"
   name "palera1n"
   desc "Jailbreak tool for checkm8-vulnerable Apple devices"
   homepage "https://palera.in/"

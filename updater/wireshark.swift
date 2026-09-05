@@ -11,6 +11,8 @@
 // 的那一项：sparkle:shortVersionString 即版本，同项注释里的 SHA256 即校验和
 // （官方给出，无需下载 66MB 实算）。appcast 的 enclosure host 是 dl 镜像
 // （2.na.dl.wireshark.org），归一化到 www 主站同路径（实测同文件，长度一致）。
+// 按本 tap 政策（所有 cask 都镜像最新版）走镜像：有更新时下载 dmg、上传本仓
+// Release（tag wireshark-<ver>），cask url 指 Release（workbuddy 同机制）。
 
 import Foundation
 
@@ -45,7 +47,8 @@ struct WiresharkCheck {
                 return UpstreamRelease(version: String(xml[vr]),
                                        downloadURL: url,
                                        sha256: String(xml[sr]).lowercased())
-            }
+            },
+            uploadRelease: true
         )
         runCheck(config)
     }

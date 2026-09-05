@@ -3,10 +3,15 @@ cask "wireshark" do
   # 上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg，只有 arm 包），故版本不跟
   # core 公式 stable（4.6.8），而是跟官方 Sparkle appcast 里带 "Intel 64" 的
   # 那一项；sha256 直接取 appcast 同项注释里的官方值，无需下载 66MB 实算。
-  # url 用 #{version} 插值，否则 audit 会因"URL 无版本"要求 sha256 :no_check。
+  # 镜像到本仓 Release（tag wireshark-<ver>）：注意 GitHub 存资产时把空格
+  # 换成点，上游的 "Wireshark <ver> Intel 64.dmg" 存成
+  # "Wireshark.<ver>.Intel.64.dmg"，url 必须写点分隔形态，否则 404
+  # （checkra1n 同例，2026-09-05 实测）。
+  # 本 tap 政策是所有 cask 都镜像最新版；url 用 #{version} 插值，否则
+  # audit 会因"URL 无版本"要求 sha256 :no_check。
   sha256 "84140b6014fb53da2d285482796283e583bf25b0c1d4ed7faee65f1f338a8570"
 
-  url "https://www.wireshark.org/download/osx/all-versions/Wireshark%20#{version}%20Intel%2064.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/wireshark-#{version}/Wireshark.#{version}.Intel.64.dmg"
   name "Wireshark"
   desc "Network protocol analyzer"
   homepage "https://www.wireshark.org/"

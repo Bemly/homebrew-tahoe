@@ -2,11 +2,12 @@ cask "brewui" do
   version "0.2.1"
   sha256 "cbc44feb39106db06de89dec6452d20ff15086bbe7cb1a9729cf3956ed31a0a8"
 
-  # 直引上游版本化 zip（稳定），不镜像到本仓 Release（zcode 同例）；
-  # url 用 #{version} 插值（tag 带 v 前缀、文件名不带），否则 audit 会因
-  # "URL 无版本"要求 sha256 :no_check。
-  # 版本更新由 updater/brewui.swift 跟 GitHub release（UpdaterCore github 流）。
-  url "https://github.com/Homebrew/BrewUI/releases/download/v#{version}/Homebrew-#{version}.zip"
+  # 镜像到本仓 Release（tag brewui-<ver>，资产名沿用上游）：
+  # 本 tap 政策是所有 cask 都镜像最新版（直引只做过渡）；
+  # url 用 #{version} 插值，否则 audit 会因"URL 无版本"要求 sha256 :no_check。
+  # 版本更新由 updater/brewui.swift 跟 GitHub release（UpdaterCore github 流），
+  # 有更新时下载、上传 Release、改写本文件。
+  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/brewui-#{version}/Homebrew-#{version}.zip"
   name "BrewUI"
   desc "Official graphical interface for Homebrew"
   homepage "https://github.com/Homebrew/BrewUI"

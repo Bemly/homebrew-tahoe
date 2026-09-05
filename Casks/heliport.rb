@@ -2,11 +2,12 @@ cask "heliport" do
   version "2.0.0-alpha"
   sha256 "751e09824c3bd0662287c42d9dd3568bed9f3e7cff920e3a47b5ef67a82975db"
 
-  # 直引上游版本化 dmg（稳定），不镜像到本仓 Release（zcode 同例）；
-  # url 用 #{version} 插值（tag 带 v 前缀、文件名无版本），否则 audit 会因
+  # 镜像到本仓 Release（tag heliport-<ver>，资产名沿用上游 HeliPort.dmg）：
+  # 本 tap 政策是所有 cask 都镜像最新版（直引只做过渡）；url 用 #{version}
+  # 插值（tag 带版本；文件名无版本但 tag 已覆盖），否则 audit 会因
   # "URL 无版本"要求 sha256 :no_check。
   # 本 cask 锁定该版本、永不检查更新（无 updater/heliport.swift）。
-  url "https://github.com/OpenIntelWireless/HeliPort/releases/download/v#{version}/HeliPort.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe-intel/releases/download/heliport-#{version}/HeliPort.dmg"
   name "HeliPort"
   desc "Wi-Fi client for Intel wireless adapters"
   homepage "https://github.com/OpenIntelWireless/HeliPort"
