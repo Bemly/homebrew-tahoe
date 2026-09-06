@@ -201,6 +201,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `wireshark` | 4.4.18 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31），镜像到本仓 Release（`wireshark-<ver>`，资产名空格换点，见 11.34）；`tshark`/`editcap` binary 垫片；同 dmg 的 `Install ChmodBPF.pkg` 必装（否则无 BPF 权限抓不了包；装完即生效无需重登，见 11.35） | 已收录 |
 | `git-lfs` | 3.8.0 | 官方 `git-lfs-darwin-amd64-v<ver>.zip`（单顶层目录，带全套 man 页；自带 install.sh 写 /usr/local 不用，直接拆文件）；检查器 brew 模板流（`checksumsURL: nil`，sha256sums.asc 文件名带 `*` 前缀对不上，见 11.21） | 已收录 |
 | `github-copilot-app` | 1.1.15 | cask——GitHub Copilot 桌面 app（github/app 按架构分包，取 `GitHub-Copilot-darwin-x64.dmg`，短链 `gh.io/copilot-app-mac-intel` 是 floating 链接 HEAD 探测不可用）；镜像到本仓 Release（`github-copilot-app-<ver>`）；版本走 core cask API（core 的 url/sha 是 arm64 的不能用，Intel sha 下载实算），检查器 brewCask 流 + 镜像分支 | 已收录 |
+| `frida-server` | 17.17.0 | GitHub frida/frida 官方 `frida-server-<ver>-macos-x86_64.xz`（裸二进制仅 Intel；上游无 checksums 清单，sha 检查器下载实算）；公式加 `depends_on "xz" => :build`（brew 解 xz 硬依赖 xz 公式，瓶用户零感知，见 11.37）；检查器 github 流（tag 无 v 前缀，`githubTagPrefix: ""`） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1268,6 +1269,27 @@ winstart 早就是这个形态（无公开链接，只能如此）。
    + corepack 单独指回 node@22 恢复。另：graphviz 重装会经 core API 漂移
    拉进 netpbm（其源码要 svn 检出，本机 subversion 未 link 时报
    "You must: brew install svn"），与改名无关但同场发生。
+
+### 11.37 frida-server 三连坑：post_install 废弃 / xz 无执行位 / WXwindows 已废弃（2026-09-06 实测）
+
+1. **brew 6 的 `post_install` 已废弃，新公式一律改声明式 `post_install_steps`**：
+   style cop `FormulaAudit/InstallSteps` 直接拒绝 `def post_install`；且新 DSL
+   是纯声明式（模板 token + `if_path_exists` 守卫，step 可序列化进 JSON API），
+   跑不了 `safe_popen_read` + `odie` 这类断言——校验逻辑挪进 `install` 尾部
+   （`file(1)`/版本自检照跑不误）。旧公式的 `def post_install` 运行时只发
+   odeprecated 警告还能用，CI 只做 `ruby -c` 不受影响；哪天全量 style 跑红再统一迁移。
+2. **xz 解出的文件没有执行位**：上游打 xz 时原文件就是 644，而 brew 的
+   `bin.install` 按源文件 exec 位决定 0555/0444——非可执行文件装成 0444，
+   install 里执行它报 `Permission denied`（经 safe_popen_read 只看到莫名其妙的
+   "exited with 1"，埋点抓 sh 的 EXIT=126 才现形）。修法：install 里
+   `chmod 0555`。tar/zip 内的二进制自带 +x，gh/mufetch/ffmpeg 都没踩过，xz 是首例。
+3. **`license "WXwindows"` 已被 SPDX 废弃**，audit --strict 拒收。正确写法是
+   例外表达式 hash 形态：`license "LGPL-2.1-only" => { with: "WxWindows-exception-3.1" }`
+   （照抄 core wxwidgets 的 DSL 用法；frida 根 COPYING 即 wxWindows 3.1）。
+4. frida 版本判据：不在 core，走 github 流（`githubRepo: "frida/frida"`，tag 无
+   v 前缀显式置 `githubTagPrefix: ""`）。版本化直链的 HEAD 探测可过
+   （302 对 `curl -fsI` 是 exit 0）。URL 里版本出现两处（tag 目录 + 文件名），
+   版本子串替换一次全换。二进制仅链系统库（Foundation/AppKit/libSystem），零依赖。
 
 ## 12. 待办 / 后续演进
 

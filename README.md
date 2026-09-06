@@ -102,6 +102,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `wireshark` | Network protocol analyzer, cask from the official Intel dmg (Intel builds stop at 4.4.x); ships `tshark`/`editcap` shims |
 | `git-lfs` | Git extension for versioning large files, upstream Intel build with full man pages (`git-lfs-darwin-amd64-v<ver>.zip`); run `git lfs install` once after install |
 | `github-copilot-app` | GitHub Copilot desktop app, cask mirrored from the official Intel dmg (`GitHub-Copilot-darwin-x64.dmg`); version tracked from the core cask, installed into `/Applications` |
+| `frida-server` | Frida dynamic instrumentation server, upstream bare binary from `frida/frida` releases (Intel only); run with `sudo`, listens on `127.0.0.1:27042` |
 
 ## Switching sources (same-name conflict)
 
