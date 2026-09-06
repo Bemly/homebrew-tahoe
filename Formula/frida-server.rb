@@ -8,6 +8,11 @@ class FridaServer < Formula
   # 根 COPYING 是 wxWindows Library Licence 3.1（= LGPL-2.1 + 静态链接例外）。
   license "LGPL-2.1-only" => { with: "WxWindows-exception-3.1" }
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "42b4234c6945487e0853e499898451bc35bb6a7ed4c6473ad92ebd0650de6e52"
+  end
+
   # brew 解 .xz 的 UnpackStrategy::Xz 硬依赖 xz 公式（unpack_strategy/xz.rb
   # 的 dependencies）：不声明则源码安装时报"需先装 xz"。声明成 build 依赖后
   # CI/源码装自动补齐（core 的 xz 有 Intel tahoe 瓶，秒倒），用户走 GHCR 瓶
