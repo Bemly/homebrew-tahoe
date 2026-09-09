@@ -3,14 +3,9 @@ class DeepseekHarness < Formula
   homepage "https://github.com/deepseek-ai/deepseek-harness"
   # 上游 npm 包直引；包内是纯 JS（lib/bin.js，shebang node），无架构之分，
   # 跑在本 tap 的 node 上（同 cmd.rb 的 npm 路线）。
-  url "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.1.1-rc.2.tgz"
-  sha256 "47ec05f45ada5ab87779ae18a90456b5ebff5421dc0ff5c179677d65e1c16057"
+  url "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.1.2-rc.1.tgz"
+  sha256 "ca370668053ad6d0ac325e919ef5f65de53de00b7bad78008e6fb422dfce3530"
   license "MIT"
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "8fdb9b6cf81c2c785da188180a76453083f4bd0b92a2ec56131e17eff0d86f2f"
-  end
 
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/node"
@@ -42,8 +37,8 @@ class DeepseekHarness < Formula
         用 DeepSeek Harness：brew uninstall dsh && brew link bemly/tahoe/deepseek-harness
         用 Dancer's shell：brew unlink bemly/tahoe/deepseek-harness && brew link dsh
 
-      本公式不检查更新（上游处于 developer preview，版本迭代快），
-      需要升级请手动改 url + sha256。
+      版本跟踪 npm 的 `latest` 标签（`updater/deepseek-harness.swift`），
+      watcher 扫到更新会自动改写并重制瓶；`alpha` 预览版不追。
     EOS
   end
 
