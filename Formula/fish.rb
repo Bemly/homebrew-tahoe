@@ -8,10 +8,9 @@ class Fish < Formula
   # base 内 fish 为 universal（arm64+x86_64），x86_64 切片原生运行
   # （universal 含 x86_64 即满足 Intel 要求，doubao-ime 同例）。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）。
-  url "https://github.com/fish-shell/fish-shell/releases/download/4.9.3/fish-4.9.0.app.zip"
-  sha256 "20998a25f73217ddcc19f499055fd587e9912d1ad6e7109120fbcf2871f0b98c"
+  url "https://github.com/fish-shell/fish-shell/releases/download/4.9.3/fish-4.9.3.app.zip"
+  sha256 "3619fa92d540ed0dff4816594429290550d21b92226e0523457e5f0242c5e9a8"
   license "GPL-2.0-only"
-
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
