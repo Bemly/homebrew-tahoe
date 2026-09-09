@@ -12,6 +12,11 @@ class Fish < Formula
   sha256 "3619fa92d540ed0dff4816594429290550d21b92226e0523457e5f0242c5e9a8"
   license "GPL-2.0-only"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "a7fa05cc98edac948f9f62d58e8b51075a4c8eabfd5bdd99176b99afbdb0257c"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
