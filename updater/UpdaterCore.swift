@@ -325,7 +325,14 @@ func currentVersion(in content: String) -> String? {
         let trimmed = line.drop(while: { $0 == " " || $0 == "\t" })
         guard trimmed.hasPrefix(#"url ""#) else { continue }
         let s = String(trimmed)
-        if let m = firstMatch(#"[^0-9]([0-9]+(?:\.[0-9]+)+)"#, in: s),
+        // url 行回退解析：点分段数字，另带可选的 semver 预发布后缀（-rc.1 / -alpha.2 …）。
+        // 后缀只认关键词开头——平台后缀（-darwin / -x86_64 / -macos-amd64）不是版本，
+        // 不能吞进来（hyperfine 的 1.20.0-x86_64 仍解析为 1.20.0）；
+        // 而 npm 包的 dsh-0.1.1-rc.2.tgz 必须拿全 0.1.1-rc.2，否则改写时旧版本只是
+        // 新文件名的前缀，替换完变 dsh-0.1.2-rc.1-rc.2.tgz（残 URL，见 fish 同类）。
+        // 两处收紧：后续点分组必须含数字（.2 行、.tgz 扩展名不行，否则连扩展名一起吞），
+        // 关键词后允许直接跟数字（-rc1 形态）。
+        if let m = firstMatch(#"[^0-9]([0-9]+(?:\.[0-9]+)+(?:-(?:preview|alpha|beta|canary|rc|pre|dev|next)[0-9]*(?:\.(?:[0-9A-Za-z-]*[0-9])[0-9A-Za-z-]*)*)?)"#, in: s),
            let r = Range(m.range(at: 1), in: s) {
             return String(s[r])
         }
@@ -346,6 +353,11 @@ func compareVersions(_ a: String, _ b: String) -> Int {
         let bv = sb[i]
         if av == bv { continue }
         if let ai = Int(av), let bi = Int(bv), ai != bi { return ai < bi ? -1 : 1 }
+        // 预发布 < 正式版：一段是另一段 + "-后缀" 时，带后缀的小。
+        // 如本地 0.1.2-rc.1 vs 上游 0.1.2 final，必须判"有更新"而非"本地更新"——
+        // 纯字符串比较会得出 "2-rc" > "2" 的反结论，rc 一旦装上就永远升不到 final。
+        if av.hasPrefix(bv + "-") { return -1 }
+        if bv.hasPrefix(av + "-") { return 1 }
         return av < bv ? -1 : 1
     }
     return 0
@@ -447,9 +459,13 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     let versionLine = try! NSRegularExpression(pattern: #"^([ \t]*)version "[^"]+""#)
     let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
     let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
-    // 旧版本号子串替换（数字边界，与 check-updates.sh 时代一致）
+    // 旧版本号子串替换（数字边界，与 check-updates.sh 时代一致）。
+    // 前瞻只挡"数字"与".数字"（更长点分段版本，如 2.88.3 里的 2.88），不挡裸点——
+    // 旧写法 (?![0-9.]) 会把 "fish-4.9.0.app.zip" 里版本号后的 ".app" 误判成
+    // 版本延续，导致只换路径段、不换文件名，提交残 URL（2026-09-09 fish 4.9.3 实测）。
+    // 同理 go（go1.27.1.darwin-amd64）、npm 包（dsh-0.1.1-rc.2.tgz）都靠这一挡。
     let oldVerPattern = try! NSRegularExpression(
-        pattern: "(?<![0-9.])" + NSRegularExpression.escapedPattern(for: oldVersion) + "(?![0-9.])")
+        pattern: "(?<![0-9.])" + NSRegularExpression.escapedPattern(for: oldVersion) + #"(?![0-9]|\.[0-9])"#)
 
     var result: [String] = []
     var bottleStale = false
@@ -841,8 +857,13 @@ func runCheck(_ config: CheckConfig) {
     // 2. 上游版本与下载直链（优先级：自定义接口 > 源仓库 raw > github > brew）
     let upstream: UpstreamRelease
     if let custom = config.customRelease {
+        // 自定义接口取不到（断网/限流/接口改版）发 check-failed 明示——绝不能静默
+        // 跳过，否则 workflow 会把它当"无需更新"吃掉（github 流同例，11.23）。
         guard let release = custom() else {
-            fail("无法从自定义更新接口获取 \(config.formula) 的版本信息")
+            print("::warning::无法从自定义更新接口获取 \(config.formula) 的版本信息（网络故障或接口变化），跳过")
+            emit("status=check-failed")
+            emit("current_version=\(current)")
+            return
         }
         upstream = release
         print("上游版本 : \(upstream.version)（自定义更新接口）")
@@ -1120,9 +1141,14 @@ func runCheck(_ config: CheckConfig) {
         guard newContent.contains("url \"\(finalURL)\"") else { fail("url 未成功更新到 \(finalURL)") }
     } else {
         // 字面 url（版本号替换后应与 finalURL 一致），或插值 url（#{version}，
-        // version 行已同步则自动指向新版）
+        // version 行已同步则自动指向新版）。
+        // 注意：插值判定只看 url 定义行——全文件 contains 会命中 pre/post_install
+        // 里无关的 Ruby #{version} 插值，让残 URL 空过自检（2026-09-09 fish 实测：
+        // 文件名没换上 4.9.3，自检却因 install 方法里的 #{version} 放行）。
         let literalOK = newContent.contains("url \"\(finalURL)\"")
-        let interpOK = newContent.contains("#{version}")
+        let interpOK = newContent.components(separatedBy: "\n").contains {
+            isURLDefinitionLine($0) && $0.contains("#{version}")
+        }
         guard literalOK || interpOK else { fail("url 未成功更新到 \(finalURL)") }
     }
     guard newContent.contains("sha256 \"\(sha)\"") else { fail("sha256 未成功更新") }

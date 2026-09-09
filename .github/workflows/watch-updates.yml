@@ -120,12 +120,16 @@ jobs:
           git add Formula/*.rb Casks/*.rb
           git commit -m "watcher: batch bump ${list}"
           git push origin HEAD:main
-          # 只有公式更新才触发制瓶；cask 无 bottle 机制，无需触发
+          # 只有公式更新才触发制瓶；cask 无 bottle 机制，无需触发。
+          # 注意：必须传 updated_formulae（仅公式），不能传全量 list——
+          # bottle.yml 跑的是 brew install --build-bottle，cask 名字传进去会
+          # 直接 "No available formula" 红掉整个 job（2026-09-09 brewui 实测）。
           if [[ ${#updated_formulae[@]} -gt 0 ]]; then
-            echo "已提交更新，触发单次批量制瓶（formula=${list}）"
+            formula_list="$(IFS=,; echo "${updated_formulae[*]}")"
+            echo "已提交更新，触发单次批量制瓶（formula=${formula_list}）"
             gh workflow run "Build bottle and publish to GHCR" \
               --repo bemly/homebrew-tahoe \
-              -f formula="$list"
+              -f formula="$formula_list"
           else
             echo "已提交更新（仅 cask，无需制瓶）"
           fi
