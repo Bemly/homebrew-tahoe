@@ -1,8 +1,8 @@
 class Protobuf < Formula
   desc "Protocol buffers (Google's data interchange format)"
   homepage "https://protobuf.dev/"
-  url "https://github.com/protocolbuffers/protobuf/releases/download/v36.0/protobuf-36.0.tar.gz"
-  sha256 "399931c793f4ac6db81045b00b06dd07c877b48aeecf36c797f65c541fb533e7"
+  url "https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protobuf-36.0.tar.gz"
+  sha256 "dc74fa582f559cbd31614ddfefb4868f43c919d7184bde514bb47f90c6025eb8"
   license "BSD-3-Clause"
   compatibility_version 5
 
@@ -11,10 +11,6 @@ class Protobuf < Formula
     strategy :github_latest
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "76a14e21d9948f1f4440bca2183c66f112a50d5b866545b7e5d4ce113f5cc6eb"
-  end
 
   depends_on "cmake" => :build
   depends_on "abseil"
@@ -33,7 +29,7 @@ class Protobuf < Formula
   end
 
   fails_with :gcc do
-    version "12"
+    version "36.1"
     cause "fails handling ABSL_ATTRIBUTE_WARN_UNUSED"
   end
 

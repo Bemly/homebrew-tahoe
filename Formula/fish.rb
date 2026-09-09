@@ -8,14 +8,10 @@ class Fish < Formula
   # base 内 fish 为 universal（arm64+x86_64），x86_64 切片原生运行
   # （universal 含 x86_64 即满足 Intel 要求，doubao-ime 同例）。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）。
-  url "https://github.com/fish-shell/fish-shell/releases/download/4.9.0/fish-4.9.0.app.zip"
-  sha256 "ba3d066d7e75a0f04935000c8624cf5c80dce8677a7acd51dd51d6b8f3f43e11"
+  url "https://github.com/fish-shell/fish-shell/releases/download/4.9.3/fish-4.9.0.app.zip"
+  sha256 "20998a25f73217ddcc19f499055fd587e9912d1ad6e7109120fbcf2871f0b98c"
   license "GPL-2.0-only"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "321031bcff7df57fa4d3a0cff1db32d9332255098e7bf3b2e9f517f26a698017"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
