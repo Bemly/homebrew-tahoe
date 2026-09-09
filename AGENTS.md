@@ -168,7 +168,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `mufetch` | 0.1.1 | GitHub release 的 `mufetch_darwin_x86_64.tar.gz`（外部直链，tar 无顶层目录，文件直接在 CWD）；brew 流模板式检查器，sha 取自 release 的 `checksums.txt`（约 2KB） | 已收录 |
 | `cmd` | 1.45.0 | npm 包 `command-code` 的 tarball 直引（`npm install` 到 libexec，四入口只暴露 `cmd`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/cmd.swift，同 neofetch） | 已收录 |
 | `zcode` | 3.11.2 | cask——上游 CDN 按架构分包，镜像到本仓 Release（`zcode-<ver>` 双资产；`arch` 双插值，`sha256 arm:/intel:` 直给）；检查器走 `brewCask` 版本 + 双架构镜像分支（见 11.26/11.34） | 已收录 |
-| `deepseek-harness` | 0.1.1-rc.2 | npm 包 `@deepseek-ai/dsh` 的 tarball 直引（`npm install` 到 libexec，只暴露 `dsh`，`dsh web` 起 Web UI，默认 `http://127.0.0.1:3080`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/deepseek-harness.swift，同 cmd/neofetch）；与 core 的 `dsh`（Dancer's shell）无关但共享 `bin/dsh` 链接，同时安装时以后 link 的为准 | 已收录 |
+| `deepseek-harness` | 0.1.1-rc.2 | npm 包 `@deepseek-ai/dsh` 的 tarball 直引（`npm install` 到 libexec，只暴露 `dsh`，`dsh web` 起 Web UI，默认 `http://127.0.0.1:3080`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；检查器跟 npm `latest` 标签（`updater/deepseek-harness.swift` 取 latest 文档的 version + tarball，alpha 不追；预发布版本号形态见 11.38）；与 core 的 `dsh`（Dancer's shell）无关但共享 `bin/dsh` 链接，同时安装时以后 link 的为准 | 已收录 |
 | `ffmpeg` | 9.0.1 | evermeet 静态发行版 `ffmpeg-<ver>.zip`（单 x86_64 二进制；不用 getrelease 的 7z——brew 解 7z 需 p7zip，core 无 Intel Tahoe 瓶，见 11.18）；检查器 brew 流模板式（`brewName: ffmpeg`，`checksumsURL: nil` 回退下载实算） | 已收录 |
 | `ffprobe` | 9.0.1 | 同上（`ffprobe-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffprobe 公式）；core 无同名公式 | 已收录 |
 | `ffplay` | 9.0.1 | 同上（`ffplay-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffplay 公式）；core 无同名公式 | 已收录 |
@@ -1290,6 +1290,39 @@ winstart 早就是这个形态（无公开链接，只能如此）。
    v 前缀显式置 `githubTagPrefix: ""`）。版本化直链的 HEAD 探测可过
    （302 对 `curl -fsI` 是 exit 0）。URL 里版本出现两处（tag 目录 + 文件名），
    版本子串替换一次全换。二进制仅链系统库（Foundation/AppKit/libSystem），零依赖。
+
+### 11.38 bottle 传参混入 cask + fish 残 URL + dsh 预发布三连修（2026-09-09 实测）
+
+1. **watch 传了全量名单，bottle 被 cask 带崩**：`watch-updates.yml` 算对了
+   `updated_formulae`（仅公式）却传 `$list`（含 cask）触发制瓶；`bottle.yml`
+   按字母排序首个撞上 `brewui` → `No available formula` 整 job 红，
+   同批的 fish/opencode 根本没轮到（`34337810851` 实测）。
+   修法：触发时传 `updated_formulae` 拼的 `formula_list`。教训：watch 与 bottle
+   之间传的名单必须按"公式/cask"分流——cask 无 bottle 机制，名字进 bottle
+   就是非法输入，不存在"跳过 cask 继续"的语义。
+2. **版本号边界 `(?![0-9.])` 误杀 `.ext` 后缀**：`fish-4.9.0.app.zip` 里版本号后
+   紧跟 `.app` 的点，被当成"更长点分段版本"跳过 → 只换路径段、不换文件名，
+   提交 `.../4.9.3/fish-4.9.0.app.zip` 残 URL（404，且旧瓶块已被摘，fish 当场
+   装不了）。fish 是全仓首个"版本后直接跟 `.ext`"的包（gh/node 的版本后都是
+   `_`/`-`，故此前无事）。修法：前瞻改为 `(?![0-9]|\.[0-9])`——只挡数字与
+   `.数字`（真续段如 2.88.3 里的 2.88），裸点（`.app`/`.tgz`/`.darwin`）放行；
+   go（`go1.27.1.darwin-amd64`）与 npm 包（`dsh-0.1.1-rc.2.tgz`）同病一并治愈。
+   另：fish 4.9.3 的 sha 也连带错了——watcher 写入的 `20998a…` 与半小时后实测的
+   `3619fa…`（curl 与 brew fetch 双重独立下载一致）不符，上游在 watcher 跑完后
+   重切了同版本包（11.24 的 gh 旧事重演）。按 11.24 三方一致原则独立复算后修正，
+   教训：URL 修完必须 `brew fetch` 端到端验 sha，不能默认 watcher 的值还有效。
+3. **改后自检的插值判定必须限定 url 行**：旧 `全文件 contains "#{version}"`
+   会命中 fish.rb pre/post_install 里无关的 Ruby `#{version}` 插值，让残 URL
+   空过自检（fail 本可拦下）。现只认 url 定义行含插值。
+4. **dsh 接入检查器（npm `latest` 流，首个全预发布版本号软件）**：
+   跟 `latest` dist-tag 文档（`registry.npmjs.org/@deepseek-ai/dsh/latest`，
+   version + dist.tarball 一次拿全，sha 回退下载实算），alpha 不追。
+   配套两处核心改动：`currentVersion` 的 url 回退解析带预发布后缀（关键词限定
+   `preview|alpha|beta|canary|rc|pre|dev|next`，平台后缀 `-darwin`/`-x86_64`
+   不吞——否则旧版本只是文件名的前缀，改写出 `dsh-0.1.2-rc.1-rc.2.tgz`）；
+   `compareVersions` 里带 `-后缀` 的段小于裸段（rc→final 不丢更新，纯字符串
+   比较会判 "2-rc" > "2" 而永久卡在 rc）。另：`customRelease` 取不到版本时由
+   `fail()`（静默跳过）改为发 `status=check-failed` 明示（11.23 同例）。
 
 ## 12. 待办 / 后续演进
 
