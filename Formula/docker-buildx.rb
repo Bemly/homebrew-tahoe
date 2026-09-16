@@ -5,7 +5,7 @@ class DockerBuildx < Formula
   # 版本号由 brew 从 URL 扫描得出（实测 darwin-amd64 尾缀不影响扫描），
   # 不重复声明 version（否则 audit 判为冗余）。
   url "https://github.com/docker/buildx/releases/download/v0.37.1/buildx-v0.37.1.darwin-amd64"
-  sha256 "c8eb34392910bf18a858d4099e841deec2f7ea433bb3ed230082f55b69f19118"
+  sha256 "7003a7bae20e7741283db1e23dafdcb957776a8be85de3f459630b1dd4c19db0"
   license "Apache-2.0"
 
 

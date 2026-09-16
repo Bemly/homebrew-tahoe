@@ -437,9 +437,10 @@ private func isMirrorDefinitionLine(_ line: String) -> Bool {
 
 /// 改写公式：version 行（如有）同步为新版本、sha256 行替换、
 /// 摘除失效的 bottle do...end 块。url 行两种处理：
-///   - replaceURLLine=true（cask 镜像流：每次部署文件名都变，如 workbuddy）→
+///   - replaceURLLine=true（cask 镜像流与 brew 全量式：前者每次部署文件名都变，
+///     如 workbuddy；后者 url 是 JSON 给的不透明直链，版本子串替换必写残）→
 ///     第一条 url 行整条替换为 newURL；
-///   - replaceURLLine=false（默认：公式与直引 cask）→ 只在第一条 url 行内把
+///   - replaceURLLine=false（模板式公式与直引 cask）→ 只在第一条 url 行内把
 ///     旧版本号替换为新版本（数字边界防误伤），保留 #{version}/#{arch} 插值；
 ///     行内本就没有旧版本号（纯插值 url）则不动该行——插值已覆盖新版本。
 /// 双架构（archShas 非空）：额外按 key 改写 `sha256 arm:/intel:` 行，
@@ -532,11 +533,11 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
             }
             urlReplaced = true
         }
-        // 镜像行（audit --strict 强制要求至少一个，见 11.28）：与 url 行同步做
-        // 版本子串替换，保持可下载。只处理点分段格式（下划线变体如 curl 的
+        // 镜像行（audit --strict 强制要求至少一个，见 11.28）：永远做版本子串
+        // 替换，保持可下载。只处理点分段格式（下划线变体如 curl 的
         // curl-8_22_0 不在此列——这类公式只保留点分段镜像，见各公式头注）；
-        // 镜像流（replaceURLLine）下不动（cask 镜像 url 已整条换新）。
-        if !replaceURLLine, isMirrorDefinitionLine(replaced) {
+        // cask 无 mirror 行，此分支天然空转。
+        if isMirrorDefinitionLine(replaced) {
             let range = fullRange(replaced)
             if oldVerPattern.firstMatch(in: replaced, range: range) != nil {
                 replaced = oldVerPattern.stringByReplacingMatches(
@@ -674,20 +675,12 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
     }
 
     // 6. 改写 cask（version 行 + 双 sha 行 + url 行版本子串替换；
-    //    镜像模式 url 行同样只换版本——Release tag 与资产名含字面版本号）
+    //    镜像模式 url 行同样只换版本——Release tag 与资产名含字面版本号）。
+    //    先验后写：自检在内存里通过才落盘（单包流同例）。
     let (newContent, bottleStale) = rewriteFormula(content, newURL: "",
                                                    newVersion: stable, oldVersion: current,
                                                    sha: "", archShas: keyed,
                                                    replaceURLLine: false)
-    do {
-        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
-    } catch {
-        fail("写回 \(formulaFile) 失败：\(error)")
-    }
-    if bottleStale {
-        print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
-    }
-
     // 7. 改后自检：arch 插值保留、双 sha 就位
     // （sha 行 key 与引号间的对齐空格原样保留；首行 `sha256 <key>:` 与换行延续
     // `<key>:` 两种形态都认，只验 key/sha 落位）
@@ -699,6 +692,15 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
         guard pat.firstMatch(in: newContent, range: fullRange(newContent)) != nil else {
             fail("sha256 \(k) 未成功更新")
         }
+    }
+
+    do {
+        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
+    } catch {
+        fail("写回 \(formulaFile) 失败：\(error)")
+    }
+    if bottleStale {
+        print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
     }
 
     print("公式已更新：\(current) -> \(stable)")
@@ -817,6 +819,14 @@ func runRawDualCheck(config: CheckConfig, content: String, formulaFile: String,
     let (newContent, bottleStale) = rewriteFormulaRawDual(
         content, intelURL: dual.intelURL, intelSHA: dual.intelSHA,
         armURL: dual.armURL, armSHA: dual.armSHA)
+    // 先验后写：自检在内存里通过才落盘（单包流同例）。
+    guard newContent.contains("url \"\(dual.intelURL)\""),
+          newContent.contains("url \"\(dual.armURL)\""),
+          newContent.contains("sha256 \"\(dual.intelSHA)\""),
+          newContent.contains("sha256 \"\(dual.armSHA)\"") else {
+        fail("双架构 url/sha 未成功更新")
+    }
+
     do {
         try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
     } catch {
@@ -824,13 +834,6 @@ func runRawDualCheck(config: CheckConfig, content: String, formulaFile: String,
     }
     if bottleStale {
         print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
-    }
-
-    guard newContent.contains("url \"\(dual.intelURL)\""),
-          newContent.contains("url \"\(dual.armURL)\""),
-          newContent.contains("sha256 \"\(dual.intelSHA)\""),
-          newContent.contains("sha256 \"\(dual.armSHA)\"") else {
-        fail("双架构 url/sha 未成功更新")
     }
 
     print("公式已更新：\(current) -> \(stable)")
@@ -983,7 +986,14 @@ func runCheck(_ config: CheckConfig) {
                 fail("无法确定 \(brewName) 的上游下载直链（JSON 缺 urls.stable.url 且未提供 downloadURL 模板）")
             }
             resolvedVersion = formulaVersion
-            hintSHA = stableEntry?["checksum"] as? String
+            // hint（JSON 的 checksum）只给全量式：它属于 core 公式指向的源码包，
+            // 与全量式写入的 url 是同一 artifact，可直接采用（qemu 链）。
+            // 模板式绝不能用 hint：它属于源码 tarball，与模板资产（gh zip /
+            // node darwin 包 / buildx 二进制）根本不是同一文件——用了就是错 sha，
+            // 制瓶 fetch 即报 reports different checksum
+            //（2026-09-16 node/gh/docker-buildx 三连中毒）。
+            hintSHA = (config.downloadURL == nil)
+                ? stableEntry?["checksum"] as? String : nil
         }
 
         upstream = UpstreamRelease(version: resolvedVersion,
@@ -1122,21 +1132,18 @@ func runCheck(_ config: CheckConfig) {
         deleteOldCaskReleases(repo: repo, formula: config.formula, keepTag: tagName)
     }
 
-    // 6. 改写公式/cask（镜像流整条换 url；其余只做版本子串替换，保插值）
+    // 6. 改写公式/cask：镜像流与全量式（无 downloadURL 模板）整条换 url——
+    // JSON 给的是不透明直链，版本子串替换会写出"路径新、文件名旧"的残 URL
+    //（2026-09-16 graphviz：path 16.1.0 + 文件名 15.1.1 → 404，且静默进了 main）；
+    // 只有模板式才做版本子串替换（保 #{version}/#{arch} 插值）。
     let (newContent, bottleStale) = rewriteFormula(content, newURL: finalURL,
                                                    newVersion: stable, oldVersion: current,
                                                    sha: sha,
-                                                   replaceURLLine: config.uploadRelease)
-    do {
-        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
-    } catch {
-        fail("写回 \(formulaFile) 失败：\(error)")
-    }
-    if bottleStale {
-        print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
-    }
-
-    // 7. 改后自检（注意：原始字符串 #"..."# 里 \(...) 不是插值，这里必须用普通字符串）
+                                                   replaceURLLine: (config.uploadRelease
+                                                       || config.downloadURL == nil))
+    // 7. 改后自检（注意：原始字符串 #"..."# 里 \(...) 不是插值，这里必须用普通字符串）。
+    //    自检在内存里做，通过才落盘——先验后写：自检失败直接 fail 退出时文件保持原样，
+    //    绝不能把残 URL 写进文件再提交（2026-09-16 graphviz 残 URL 进 main 的教训）。
     if config.uploadRelease {
         guard newContent.contains("url \"\(finalURL)\"") else { fail("url 未成功更新到 \(finalURL)") }
     } else {
@@ -1152,6 +1159,15 @@ func runCheck(_ config: CheckConfig) {
         guard literalOK || interpOK else { fail("url 未成功更新到 \(finalURL)") }
     }
     guard newContent.contains("sha256 \"\(sha)\"") else { fail("sha256 未成功更新") }
+
+    do {
+        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
+    } catch {
+        fail("写回 \(formulaFile) 失败：\(error)")
+    }
+    if bottleStale {
+        print("已摘除失效的 bottle 块（其 sha256 属于旧版本），需重跑 bottle workflow 重建 GHCR 瓶")
+    }
 
     print("公式已更新：\(current) -> \(stable)")
     emit("status=updated")

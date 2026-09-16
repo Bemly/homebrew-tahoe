@@ -67,7 +67,17 @@ jobs:
             swiftc -O -o "/tmp/check-$f" "updater/UpdaterCore.swift" "updater/$f.swift"
             GITHUB_OUTPUT="$out" "/tmp/check-$f" || true
             status="$(grep '^status=' "$out" | cut -d= -f2 || true)"
-            if [[ "$status" == "upstream-missing" ]]; then
+            # —— 静默失败兜底：检查器没有回 status 行（自检 fail 直接 exit 1、
+            # 编译后崩溃、GITHUB_OUTPUT 没写上），绝不能当"无需更新"吃掉——
+            # graphviz 残 URL 就是这么静默进 main 的（2026-09-16：status 空，
+            # 落进 else 分支打了句"无需更新"就提交了坏文件）。
+            # 无 status 即视为检查失败：不提交该文件（git checkout 还原），
+            # 记入 failed 清单公示，下次跑自动恢复。
+            if [[ -z "$status" ]]; then
+              git checkout -- "$rb" 2>/dev/null || true
+              failed+=("$f")
+              echo "::warning::$f 无状态输出（自检 fail 或崩溃），已还原文件并跳过（绝不当成无需更新）"
+            elif [[ "$status" == "upstream-missing" ]]; then
               ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
               missing+=("${f}:${ver}")
               echo "  -> $f 上游资源不可下载（${ver}），跳过更新"
@@ -83,6 +93,8 @@ jobs:
             fi
             rm -f "$out"
           done
+          # 先落盘 outputs：updated/missing 已定；failed 后面 fetch 段还会追加，
+          # 那里直接 append 到 GITHUB_OUTPUT（early-exit 分支也要能公示）。
           if [[ ${#updated[@]} -gt 0 ]]; then
             echo "updated=$(IFS=,; echo "${updated[*]}")" >> "$GITHUB_OUTPUT"
           fi
@@ -94,22 +106,59 @@ jobs:
           if [[ ${#missing[@]} -gt 0 ]]; then
             echo "missing=$(IFS=,; echo "${missing[*]}")" >> "$GITHUB_OUTPUT"
           fi
-          # 检查失败清单只公示（下次跑自动恢复，不开 issue）
-          if [[ ${#failed[@]} -gt 0 ]]; then
-            echo "failed=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_OUTPUT"
-          fi
           if [[ ${#updated[@]} -eq 0 ]]; then
             echo "没有软件需要更新。"
+            # 检查失败清单只公示（下次跑自动恢复，不开 issue）
+            if [[ ${#failed[@]} -gt 0 ]]; then
+              echo "failed=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
           list="$(IFS=,; echo "${updated[*]}")"
           echo "需要更新的软件：$list"
-          # 批量更新直接提交 main，提交前先做语法自检
+          # 批量更新直接提交 main，提交前先做语法自检 +
+          # 端到端 fetch 验证（url+sha 真可下载且一致）。
+          # 语法对不代表资源对：graphviz 残 URL（path 新、文件名旧 → 404）就是
+          # ruby -c 全绿、提交后才在制瓶 fetch 现形的（2026-09-16）。
+          # fetch 在 ubuntu 上只验直链（瓶块已摘，无 GHCR 可走），失败即还原该文件、
+          # 记入 failed，不阻断其它包。
           for f in "${updated[@]}"; do
             # 公式与 cask 都可能被更新，按实际存在的文件自检
             if [[ -f "Formula/$f.rb" ]]; then ruby -c "Formula/$f.rb"; fi
             if [[ -f "Casks/$f.rb" ]]; then ruby -c "Casks/$f.rb"; fi
           done
+          fetch_failed=()
+          for f in "${updated_formulae[@]}"; do
+            # ubuntu 自带 linuxbrew：tap 本仓后 fetch 只验直链（瓶块已摘、无 GHCR 可走），
+            # 正好覆盖 url+sha。无同名 tap 冲突（ubuntu runner 干净），失败只可能是资源问题。
+            if brew tap bemly/tahoe "$GITHUB_WORKSPACE" >/dev/null 2>&1; then :; fi
+            if ! brew fetch --force "bemly/tahoe/$f" 2>&1 | tail -n 3; then
+              echo "::warning::$f fetch 验证失败（url 或 sha 不可用），还原并跳过提交"
+              git checkout -- "Formula/$f.rb" 2>/dev/null || true
+              fetch_failed+=("$f")
+              failed+=("$f(fetch)")
+            fi
+          done
+          if [[ ${#fetch_failed[@]} -gt 0 ]]; then
+            # macos bash 3.2 无关联数组：用 grep -vxF 逐个剔除（元素无空格逗号，安全）。
+            # 注意：grep 全剔除时 exit 1（空输出），|| true 保住（set -e 下不炸）。
+            # failed（含 fetch 追加）直接 append 到 GITHUB_OUTPUT——前面的 failed 输出
+            # 是在 updated 非空分支落的盘，这里追加不覆盖。
+            updated=($(printf '%s\n' "${updated[@]}" | grep -vxF "${fetch_failed[@]}" || true))
+            updated_formulae=($(printf '%s\n' "${updated_formulae[@]}" | grep -vxF "${fetch_failed[@]}" || true))
+            echo "fetch 失败已剔除：$(IFS=,; echo "${fetch_failed[*]}")"
+            echo "剔除后待提交：$(IFS=,; echo "${updated[*]:-无}")"
+          fi
+          # 检查失败清单只公示（下次跑自动恢复，不开 issue）
+          if [[ ${#failed[@]} -gt 0 ]]; then
+            echo "failed=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ ${#updated[@]} -eq 0 ]]; then
+            echo "全部更新均未通过 fetch 验证，无可提交内容。"
+            exit 0
+          fi
+          # 剔除后 list 重算：commit message 与 bottle 传参必须用剔除后的名单
+          list="$(IFS=,; echo "${updated[*]}")"
           # dry_run=true：只检查不提交（不 commit、不触发制瓶）
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             echo "dry_run=true：文件已就地改写但不提交、不触发制瓶。"

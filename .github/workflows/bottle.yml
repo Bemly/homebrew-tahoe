@@ -119,7 +119,62 @@ jobs:
             [[ -n "$line" ]] && FORMULAS+=("$line")
           done < /tmp/formulas.txt
           BREW_PREFIX="$(brew --prefix)"
-          for f in "${FORMULAS[@]}"; do
+          # —— 依赖拓扑排序：被依赖者先制瓶 ——
+          # 有些公式依赖本 tap 的其它公式（如 deepseek-harness/cmd → node、
+          # opencode → ripgrep、qemu → capstone/dtc/libslirp/vde、curl3 → libnghttp3/libngtcp2）。
+          # 依赖必须先出瓶，否则被依赖者装不上时（无瓶走源码编译，在 CI 里直接失败），
+          # 依赖它的公式连 install 都进不去。
+          # 做法：python3 读每个公式的 depends_on "bemly/tahoe/X"，按 X→f 拓扑排序；
+          # 无 python3 或解析失败时回退原顺序（宁可慢，不可错）。
+          # 注意字母序陷阱：opencode < ripgrep，deepseek-harness < node——排序绝不能省。
+          FORMULAS_SORTED=()
+          if command -v python3 >/dev/null 2>&1; then
+            topo_input="$(for f in "${FORMULAS[@]}"; do
+              deps="$(sed -n 's/^[[:space:]]*depends_on "bemly\/tahoe\/\([^"]*\)".*/\1/p' "Formula/${f}.rb" 2>/dev/null | tr '\n' ' ')"
+              echo "${f}|${deps}"
+            done)"
+            topo_out="$(printf '%s\n' "$topo_input" | python3 -c '
+import sys
+items = {}
+order = []
+for line in sys.stdin:
+    line = line.strip()
+    if not line: continue
+    name, _, deps = line.partition("|")
+    items[name] = deps.split()
+    order.append(name)
+done_set = set()
+result = []
+remaining = list(order)
+while remaining:
+    progressed = False
+    for name in list(remaining):
+        if all(d not in items or d in done_set for d in items[name]):
+            result.append(name)
+            done_set.add(name)
+            remaining.remove(name)
+            progressed = True
+    if not progressed:
+        result.extend(remaining)
+        break
+print("\n".join(result))
+' 2>/dev/null || true)"
+            if [[ -n "$topo_out" ]]; then
+              while IFS= read -r line; do
+                [[ -n "$line" ]] && FORMULAS_SORTED+=("$line")
+              done <<< "$topo_out"
+              # 拓扑结果必须与输入是同一集合，否则回退
+              if [[ "${#FORMULAS_SORTED[@]}" != "${#FORMULAS[@]}" ]]; then
+                FORMULAS_SORTED=("${FORMULAS[@]}")
+              fi
+            else
+              FORMULAS_SORTED=("${FORMULAS[@]}")
+            fi
+          else
+            FORMULAS_SORTED=("${FORMULAS[@]}")
+          fi
+          echo "制瓶顺序（依赖优先）：$(printf '%s,' "${FORMULAS_SORTED[@]}")"
+          for f in "${FORMULAS_SORTED[@]}"; do
             echo "===== 处理 $f ====="
             # node 家族（node / node@24 / node@22）共用 bin/node、bin/npm 等链接。
             # runner 镜像预装了 core 的 node@24（实测 24.19.0），它的链接会直接阻塞
