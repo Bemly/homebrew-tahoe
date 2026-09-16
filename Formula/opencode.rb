@@ -12,6 +12,11 @@ class Opencode < Formula
   sha256 "f8510eaf400f07c3a2014e3a517e3650c705bcd6ac3e6740351b723ee685042f"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "d9785136cc424fde817935cd2fe1084889d2ddc713e10a1281f4fcdb62881bf5"
+  end
+
 
 
   # 瓶是 x86_64 的（macos-26-intel 制出）；ARM 安装回退到上游直链（同版本 arm64 包）。
