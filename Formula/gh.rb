@@ -2,14 +2,10 @@ class Gh < Formula
   desc "GitHub CLI (Intel x86_64 build for macOS Tahoe)"
   homepage "https://cli.github.com/"
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）
-  url "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_macOS_amd64.zip"
-  sha256 "fcd7799e85eb575f3c7d2b1679bfbfedaefa1269d4bc7d096b51e10939b4812b"
+  url "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_macOS_amd64.zip"
+  sha256 "a266fe8575c0e061b987920c1831a15f71bf0036a8729a5ebb93c2fb0164899c"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "8b60f2163a279b6f0ffd9a72de2b2467235aa4edaa2e33d0380d53e05cd93076"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，所以这里直接引用上游官方发布包。

@@ -4,14 +4,10 @@ class DockerBuildx < Formula
   # 上游官方裸二进制（无压缩包，brew 按未压缩文件处理，直接改名装进 bin）。
   # 版本号由 brew 从 URL 扫描得出（实测 darwin-amd64 尾缀不影响扫描），
   # 不重复声明 version（否则 audit 判为冗余）。
-  url "https://github.com/docker/buildx/releases/download/v0.37.0/buildx-v0.37.0.darwin-amd64"
-  sha256 "9d5a359608ffddbc9049eb0a8128db798a1fcc30cbfb2e451cb49ab99cbe0635"
+  url "https://github.com/docker/buildx/releases/download/v0.37.1/buildx-v0.37.1.darwin-amd64"
+  sha256 "c8eb34392910bf18a858d4099e841deec2f7ea433bb3ed230082f55b69f19118"
   license "Apache-2.0"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "9bb882b0e0ed0eac72751f452fcc1c2b61f5bcbb19606eae9496def41c00da32"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

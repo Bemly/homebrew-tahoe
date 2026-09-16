@@ -1,17 +1,13 @@
 class Node < Formula
   desc "JavaScript runtime built on V8 (Intel x86_64 for macOS Tahoe)"
   homepage "https://nodejs.org/"
-  url "https://nodejs.org/dist/v26.8.1/node-v26.8.1-darwin-x64.tar.gz"
+  url "https://nodejs.org/dist/v26.8.2/node-v26.8.2-darwin-x64.tar.gz"
   # brew 从 URL 尾部 darwin-x64.tar.gz 只能扫出 "64"，与真实版本不符，
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余）
-  version "26.8.1"
-  sha256 "fe9c6dbf9c8e1b4443803d75e2a20366e420dae650c747dbb116b22975751baf"
+  version "26.8.2"
+  sha256 "36b37bf5ee4d092b9d9dff2d1a90b1444f8b453eddf6ff96cabdebb97d32f41d"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "6d008316edf37932efb8bc9d12527b7570fc5b280408d14497924d53015c7276"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。

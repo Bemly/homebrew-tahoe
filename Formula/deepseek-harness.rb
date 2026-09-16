@@ -3,14 +3,10 @@ class DeepseekHarness < Formula
   homepage "https://github.com/deepseek-ai/deepseek-harness"
   # 上游 npm 包直引；包内是纯 JS（lib/bin.js，shebang node），无架构之分，
   # 跑在本 tap 的 node 上（同 cmd.rb 的 npm 路线）。
-  url "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.1.2-rc.1.tgz"
-  sha256 "ca370668053ad6d0ac325e919ef5f65de53de00b7bad78008e6fb422dfce3530"
+  url "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.1.5-rc.1.tgz"
+  sha256 "1a79719f1c763918ac30e8194df783a9330c6b12d5f04c950731a3f8a1c3d9d0"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "ba4a045239cf78cbadb4c641da1297097c80719eb732f933dd1218a19660111d"
-  end
 
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/node"
