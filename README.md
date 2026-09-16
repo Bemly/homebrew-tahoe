@@ -63,7 +63,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `mufetch` | System info tool, from the release `mufetch_darwin_x86_64.tar.gz` |
 | `cmd` | Terminal AI coding agent, npm package `command-code` (exposes the `cmd` command only); depends on this tap's node bottle; no update checks |
 | `zcode` | z.ai AI-assisted development environment, cask from the upstream CDN (both x64 and arm64); version follows homebrew/core's cask |
-| `deepseek-harness` | DeepSeek agent harness, npm package `@deepseek-ai/dsh` (exposes the `dsh` command only, `dsh web` serves the browser UI); depends on this tap's node bottle; no update checks |
+| `deepseek-harness` | DeepSeek agent harness, npm package `@deepseek-ai/dsh` (exposes the `dsh` command only, `dsh web` serves the browser UI); depends on this tap's node bottle; version tracks the npm `latest` tag |
 | `ffmpeg` | FFmpeg itself, Intel x86_64 static build from evermeet (`ffmpeg-<ver>.zip`); version follows homebrew/core's ffmpeg |
 | `ffprobe` | FFmpeg stream analyzer, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
 | `ffplay` | FFmpeg media player, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |

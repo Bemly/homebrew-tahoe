@@ -56,7 +56,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `mufetch` | 系统信息工具，取 release 的 `mufetch_darwin_x86_64.tar.gz` |
 | `cmd` | 终端 AI 编程 agent，npm 包 `command-code`（只暴露 `cmd` 命令）；依赖本 tap 的 node 瓶；不检查更新 |
 | `zcode` | 智谱 z.ai 的 AI 辅助开发环境，cask 取上游 CDN（x64/arm64 双架构）；版本跟随 core 的 cask |
-| `deepseek-harness` | DeepSeek agent harness，npm 包 `@deepseek-ai/dsh`（只暴露 `dsh` 命令，`dsh web` 起浏览器 UI）；依赖本 tap 的 node 瓶；不检查更新 |
+| `deepseek-harness` | DeepSeek agent harness，npm 包 `@deepseek-ai/dsh`（只暴露 `dsh` 命令，`dsh web` 起浏览器 UI）；依赖本 tap 的 node 瓶；版本跟随 npm `latest` 标签 |
 | `ffmpeg` | FFmpeg 本体，evermeet 的 Intel x86_64 静态构建（`ffmpeg-<ver>.zip`）；版本跟随 core 的 ffmpeg |
 | `ffprobe` | FFmpeg 流分析器，evermeet 静态构建，与本 tap 的 ffmpeg 同版本；core 无此公式 |
 | `ffplay` | FFmpeg 播放器，evermeet 静态构建，与本 tap 的 ffmpeg 同版本；core 无此公式 |
