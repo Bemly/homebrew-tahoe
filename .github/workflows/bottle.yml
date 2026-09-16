@@ -124,53 +124,46 @@ jobs:
           # opencode → ripgrep、qemu → capstone/dtc/libslirp/vde、curl3 → libnghttp3/libngtcp2）。
           # 依赖必须先出瓶，否则被依赖者装不上时（无瓶走源码编译，在 CI 里直接失败），
           # 依赖它的公式连 install 都进不去。
-          # 做法：python3 读每个公式的 depends_on "bemly/tahoe/X"，按 X→f 拓扑排序；
-          # 无 python3 或解析失败时回退原顺序（宁可慢，不可错）。
+          # 做法：读每个公式的 depends_on "bemly/tahoe/X"，多轮扫描——每轮排出
+          # 所有"本批内依赖已排空"的公式；一轮无进展则把剩余按原序全收（防环兜底）。
+          # 纯 bash（macos runner 是 bash 3.2，无关联数组；python 方案因 YAML
+          # 缩进问题解析失败，已废弃）。本批之外的依赖视为已满足（外部瓶或历史瓶）。
           # 注意字母序陷阱：opencode < ripgrep，deepseek-harness < node——排序绝不能省。
-          FORMULAS_SORTED=()
-          if command -v python3 >/dev/null 2>&1; then
-            topo_input="$(for f in "${FORMULAS[@]}"; do
-              deps="$(sed -n 's/^[[:space:]]*depends_on "bemly\/tahoe\/\([^"]*\)".*/\1/p' "Formula/${f}.rb" 2>/dev/null | tr '\n' ' ')"
-              echo "${f}|${deps}"
-            done)"
-            topo_out="$(printf '%s\n' "$topo_input" | python3 -c '
-import sys
-items = {}
-order = []
-for line in sys.stdin:
-    line = line.strip()
-    if not line: continue
-    name, _, deps = line.partition("|")
-    items[name] = deps.split()
-    order.append(name)
-done_set = set()
-result = []
-remaining = list(order)
-while remaining:
-    progressed = False
-    for name in list(remaining):
-        if all(d not in items or d in done_set for d in items[name]):
-            result.append(name)
-            done_set.add(name)
-            remaining.remove(name)
-            progressed = True
-    if not progressed:
-        result.extend(remaining)
-        break
-print("\n".join(result))
-' 2>/dev/null || true)"
-            if [[ -n "$topo_out" ]]; then
-              while IFS= read -r line; do
-                [[ -n "$line" ]] && FORMULAS_SORTED+=("$line")
-              done <<< "$topo_out"
-              # 拓扑结果必须与输入是同一集合，否则回退
-              if [[ "${#FORMULAS_SORTED[@]}" != "${#FORMULAS[@]}" ]]; then
-                FORMULAS_SORTED=("${FORMULAS[@]}")
+          remaining=" ${FORMULAS[*]} "
+          sorted=""
+          for _ in "${FORMULAS[@]}"; do
+            [[ -z "${remaining// /}" ]] && break
+            progressed=false
+            for f in "${FORMULAS[@]}"; do
+              case "$remaining" in
+                *" $f "*) ;;
+                *) continue ;;
+              esac
+              deps="$(sed -n 's/^[[:space:]]*depends_on "bemly\/tahoe\/\([^"]*\)".*/\1/p' "Formula/${f}.rb" 2>/dev/null)"
+              ready=true
+              for d in $deps; do
+                case "$remaining" in
+                  *" $d "*) ready=false; break ;;
+                esac
+              done
+              if $ready; then
+                sorted="$sorted $f"
+                remaining="${remaining/ $f / }"
+                progressed=true
               fi
-            else
-              FORMULAS_SORTED=("${FORMULAS[@]}")
+            done
+            if ! $progressed; then
+              for f in "${FORMULAS[@]}"; do
+                case "$remaining" in
+                  *" $f "*) sorted="$sorted $f" ;;
+                esac
+              done
+              break
             fi
-          else
+          done
+          FORMULAS_SORTED=($sorted)
+          # 结果必须与输入同一集合，否则回退原序（宁可慢，不可错）
+          if [[ "${#FORMULAS_SORTED[@]}" != "${#FORMULAS[@]}" ]]; then
             FORMULAS_SORTED=("${FORMULAS[@]}")
           fi
           echo "制瓶顺序（依赖优先）：$(printf '%s,' "${FORMULAS_SORTED[@]}")"
