@@ -96,6 +96,8 @@ brew install --cask bemly/tahoe/doubao-ime
 | `git-lfs` | Git 大文件扩展，上游 Intel 构建（带全套 man 页）；装完手动跑一次 `git lfs install` |
 | `github-copilot-app` | GitHub Copilot 桌面 app，cask 镜像官方 Intel dmg（`GitHub-Copilot-darwin-x64.dmg`）；版本跟 core cask，装进 `/Applications` |
 | `frida-server` | Frida 动态插桩服务端，frida/frida 官方裸二进制（仅 Intel）；需 sudo 运行，默认监听 `127.0.0.1:27042` |
+| `afm` | AFM拼音输入法，仅 Apple Silicon（本 tap 首个破 Intel 门槛的例外）；用户级安装并自动启用输入源；锁定版本不检查更新 |
+| `amd` | AMD 歌词汉化下载器（universal 双架构，本地构建后镜像）；附带 `obcli` 命令行；锁定版本不检查更新 |
 
 ## 注意事项（同名冲突）
 

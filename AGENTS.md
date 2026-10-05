@@ -39,6 +39,11 @@ Homebrew 官方已不再为 macOS 26 构建 x86_64 的 bottle。
 跨 tap 是 Homebrew 硬限制，对依赖同样生效），枢纽依赖留给 core、只有"卸载得掉"的叶子才自瓶。
 完整规则见 6 节「qemu 代编译模式」。
 
+**例外——arm64-only（2026-10-05 起，`afm` 为首例）**：AFM拼音输入法两个二进制皆
+thin arm64，Intel 机跑不起来，但值得收录。经用户拍板作为首个破例收进本 tap：
+cask 写 `depends_on arch: :arm64`（Intel 安装直接拒绝，见 11.40），macos 门槛不变。
+此口子只为自有软件（AFM）开，不接外部 arm64-only 收录。
+
 ## 2. 命名约定
 
 | 项 | 值 | 说明 |
@@ -202,6 +207,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `git-lfs` | 3.8.0 | 官方 `git-lfs-darwin-amd64-v<ver>.zip`（单顶层目录，带全套 man 页；自带 install.sh 写 /usr/local 不用，直接拆文件）；检查器 brew 模板流（`checksumsURL: nil`，sha256sums.asc 文件名带 `*` 前缀对不上，见 11.21） | 已收录 |
 | `github-copilot-app` | 1.1.21 | cask——GitHub Copilot 桌面 app（github/app 按架构分包，取 `GitHub-Copilot-darwin-x64.dmg`，短链 `gh.io/copilot-app-mac-intel` 是 floating 链接 HEAD 探测不可用）；镜像到本仓 Release（`github-copilot-app-<ver>`）；版本走 core cask API（core 的 url/sha 是 arm64 的不能用，Intel sha 下载实算），检查器 brewCask 流 + 镜像分支 | 已收录 |
 | `frida-server` | 17.18.0 | GitHub frida/frida 官方 `frida-server-<ver>-macos-x86_64.xz`（裸二进制仅 Intel；上游无 checksums 清单，sha 检查器下载实算）；公式加 `depends_on "xz" => :build`（brew 解 xz 硬依赖 xz 公式，瓶用户零感知，见 11.37）；检查器 github 流（tag 无 v 前缀，`githubTagPrefix: ""`） | 已收录 |
+| `afm` | 2026.09.15 | cask——AFM拼音输入法，**arm64-only（本 tap 首个破例，见 §1）**；zip 单顶层 `AFM拼音.app`（ditto 打包，unzip 解包保留 NFC 字节，见 11.40），用户级 `~/Library/Input Methods` 安装 + postflight_steps 自动启用输入源；镜像到本仓 Release（`afm-<ver>`）；**不检查更新**（无 updater/afm.swift） | 已收录 |
+| `amd` | 2026.09.18 | cask——自有软件 AMD-Pastis-Bartender（歌词汉化下载器）；上游只有源码 tag、无 release 资产，本地 xcodebuild 出 universal 包后镜像到本仓 Release（`amd-<ver>`，zip 含 `.app` + `obcli` 双顶层）；`app` + `binary` 双产物，ad-hoc 签名；frida 静态链接、装机零依赖（见 11.41）；**不检查更新**（无 updater/amd.swift） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1361,6 +1368,66 @@ winstart 早就是这个形态（无公开链接，只能如此）。
 5. **附带**：bottle.yml 的 python 拓扑首版直接碎 YAML（push 即 invalid，
    多行 `python3 -c` 缩进与 YAML 冲突）——CI 内嵌脚本只用 bash，复杂逻辑放
    Swift/脚本文件里，不要 inline python。
+
+### 11.40 brew 7 起 cask 禁止命令式 flight + arm64 首包实录（2026-10-05 实测，afm）
+
+1. **本机 brew 7.0.1→7.0.7 自动更新后新增 `Cask/InstallSteps` cop**：`preflight do` /
+   `postflight do` 一律判 offense，必须改声明式 `preflight_steps` / `postflight_steps`
+   （公式侧 `post_install` → `post_install_steps` 是同款，见 11.37）。连带后果：
+   存量 `doubao-ime.rb`（preflight + postflight 双块）现已 style 红——运行时不受影响，
+   属 lint 腐化（11.25 同例）；动它有回归风险，本轮未改，新文件只保证自己绿。
+2. **steps 块内只能写 DSL 调用**（`run` / `set_permissions` / `terminate_process` /
+   `write_file` 等，Ruby 逻辑一律不许）：afm 的"读输入源判重再 array-add"无法直写，
+   包一层 `run "/bin/sh", args: ["-c", "defaults read ... | grep -q ... || defaults write ..."]`
+   保持幂等（array-add 非幂等，无条件跑会重复追加）。`defaults` 落盘要写
+   `~/Library/Preferences`，run 步须显式声明 `writable_paths` + `writable_base: :home`
+   （sandbox 否则拦截）；`must_succeed: false` 是故意的——无 GUI 会话下 cfprefsd
+   不可达时安装仍成功，仅输入源需手动加。`chmod -R u+w` 对应
+   `set_permissions <path>, "u+w", base: :home`（默认递归）；三个 killall 对应
+   `terminate_process`（默认 `must_succeed: false`，进程不在不报错）。
+   steps 可序列化：`brew ruby -e` 打印 `PostflightSteps` JSON 即验 DSL 合法。
+   本轮包名中途从 `amd` 纠正为 `afm`：牵涉 cask 文件名/token、Release tag+资产名
+   （政策要求 `<name>-<ver>` 同名）、三处文档——旧 `amd-2026.09.15` release
+   已整包删除（含 tag），现只有 `afm-2026.09.15`。
+3. **中文 app 名直写可行**：brew 用 Info-ZIP `unzip` 解包（`unpack_strategy/zip.rb`
+   实读），实测 `AFM拼音.app` 解包后与 NFC 字面逐字节一致；ditto 打包 round-trip
+   `diff -rq` 零差异且 `codesign -v` 有效——无需改 ASCII 名。
+4. **Intel 机上 cask 侧验证天花板**：`depends_on arch: :arm64` 使 `brew fetch --cask`
+   与 `install` 一并拒绝（fetch 直接跳过下载但 exit 0，绝不能当"下载成功"读；
+   url+sha 改走 curl 实下 85MB 对账）。`info --cask` 解析 + `style` + `audit --strict`
+   + steps JSON + 安装拒绝测试（exit 1，明示 arch 不符）即本地全部证据；
+   ARM 真装机验证只能在 Apple Silicon 上补。
+5. **`gh release create` 传 85MB 资产曾 hang 到 300s 超时**：release draft 已建、
+   资产未传——`gh release view` 确认后 `upload --clobber` 补传（本次补传秒成，
+   初次 hang 疑似 tag 推送阶段问题非上传本身），再 `edit --draft=false` 发布。
+
+### 11.41 自有源码包的本地构建镜像实录（2026-10-05，amd 首例）
+
+上游 `Bemly/AMD-Pastis-Bartender` 只有源码 tag（`v2026.09.18` 最新）、无 release
+资产——走 winstart 模式：本地 `xcodebuild` 出包 → 镜像到本仓 Release
+（`amd-<ver>`）→ cask 指 Release。构建链三前置（缺一即红）：`git submodule
+update --init`（`Vendor/mac-dual-pipe` 空克隆无内容）；`tools/build_dualpipe.sh`
+（直传静态库）；`tools/getkit.sh`（frida-core devkit 16.7.19 改中性名放
+`~/.obkit`，仓库外，不进 git）。
+
+1. **老 SDK 编不过新符号**：`effectIsInteractive` 只在 `@available(macOS 27.0, *)`
+   里用，但 Xcode 26.5 自带 SDK 根本没声明该属性（availability 守卫救不了缺声明）。
+   修法只动 `/tmp` 临时克隆、不碰上游：`@try { [g setValue:@(interactive)
+   forKey:@"effectIsInteractive"]; } @catch (...) {}`（KVC 零编译期引用；
+   `respondsToSelector:@selector(...)` 写法新 clang 照样判 error，别用）。
+   建议上游合入同款，之后老 SDK 也能编。
+2. **Intel 机默认只出 x86_64**：必须显式 `ONLY_ACTIVE_ARCH=NO ARCHS="arm64 x86_64"`
+   才是 universal（`lipo -archs` 双确认 `.app` 二进制与 `obcli`）；arm64 切片跨编
+   无需本机运行。
+3. **frida 不用加依赖**（用户问过，结论：不加）：`otool -L` 只有系统库，
+   frida 以 `.a` 静态链接进了二进制，装机零依赖；且本 tap 的 `frida-server`
+   是 17.18.0、构建 kit 是 16.7.19——frida 客户端/服务端要同版本，加了也是错的。
+4. **zip 双顶层**：`ditto -c` 只收单源，多顶层（`.app` + `obcli`）用 `zip -qry`
+   （先 `xattr -cr` 清隔离属性再打），round-trip 后 `codesign -v` 有效、
+   `lipo` 双架构、`obcli --help` exit 0 才算过。
+5. **ad-hoc 签名预期行为**：`spctl` 报 rejected 正常，caveats 写右键打开；
+   首跑 `osascript ... quit` 可能 hang（测试改 `kill`，cask 本身不受影响）。
+   Intel 真装全绿：`install` 成功、app 启动退出正常、`obcli` 进 `/usr/local/bin`。
 
 ## 12. 待办 / 后续演进
 

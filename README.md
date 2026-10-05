@@ -103,6 +103,8 @@ brew install --cask bemly/tahoe/doubao-ime
 | `git-lfs` | Git extension for versioning large files, upstream Intel build with full man pages (`git-lfs-darwin-amd64-v<ver>.zip`); run `git lfs install` once after install |
 | `github-copilot-app` | GitHub Copilot desktop app, cask mirrored from the official Intel dmg (`GitHub-Copilot-darwin-x64.dmg`); version tracked from the core cask, installed into `/Applications` |
 | `frida-server` | Frida dynamic instrumentation server, upstream bare binary from `frida/frida` releases (Intel only); run with `sudo`, listens on `127.0.0.1:27042` |
+| `afm` | AFM pinyin input method, Apple Silicon only (first exception to the Intel-only rule); user-level install into `~/Library/Input Methods` with automatic input-source enablement; pinned, no update checks |
+| `amd` | AMD lyrics downloader (universal Intel + Apple Silicon, built locally and mirrored); ships the app plus the `obcli` command; pinned, no update checks |
 
 ## Switching sources (same-name conflict)
 
