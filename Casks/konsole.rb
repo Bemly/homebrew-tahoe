@@ -1,9 +1,9 @@
 cask "konsole" do
   arch arm: "arm64", intel: "x86_64"
 
-  version "5277"
-  sha256 arm:   "3c9c1be5f3d88cc00928207206a0e50db86a87e1b99aabe45f1e92283cacef84",
-         intel: "e36f05bf25af6aa82d3f4cc809635c03d4599da0331a0bcd27de0cf6ab282789"
+  version "5348"
+  sha256 arm:   "ad0fcd3456f9d53e3ec577417a9b0e34f75d28604f7a40833e65d7b3ade03beb",
+         intel: "faa83e9669afa4f257573fffb30539394916e59fb40f5ed9034c0100b8fb56a1"
 
   # KDE CI 每日构建只保留最新一天（直链几天即 404，5276 已死），故镜像到
   # 本仓 Release（tag konsole-<构建号>），cask 永远指 Release

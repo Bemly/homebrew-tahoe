@@ -104,6 +104,10 @@ struct CheckConfig {
     /// raw 流：是否按双架构解析（mac 的 intel/arm 双块各取 url/sha，
     /// 改写公式内双 `if Hardware::CPU` 块）。默认单架构（只取 intel 段）。
     let rawDualArch: Bool
+    /// 必触发模式：版本相同也跳过 up-to-date 直接走下载/sha/改写全链路。
+    /// 给浮动直链（dsh-gui 的 dsh-latest-*.dmg）与只留最新快照（konsole）这类
+    /// "内容会变但版本号不变" 的上游准备——默认 false，其他包行为逐字节不变。
+    let alwaysUpdate: Bool
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -118,9 +122,10 @@ struct CheckConfig {
          uploadRelease: Bool = false,
          githubRepo: String? = nil,
          githubTagPrefix: String? = "v",
-         archArtifacts: [String]? = nil,
-         downloadURLForArch: ((String, String) -> String)? = nil,
-         rawDualArch: Bool = false) {
+          archArtifacts: [String]? = nil,
+          downloadURLForArch: ((String, String) -> String)? = nil,
+          rawDualArch: Bool = false,
+          alwaysUpdate: Bool = false) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -137,6 +142,7 @@ struct CheckConfig {
         self.archArtifacts = archArtifacts
         self.downloadURLForArch = downloadURLForArch
         self.rawDualArch = rawDualArch
+        self.alwaysUpdate = alwaysUpdate
     }
 }
 
@@ -1002,12 +1008,17 @@ func runCheck(_ config: CheckConfig) {
     }
     let stable = upstream.version
 
-    // 3. 版本比较
+    // 3. 版本比较（alwaysUpdate 跳过相等判定：浮动直链/只留最新快照类上游，
+    // 内容变化不体现在版本号上，相等也必须走完全链路重验；newer-than 守卫保留）
     if current == stable {
-        print("已是最新，无需更新。")
-        emit("status=up-to-date")
-        emit("current_version=\(current)")
-        return
+        if config.alwaysUpdate {
+            print("必触发模式（alwaysUpdate）：版本相同（\(current)）仍继续更新。")
+        } else {
+            print("已是最新，无需更新。")
+            emit("status=up-to-date")
+            emit("current_version=\(current)")
+            return
+        }
     }
     if compareVersions(current, stable) > 0 {
         print("本地版本(\(current)) 比 上游版本(\(stable)) 更新，保持不动。")

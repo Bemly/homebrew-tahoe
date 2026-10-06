@@ -188,7 +188,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `docker-compose` | 5.5.1 | 官方裸二进制 `docker-compose-darwin-x86_64`（文件名无版本、路径段可扫，无需 version 行，见 11.21）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 文件名带 `*` 前缀、核心精确匹配对不上） | 已收录 |
 | `go` | 1.27.1 | Go 官方 `go<ver>.darwin-amd64.tar.gz`（完整工具链，只链系统库，零依赖；不用同版本 `.pkg`——要 root 写 /usr/local；`go1.27.1.darwin-amd64` 会扫成 `"64"`，需显式 version 行，见下） | 已收录 |
 | `heliport` | 2.0.0-alpha | cask——上游 dmg（包内 x86_64 thin），镜像到本仓 Release（`heliport-<ver>`）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
-| `konsole` | 5277 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支，每月手动跑一次（不设 cron，见 11.26） | 已收录 |
+| `konsole` | 5348 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支 + `alwaysUpdate` 必触发（见 11.43），每月手动跑一次（不设 cron，见 11.26） | 已收录 |
 | `curl3` | 8.22.0 | **改名代编译**：与 core curl 同源 + 独家 `--enable-proxy-http3`（MASQUE/CONNECT-UDP 实验开关，core 没开）；改名避与 core curl 同 Cellar 冲突；主二进制同步改名 `curl3` 正常 link（系统 curl 不动）；`--disable-shared` 纯客户端形态，开发件全裁（避 SDK 头 shadowing，见 11.33）；`libnghttp3/libngtcp2` 走本 tap 全名叶子依赖，`libnghttp2` 等枢纽留 core 裸名（扇入 19，见 11.31） | 已收录 |
 | `libnghttp3` | 1.18.0 | 代编译叶子：curl3 专属 H3 依赖（扇入 5），core 拷入 | 已收录 |
 | `libngtcp2` | 1.25.0 | 代编译叶子：curl3 专属 QUIC 依赖（扇入 4），core 拷入 | 已收录 |
@@ -209,6 +209,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `frida-server` | 17.18.0 | GitHub frida/frida 官方 `frida-server-<ver>-macos-x86_64.xz`（裸二进制仅 Intel；上游无 checksums 清单，sha 检查器下载实算）；公式加 `depends_on "xz" => :build`（brew 解 xz 硬依赖 xz 公式，瓶用户零感知，见 11.37）；检查器 github 流（tag 无 v 前缀，`githubTagPrefix: ""`） | 已收录 |
 | `afm` | 2026.09.15 | cask——AFM拼音输入法，**arm64-only（本 tap 首个破例，见 §1）**；zip 单顶层 `AFM拼音.app`（ditto 打包，unzip 解包保留 NFC 字节，见 11.40），用户级 `~/Library/Input Methods` 安装 + postflight_steps 自动启用输入源；镜像到本仓 Release（`afm-<ver>`）；**不检查更新**（无 updater/afm.swift） | 已收录 |
 | `amd` | 2026.09.18 | cask——自有软件 AMD-Pastis-Bartender（歌词汉化下载器）；上游只有源码 tag、无 release 资产，本地 xcodebuild 出 universal 包后镜像到本仓 Release（`amd-<ver>`，zip 含 `.app` + `obcli` 双顶层）；`app` + `binary` 双产物，ad-hoc 签名；frida 静态链接、装机零依赖（见 11.41）；**不检查更新**（无 updater/amd.swift） | 已收录 |
+| `blender-5x` | 5.2.2 | cask——jaguarus83 的 Blender 5.x Intel 构建（`Blender-<ver>-macOS-x86_64-AMD.dmg`，thin x86_64，未签名），**Intel-only（本 tap 首个 `arch: :x86_64` 门槛 cask）**；镜像到本仓 Release（`blender-5x-<ver>`）；检查器 github 流（tag `v` 前缀，资产名不稳定、改名即 upstream-missing，见 11.42） | 已收录 |
+| `dsh-gui` | 2026.10.06（镜像日期） | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；`dsh-latest-macos-x64.dmg` 浮动直链，thin x86_64，公证签名零拦截）；版本即镜像日（UTC，浮动上游无版本信号，见 11.43）；镜像到本仓 Release（`dsh-gui-<ver>`）；检查器 customRelease + `alwaysUpdate` 必触发（每次检查必走完全链路） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1428,6 +1430,54 @@ update --init`（`Vendor/mac-dual-pipe` 空克隆无内容）；`tools/build_dua
 5. **ad-hoc 签名预期行为**：`spctl` 报 rejected 正常，caveats 写右键打开；
    首跑 `osascript ... quit` 可能 hang（测试改 `kill`，cask 本身不受影响）。
    Intel 真装全绿：`install` 成功、app 启动退出正常、`obcli` 进 `/usr/local/bin`。
+
+### 11.42 Intel-only cask + 资产名不稳定上游的 github 流（2026-10-05 实测，blender-5x）
+
+上游 `jaguarus83/blender-5x-intel-mac-builds` 的 release 资产名三版三个样
+（5.0.1 `Blender-5.0.1-x86_64.dmg` → 5.2.x `Blender-<ver>-macOS-x86_64-AMD.dmg`，
+5.2.1 双资产并存）：检查器走 github 流 + `uploadRelease` 镜像分支，`downloadURL`
+模板按最新形态写——上游改名则 HEAD 探测 404 报 `upstream-missing` 开 issue，
+绝不写坏文件（到时人工同步模板与资产名）。`checksumsURL: nil`（上游无清单，
+有更新时 400MB 下载实算，仅新版本时发生）。
+
+1. **dmg 里 `Blender.app` + `Applications` 符号链接是 cask 常规形态**：11.8 的
+   `MacOS.system_dir?` 崩溃是公式 `DmgUnpackStrategy` 专属，cask 挂载拷贝不走
+   那条路，core 里同类 dmg 遍地——不用因噎废食转 zip。
+2. **未签名包不做 quarantine 清除**：与 TSKMGR（签名已破、"已损坏"绕不过）不同，
+   完整未签名包右键打开即可（palera1n 同例），caveats 写清即可。
+3. **文件名尾部 `x86_64` 致盲版本检测**：字面版本 url 被 audit 判 unversioned
+   （扫成 `"64"`，node/go 同病）——cask url 必须 `#{version}` 插值（tag 与资产名
+   双插值，wireshark/zcode 同例）。注意镜像分支更新时整条换字面 url，届时若
+   audit 再红，回头修核心改写（本次首版插值绿）。
+4. **本机已有 Blender.app 时的验证**：`install` 在下载+sha（`✔︎ Cask`）之后、
+   搬 app 之前报 `already an App` 中断——这本身即全链路证据（url/sha/app 名全对），
+   不用为验证挪走用户 400MB 的旧 app；二进制另做 headless 跑
+   (`Blender --background --version` exit 0) 验 dylib 闭包。
+5. 本 tap 首个 `depends_on arch: :x86_64` cask（与 afm 的 `:arm64` 对称）；
+   与 core `blender` 同名同 ID（`org.blenderfoundation.blender`），caveats 写明
+   先卸旧版（11.20 同例）。
+
+### 11.43 必触发更新 + 浮动直链的日期版本 + audit 再收紧（2026-10-06 实测，dsh-gui/konsole）
+
+1. **`UpdaterCore` 新增 `alwaysUpdate` 开关**（默认 false，其他 40+ 包行为逐字节
+   不变，48 个检查器全编译回归通过）：`current == stable` 也跳过 up-to-date、
+   照走 HEAD→sha→镜像→改写全链路；`newer-than` 守卫保留。给"内容会变但版本号
+   不变"的上游准备：dsh-gui 的浮动直链、konsole 的只留最新快照。
+2. **dsh-gui 版本即镜像日（UTC `yyyy.MM.dd`）**：浮动直链无版本信号，日期是唯一
+   如实版本（konsole 用构建号是同类思路）；首版镜像内实为上游 0.2.0-rc.2。
+   `customRelease` 只返回日期+浮动直链（sha 由核心下载实算；必触发下每次检查
+   都下 386MB——watcher 手动触发，代价可控）。实测同版本跑出
+   `status=updated` 全链路（下载→实算→clobber 重传→改写 no-op），机制成立。
+3. **konsole 顺手真升了一次**：跑必触发验证时正撞上游 5277→5348，双包下载实算、
+   上传 `konsole-5348`、旧 `konsole-5277` 自动清理、改写 version+双 sha——
+   §6 版本行同步 5348。注意 konsole 的 url 仍是 `#{version}` 插值（双分支不动 url 行）。
+4. **audit 又收紧了**：字面"版本仅 tag 段"不再过 unversioned 检查——此前全绿的
+   brewui、github-copilot-app 现同红（存量漂化，11.25 同例，本轮未动）。
+   dsh-gui（资产名浮动无版本）用 `dsh-gui-#{version}/` tag 段插值过关。
+   教训：凡 tag/资产名形态特殊的 cask，首版即用插值，不要赌字面。
+5. dsh-gui 包体：thin x86_64 + 公证签名（`spctl accepted`，零 Gatekeeper 摩擦，
+   无需 quarantine/caveats）；与 `deepseek-harness` 公式（npm CLI）同源不同物，
+   token 不冲突。Intel 真装全绿（386MB，app 启动 multi-helper 正常）。
 
 ## 12. 待办 / 后续演进
 

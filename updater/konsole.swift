@@ -14,7 +14,8 @@
 // 运行：swiftc updater/UpdaterCore.swift updater/konsole.swift -o /tmp/check-konsole && /tmp/check-konsole
 // （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
 // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致
-//（customRelease < uploadRelease < archArtifacts < downloadURLForArch）。
+//（customRelease < uploadRelease < archArtifacts < downloadURLForArch < ... < alwaysUpdate，末位追加）。
+// alwaysUpdate：上游只留最新快照，版本号不变也可能换内容——每次检查必走完全链路重验。
 
 import Foundation
 
@@ -49,7 +50,8 @@ struct KonsoleCheck {
             archArtifacts: ["arm64", "x86_64"],
             downloadURLForArch: { version, arch in
                 "https://cdn.kde.org/ci-builds/utilities/konsole/master/macos-\(arch)/konsole-master-\(version)-macos-clang-\(arch).dmg"
-            }
+            },
+            alwaysUpdate: true
         )
         runCheck(config)
     }

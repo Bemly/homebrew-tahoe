@@ -105,6 +105,8 @@ brew install --cask bemly/tahoe/doubao-ime
 | `frida-server` | Frida dynamic instrumentation server, upstream bare binary from `frida/frida` releases (Intel only); run with `sudo`, listens on `127.0.0.1:27042` |
 | `afm` | AFM pinyin input method, Apple Silicon only (first exception to the Intel-only rule); user-level install into `~/Library/Input Methods` with automatic input-source enablement; pinned, no update checks |
 | `amd` | AMD lyrics downloader (universal Intel + Apple Silicon, built locally and mirrored); ships the app plus the `obcli` command; pinned, no update checks |
+| `blender-5x` | Blender 5.x Intel-optimized community build (x86_64 only); mirrored to this repo's releases, version tracked from upstream releases |
+| `dsh-gui` | DeepSeek Harness desktop app (Intel only, floating upstream link mirrored by date); refreshed on every check, version is the mirror date |
 
 ## Switching sources (same-name conflict)
 
