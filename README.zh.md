@@ -100,6 +100,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `amd` | AMD 歌词汉化下载器（universal 双架构，本地构建后镜像）；附带 `obcli` 命令行；锁定版本不检查更新 |
 | `blender-5x` | Blender 5.x Intel 优化社区构建（仅 x86_64）；镜像到本仓 Release，版本跟随上游 releases |
 | `dsh-gui` | DeepSeek Harness 桌面端（仅 Intel，上游浮动链接按日期镜像）；每次检查必刷新，版本即镜像日期 |
+| `cmake` | 跨平台构建工具，上游 universal macOS 包（Intel 切片）；core 无 Intel 瓶，秒装代替源码编译 |
 
 ## 注意事项（同名冲突）
 

@@ -211,6 +211,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `amd` | 2026.09.18 | cask——自有软件 AMD-Pastis-Bartender（歌词汉化下载器）；上游只有源码 tag、无 release 资产，本地 xcodebuild 出 universal 包后镜像到本仓 Release（`amd-<ver>`，zip 含 `.app` + `obcli` 双顶层）；`app` + `binary` 双产物，ad-hoc 签名；frida 静态链接、装机零依赖（见 11.41）；**不检查更新**（无 updater/amd.swift） | 已收录 |
 | `blender-5x` | 5.2.2 | cask——jaguarus83 的 Blender 5.x Intel 构建（`Blender-<ver>-macOS-x86_64-AMD.dmg`，thin x86_64，未签名），**Intel-only（本 tap 首个 `arch: :x86_64` 门槛 cask）**；镜像到本仓 Release（`blender-5x-<ver>`）；检查器 github 流（tag `v` 前缀，资产名不稳定、改名即 upstream-missing，见 11.42） | 已收录 |
 | `dsh-gui` | 2026.10.06（镜像日期） | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；`dsh-latest-macos-x64.dmg` 浮动直链，thin x86_64，公证签名零拦截）；版本即镜像日（UTC，浮动上游无版本信号，见 11.43）；镜像到本仓 Release（`dsh-gui-<ver>`）；检查器 customRelease + `alwaysUpdate` 必触发（每次检查必走完全链路） | 已收录 |
+| `cmake` | 4.4.4 | 官方 `cmake-<ver>-macos-universal.tar.gz`（universal 双切片；core 无 Intel 瓶，Tier 3 只能源码编，见 11.44）；主 url 用 Kitware GitHub（避版本目录段坑），cmake.org 作 http(s) 双镜像；`install` 尾部做 file 架构 + `--version` 自检（`post_install` 已废弃）；检查器 brew 流模板式（sha 走官方 `SHA-256.txt` 精确匹配） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1478,6 +1479,33 @@ update --init`（`Vendor/mac-dual-pipe` 空克隆无内容）；`tools/build_dua
 5. dsh-gui 包体：thin x86_64 + 公证签名（`spctl accepted`，零 Gatekeeper 摩擦，
    无需 quarantine/caveats）；与 `deepseek-harness` 公式（npm CLI）同源不同物，
    token 不冲突。Intel 真装全绿（386MB，app 启动 multi-helper 正常）。
+
+### 11.44 cmake 直引预编译：Tier 3 下绕开源码编译（2026-10-08 实测）
+
+core cmake 4.4.4 的瓶只有 `arm64_*` + `x86_64_linux`，Intel Mac 只能源码编——
+本 tap 改直引上游官方 `cmake-<ver>-macos-universal.tar.gz`（universal 双切片，
+file 实测），15 秒装完。结论：**有上游 macOS 预编译就不走 qemu 代编译模式**，
+更不碰本地工具链（本机 `/usr/local/lib/libcurl.a` 缺 ICU 符号、x86_64 链不过——
+而预编译包只链**系统** `/usr/lib/libcurl.4.dylib`，otool 全系统库，零依赖，
+本地那堆问题根本走不到）。
+
+1. **检查器与 brew 扫描对同一 URL 结论不同**：`currentVersion` 取 url 行首个点分段
+   （`/v4.4/` 目录段 → `"4.4"`），brew 自身扫描取文件名（→ `4.4.4`）。初版按 glib
+   前例写了显式 `version` 行，被 audit 判冗余——实证 brew 扫描是对的。修法是反过来：
+   主 url 换 Kitware GitHub（全段全版本号，无目录段坑），cmake.org 作 http(s)
+   双镜像；检查器模板仍按 `v<主次>` 动态拼目录（补丁升级自动对）。
+2. **http 镜像是硬性要求**：cmake 在 core curl 的递归依赖树里（构建工具链），
+   audit 强制至少一条明文 `http://` 镜像（core 用 fresh-center 同例）——本公式加
+   `http://cmake.org/...`（301 到 https，同文件，纯为过审）。
+3. **`post_install` 已死**：style 直接拒（11.37 同款），校验（file 认 x86_64 +
+   `--version` 自检）挪进 `install` 尾部，走最终交付的 bin 软链。
+4. **同名切换三步**：本机 core cmake 被 `pin` 过（bootstrap 防 churn），须先
+   `brew unpin cmake` 才能卸；`brew uninstall` 触发 autoremove 顺手带走了
+   meson/bison（无依赖者）——完事后原样装回，环境零漂移。教训：动 pin 过的包
+   先看 pin，动构建依赖先记清单。
+5. 小版本升级（4.4→4.5）时 cmake.org 镜像行的 `/v4.4/` 目录要手工跟（子串替换够不着），
+   主 url（GitHub，无目录段）不受影响；watcher 的 fetch 校验失败会安全跳过并告警，
+   到时改两行镜像即可。
 
 ## 12. 待办 / 后续演进
 
