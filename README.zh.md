@@ -101,6 +101,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `blender-5x` | Blender 5.x Intel 优化社区构建（仅 x86_64）；镜像到本仓 Release，版本跟随上游 releases |
 | `dsh-gui` | DeepSeek Harness 桌面端（仅 Intel，上游浮动链接按日期镜像）；每次检查必刷新，版本即镜像日期 |
 | `cmake` | 跨平台构建工具，上游 universal macOS 包（Intel 切片）；core 无 Intel 瓶，秒装代替源码编译 |
+| `grok-bot` | Cursor Grok Bot 桌面 agent（仅 Intel）；镜像到本仓 Release，版本跟随 Cursor 下载页 |
 
 ## 注意事项（同名冲突）
 

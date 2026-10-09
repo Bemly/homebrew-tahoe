@@ -212,6 +212,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `blender-5x` | 5.2.2 | cask——jaguarus83 的 Blender 5.x Intel 构建（`Blender-<ver>-macOS-x86_64-AMD.dmg`，thin x86_64，未签名），**Intel-only（本 tap 首个 `arch: :x86_64` 门槛 cask）**；镜像到本仓 Release（`blender-5x-<ver>`）；检查器 github 流（tag `v` 前缀，资产名不稳定、改名即 upstream-missing，见 11.42） | 已收录 |
 | `dsh-gui` | 2026.10.06（镜像日期） | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；`dsh-latest-macos-x64.dmg` 浮动直链，thin x86_64，公证签名零拦截）；版本即镜像日（UTC，浮动上游无版本信号，见 11.43）；镜像到本仓 Release（`dsh-gui-<ver>`）；检查器 customRelease + `alwaysUpdate` 必触发（每次检查必走完全链路） | 已收录 |
 | `cmake` | 4.4.4 | 官方 `cmake-<ver>-macos-universal.tar.gz`（universal 双切片；core 无 Intel 瓶，Tier 3 只能源码编，见 11.44）；主 url 用 Kitware GitHub（避版本目录段坑），cmake.org 作 http(s) 双镜像；`install` 尾部做 file 架构 + `--version` 自检（`post_install` 已废弃）；检查器 brew 流模板式（sha 走官方 `SHA-256.txt` 精确匹配） | 已收录 |
+| `grok-bot` | 0.68.1 | cask——Cursor Grok Bot 桌面 agent（`Grok_Bot_<ver>_x64.dmg`，thin x86_64，公证签名零拦截）；**Intel-only**；镜像到本仓 Release（`grok-bot-<ver>`）；检查器 customRelease 抓 cursor 下载页的 Intel 行判新（页内另有无关版本，必须锚定，见 11.45） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1506,6 +1507,18 @@ file 实测），15 秒装完。结论：**有上游 macOS 预编译就不走 qe
 5. 小版本升级（4.4→4.5）时 cmake.org 镜像行的 `/v4.4/` 目录要手工跟（子串替换够不着），
    主 url（GitHub，无目录段）不受影响；watcher 的 fetch 校验失败会安全跳过并告警，
    到时改两行镜像即可。
+
+### 11.45 cursor 下载页锚定判新（2026-10-09 实测，grok-bot）
+
+`https://cursor.com/cn/download/bot` 页内除 Grok Bot 各平台直链外，还有
+`0.814.049` 之类无关版本——检查器必须锚定 Intel 行
+（`darwin-x64/<ver>/Grok_Bot_`）取版本号，裸扫点分段必误抓（konsole 的
+双 listing 交集是同类思路：版本信号有多个时先锚定再取）。
+上游直链全版本化（`darwin-x64/<ver>/Grok_Bot_<ver>_x64.dmg`），命名稳定，
+无需 blender 式的改名预警；`checksumsURL: nil`（155MB 下载实算，仅新版本时）。
+包体 thin x86_64 + 公证签名（`spctl accepted`），Intel-only 门槛 + 无 caveats；
+`Grok_Bot_<ver>_x64.dmg` 的 `_x64` 尾缀同 `darwin-amd64` 一样致盲版本检测，
+cask url 首版即用 `#{version}` 双插值（11.42 教训前置）。
 
 ## 12. 待办 / 后续演进
 
