@@ -7,15 +7,11 @@ class Go < Formula
   # 公式无 sudo 不可用；tar.gz 是 brew 原生路线（node 同例）。
   # brew 从 URL 尾部 darwin-amd64 只能扫出 "64"，与真实版本不符，
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余；node 同款坑，见 11.3）。
-  url "https://go.dev/dl/go1.27.1.darwin-amd64.tar.gz"
-  version "1.27.1"
-  sha256 "8f8f52c6649542cf027bbc9b9c68d1ec042f9f34808a40413f0b8b3f66f3caa4"
+  url "https://go.dev/dl/go1.27.2.darwin-amd64.tar.gz"
+  version "1.27.2"
+  sha256 "587b59182488b23aa6e5fc25110405a3e0e5b38ed2f5b2f46ed13c32aee356fe"
   license "BSD-3-Clause"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "44530df7db23122a144dddbb34504d089944a8bb0a5ce1a0fc2d76afb57f2936"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

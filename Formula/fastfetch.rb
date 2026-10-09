@@ -2,14 +2,10 @@ class Fastfetch < Formula
   desc "Neofetch-like system info tool (Intel x86_64 for macOS Tahoe)"
   homepage "https://github.com/fastfetch-cli/fastfetch"
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）
-  url "https://github.com/fastfetch-cli/fastfetch/releases/download/2.68.1/fastfetch-macos-amd64.tar.gz"
-  sha256 "1e9a6ba7474a41b3cc2bb1b923afcf40c749c25bd17dc1e62b64464e7445a534"
+  url "https://github.com/fastfetch-cli/fastfetch/releases/download/2.69.0/fastfetch-macos-amd64.tar.gz"
+  sha256 "ec6ea2aed26df0561c9331526f1f4289f4285b11f7e3910c29f0b66766b635f1"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "6935b7252969185b62245e89118907eda30e09dec3243582f309aaedfd77f6b6"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。

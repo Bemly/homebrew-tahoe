@@ -3,14 +3,10 @@ class Hyperfine < Formula
   homepage "https://github.com/sharkdp/hyperfine"
   # 上游官方 x86_64-apple-darwin tar 包（单顶层目录，brew 会下降进入）。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）。
-  url "https://github.com/sharkdp/hyperfine/releases/download/v1.20.0/hyperfine-v1.20.0-x86_64-apple-darwin.tar.gz"
-  sha256 "f58d0b90993fadfa122a351428c469ce24afef3865f027f0e6e86f0830d088f1"
+  url "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-apple-darwin.tar.gz"
+  sha256 "8afe204926afefa406ad320cef0672b739e5f676c623fbd6d43d779bacd684e3"
   license any_of: ["Apache-2.0", "MIT"]
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "f06f971f7a56111f8a27e7c5ce16f7e572fdff02c8eadabd5e39f92fc5542be8"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

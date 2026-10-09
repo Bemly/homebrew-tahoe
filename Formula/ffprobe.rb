@@ -5,14 +5,10 @@ class Ffprobe < Formula
   # 不用 getrelease 的 7z：brew 解 7z 需要 p7zip，而 p7zip 在 core 里没有
   # x86_64_tahoe 瓶（用户要从源码编译）；zip 是 brew 原生格式，零依赖。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）。
-  url "https://evermeet.cx/ffmpeg/ffprobe-9.0.1.zip"
-  sha256 "d13f35db03456b7f65b7edb6437c86e23810fbfe91795e571f5b77211343b4f1"
+  url "https://evermeet.cx/ffmpeg/ffprobe-9.0.2.zip"
+  sha256 "24a9c968cd4da72d99c7245e914b921815835eb6dff01d99868031aebaf1d439"
   license "GPL-3.0-or-later"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "6c00b24f0359fb8e15843498357bf8e42c1753d844071375d6243df528b3a44f"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

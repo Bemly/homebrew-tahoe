@@ -1,8 +1,8 @@
 class Qemu < Formula
   desc "Generic machine emulator and virtualizer"
   homepage "https://www.qemu.org/"
-  url "https://download.qemu.org/qemu-11.1.1.tar.xz"
-  sha256 "079ffbff8a7111bbc89022107cbabf3bbfd614d5fc9d7cc675991196aca12482"
+  url "https://download.qemu.org/qemu-11.1.2.tar.xz"
+  sha256 "731b5681e4bb18be313231579b8efd0296c5b015fa36dc533874b639ba838016"
   license "GPL-2.0-only"
 
   compatibility_version 1
@@ -14,10 +14,6 @@ class Qemu < Formula
     regex(/href=.*?qemu[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "bf5277fca805b5c9711decb01e25968ace6e6bf1e963f46c6b91e573a96762cb"
-  end
   depends_on "bison" => :build # >= 3.0
   depends_on "libtool" => :build
   depends_on "meson" => :build

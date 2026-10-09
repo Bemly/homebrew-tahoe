@@ -1,17 +1,13 @@
 class NodeAT22 < Formula
   desc "JavaScript runtime, Node.js 22 LTS (Intel x86_64 for macOS Tahoe)"
   homepage "https://nodejs.org/"
-  url "https://nodejs.org/dist/v22.23.2/node-v22.23.2-darwin-x64.tar.gz"
+  url "https://nodejs.org/dist/v22.23.3/node-v22.23.3-darwin-x64.tar.gz"
   # brew 从 URL 尾部 darwin-x64.tar.gz 只能扫出 "64"，与真实版本不符，
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余）
-  version "22.23.2"
-  sha256 "58e99022c2ff89395576cc7fd4d98cea24bb68081475d5f88b801ee8729fb026"
+  version "22.23.3"
+  sha256 "8a677b0219178efd6eb0e475457c4afb452b521a92f6e67845a73bd85727f2a8"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "933289815490627e09bc4c6f64bb37b0179171b618b91ebf3e980eed0b6e3de1"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。

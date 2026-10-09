@@ -4,14 +4,10 @@ class Sst < Formula
   # 取自 anomalyco/homebrew-tap 的 sst.rb（GoReleaser 产物，只留 Intel mac 段）。
   # 上游是 anomalyco/sst 的官方发布包；源文件 desc/homepage 为空，此处按上游补齐。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 11.3）。
-  url "https://github.com/anomalyco/sst/releases/download/v4.17.1/sst-mac-x86_64.tar.gz"
-  sha256 "9244910c50db88140f12579ce94923d2f0eae5f22a27bc884b2e1d7d245dcbf5"
+  url "https://github.com/anomalyco/sst/releases/download/v4.17.2/sst-mac-x86_64.tar.gz"
+  sha256 "b337728ad7a185478b6fb80f484ca2338724f0cc7f0c54225ce864f4ad9362b5"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "162710ad8ab13cf6121a841f14f544021aeb99cf7678961f70ef67fa20115c40"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

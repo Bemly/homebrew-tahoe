@@ -3,15 +3,11 @@ class FridaServer < Formula
   homepage "https://frida.re"
   # frida-server 是 frida/frida 发布的裸二进制（macOS 侧只有 .xz 格式，无
   # checksums 清单——sha 由检查器下载实算）。xz 内是单文件、无顶层目录。
-  url "https://github.com/frida/frida/releases/download/17.18.0/frida-server-17.18.0-macos-x86_64.xz"
-  sha256 "16e2b7dc66cb61643bfa62bd387d9d067f190f165035d4b8dd9580b805d7bbf1"
+  url "https://github.com/frida/frida/releases/download/17.23.1/frida-server-17.23.1-macos-x86_64.xz"
+  sha256 "9270d241317b33d51e6fb6fb74cc119c9bb98e90359f8381907849f8b9386b6a"
   # 根 COPYING 是 wxWindows Library Licence 3.1（= LGPL-2.1 + 静态链接例外）。
   license "LGPL-2.1-only" => { with: "WxWindows-exception-3.1" }
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "a9e2cc7cbd1b2638345a32f51f1a654c16ab2ad26bd1834998720931e10dcbde"
-  end
 
 
   # brew 解 .xz 的 UnpackStrategy::Xz 硬依赖 xz 公式（unpack_strategy/xz.rb
