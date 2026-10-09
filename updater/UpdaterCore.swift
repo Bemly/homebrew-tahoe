@@ -466,6 +466,9 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     let versionLine = try! NSRegularExpression(pattern: #"^([ \t]*)version "[^"]+""#)
     let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
     let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
+    // fails_with 块守卫（与 currentVersion 同套正则）：块内的 version 行是编译器
+    // 版本（如 gcc "13"），绝不能当公式版本改写，见下。
+    let failsStart = try! NSRegularExpression(pattern: #"^[ \t]*fails_with\b.*\bdo[ \t]*$"#)
     // 旧版本号子串替换（数字边界，与 check-updates.sh 时代一致）。
     // 前瞻只挡"数字"与".数字"（更长点分段版本，如 2.88.3 里的 2.88），不挡裸点——
     // 旧写法 (?![0-9.]) 会把 "fish-4.9.0.app.zip" 里版本号后的 ".app" 误判成
@@ -481,6 +484,7 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     var versionReplaced = false
     var archMatched = Set<String>()
     var inArchSha = false
+    var failsDepth = 0
 
     for line in content.components(separatedBy: "\n") {
         if skipping {
@@ -492,6 +496,16 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
             skipping = true
             bottleStale = true
             continue
+        }
+        // fails_with 块深度跟踪：块内 version 行是编译器版本，版本同步必须跳过
+        //（无顶层 version 行的公式如 protobuf，第一命中即块内行——11.29 只守了
+        // 解析侧，改写侧漏网把 gcc "12" 污染成 36.x，2026-10-09 实测）。
+        // bare 形态（make 的 `fails_with :clang` 无 do）不进深度，配套 end 照常忽略。
+        if failsStart.firstMatch(in: line, range: fullRange(line)) != nil {
+            failsDepth += 1
+        } else if failsDepth > 0,
+                  blockEnd.firstMatch(in: line, range: fullRange(line)) != nil {
+            failsDepth -= 1
         }
 
         var replaced = line
@@ -550,10 +564,11 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
                     in: replaced, range: range, withTemplate: newVersion)
             }
         }
-        // 顶层 version 行同步（公式级唯一 version；resource 块内 version 行不会被
-        // 该正则命中，因为 resource 的 version 缩进在块内但正则只认行首空白+version，
-        // 块内的同样匹配——因此用只换第一次的方式保护）
-        if !versionReplaced, let m = versionLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+        // 顶层 version 行同步（公式级唯一 version；fails_with 块内与 resource
+        // 块内的 version 行一律跳过——前者是编译器版本（如 gcc "13"），后者是
+        // 独立资源版本，都与包版本无关；只换第一次的保护保留作兜底）
+        if failsDepth == 0, !versionReplaced,
+           let m = versionLine.firstMatch(in: replaced, range: fullRange(replaced)) {
             let indent = (replaced as NSString).substring(with: m.range(at: 1))
             replaced = "\(indent)version \"\(newVersion)\""
             versionReplaced = true

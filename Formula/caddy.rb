@@ -3,14 +3,9 @@ class Caddy < Formula
   homepage "https://caddyserver.com/"
   # 上游官方 mac_amd64 tar 包（顶层即 caddy 二进制，无嵌套目录）。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）。
-  url "https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_mac_amd64.tar.gz"
-  sha256 "34bc9e5cceee8d67844ef51da624f5b79e8d070f27236e050c3f0066a2dba534"
+  url "https://github.com/caddyserver/caddy/releases/download/v2.11.7/caddy_2.11.7_mac_amd64.tar.gz"
+  sha256 "110c53e5c093e4cfce6eda787f94f23bef913c309f620fab26b4f678031841ad"
   license "Apache-2.0"
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "d9e56d07ecfdf9e3bc9e39a525f8fea0b1759481e04f9c47d116af66aa095aa7"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

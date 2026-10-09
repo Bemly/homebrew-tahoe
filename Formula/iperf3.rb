@@ -7,14 +7,9 @@ class Iperf3 < Formula
   # install 用通配不写死；版本判据走 brew iperf3 stable，资产发现逻辑见
   # updater/iperf3.swift（expanded_assets 抓取 + HEAD 探测兜底）。
   # 版本在路径段（/download/3.21/），brew 可扫描，无需 version 行（compose 同例）。
-  url "https://github.com/userdocs/iperf3-static/releases/download/3.21/iperf3-amd64-osx-15"
-  sha256 "71474bb614e2d48f3c5fcb63ae7b77b51e37043f989478ee9021223db856a8e6"
+  url "https://github.com/userdocs/iperf3-static/releases/download/3.22/iperf3-amd64-osx-15"
+  sha256 "615c2bc0b6b63e86e9038d0c2723e784d27d044feeb9abce5a6baf3cf0d784cb"
   license "BSD-3-Clause"
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "927c2873423933e15451fbf79856b4cda7b04b7118aa4729536d1c4aaed2ff74"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
