@@ -128,8 +128,23 @@ jobs:
             if [[ -f "Casks/$f.rb" ]]; then ruby -c "Casks/$f.rb"; fi
           done
           fetch_failed=()
+          # ubuntu runner 的 linuxbrew 默认不在 PATH：先显式接入
+          # （缺这步就是本次的 `brew: command not found`，全部 fetch 失败被还原）。
+          if ! command -v brew >/dev/null 2>&1 && [[ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
+            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          fi
+          if ! command -v brew >/dev/null 2>&1; then
+            echo "::error::找不到 brew（linuxbrew 不在 PATH），fetch 验证无法执行，已还原全部更新并跳过提交"
+            for f in "${updated[@]}"; do
+              if [[ -f "Formula/$f.rb" ]]; then git checkout -- "Formula/$f.rb" 2>/dev/null || true; fi
+              if [[ -f "Casks/$f.rb" ]]; then git checkout -- "Casks/$f.rb" 2>/dev/null || true; fi
+              failed+=("$f(brew-missing)")
+            done
+            echo "failed=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           for f in "${updated_formulae[@]}"; do
-            # ubuntu 自带 linuxbrew：tap 本仓后 fetch 只验直链（瓶块已摘、无 GHCR 可走），
+            # linuxbrew：tap 本仓后 fetch 只验直链（瓶块已摘、无 GHCR 可走），
             # 正好覆盖 url+sha。无同名 tap 冲突（ubuntu runner 干净），失败只可能是资源问题。
             if brew tap bemly/tahoe "$GITHUB_WORKSPACE" >/dev/null 2>&1; then :; fi
             if ! brew fetch --force "bemly/tahoe/$f" 2>&1 | tail -n 3; then
@@ -140,12 +155,16 @@ jobs:
             fi
           done
           if [[ ${#fetch_failed[@]} -gt 0 ]]; then
-            # macos bash 3.2 无关联数组：用 grep -vxF 逐个剔除（元素无空格逗号，安全）。
+            # 用 pattern 文件逐个剔除：`grep -vxF "${arr[@]}"` 多元素时首个当 pattern、
+            # 其余被当文件名（本次 `grep: ffmpeg: No such file` 即此），必须走 -f 文件。
             # 注意：grep 全剔除时 exit 1（空输出），|| true 保住（set -e 下不炸）。
             # failed（含 fetch 追加）直接 append 到 GITHUB_OUTPUT——前面的 failed 输出
             # 是在 updated 非空分支落的盘，这里追加不覆盖。
-            updated=($(printf '%s\n' "${updated[@]}" | grep -vxF "${fetch_failed[@]}" || true))
-            updated_formulae=($(printf '%s\n' "${updated_formulae[@]}" | grep -vxF "${fetch_failed[@]}" || true))
+            _pat="$(mktemp)"
+            printf '%s\n' "${fetch_failed[@]}" > "$_pat"
+            updated=($(printf '%s\n' "${updated[@]}" | grep -vxFf "$_pat" || true))
+            updated_formulae=($(printf '%s\n' "${updated_formulae[@]}" | grep -vxFf "$_pat" || true))
+            rm -f "$_pat"
             echo "fetch 失败已剔除：$(IFS=,; echo "${fetch_failed[*]}")"
             echo "剔除后待提交：$(IFS=,; echo "${updated[*]:-无}")"
           fi
