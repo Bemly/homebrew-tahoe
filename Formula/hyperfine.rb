@@ -7,6 +7,11 @@ class Hyperfine < Formula
   sha256 "8afe204926afefa406ad320cef0672b739e5f676c623fbd6d43d779bacd684e3"
   license any_of: ["Apache-2.0", "MIT"]
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "c0734aa5888b4daf88b07b9a022301b4e3d8c1bd28a18eb22e19b4f97cd46a37"
+  end
+
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

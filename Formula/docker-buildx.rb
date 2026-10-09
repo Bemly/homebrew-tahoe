@@ -8,6 +8,11 @@ class DockerBuildx < Formula
   sha256 "b123dc6fb51f88e47d37223938e2acd66edec73105459f65f19f15cc912ee559"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "e15d5410dc139892d89e37bc176ae59200e00802bcd2f2232e0bcfdf8947b476"
+  end
+
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。

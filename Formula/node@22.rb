@@ -8,6 +8,11 @@ class NodeAT22 < Formula
   sha256 "8a677b0219178efd6eb0e475457c4afb452b521a92f6e67845a73bd85727f2a8"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "8dbd694681a65a2e4140a80b119ce586ca10f2e54fdf7be2bc34a12299470db8"
+  end
+
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。

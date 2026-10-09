@@ -8,6 +8,11 @@ class Node < Formula
   sha256 "dcc3cdaa71744ebce8db2c5005e791eb27e214818a5289f4dd520a7321160297"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "5430bea4c7748736e37d48a52f3262fb4e315e8d7e5463f04c31cdffcc374e67"
+  end
+
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。

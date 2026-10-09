@@ -6,6 +6,11 @@ class Fastfetch < Formula
   sha256 "ec6ea2aed26df0561c9331526f1f4289f4285b11f7e3910c29f0b66766b635f1"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "4e6fa1dcd19e8b747d549cec2d5bf6622fbae5f9d232ff62d725ad82c1c5b0c2"
+  end
+
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。
