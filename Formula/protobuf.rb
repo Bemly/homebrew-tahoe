@@ -11,6 +11,11 @@ class Protobuf < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "c086773c632a13c9cec363273e91d0ef0d9fbbf731df620c4788f3de3e85adcd"
+  end
+
   depends_on "cmake" => :build
   depends_on "abseil"
   depends_on arch: :x86_64

@@ -11,6 +11,11 @@ class Iperf3 < Formula
   sha256 "615c2bc0b6b63e86e9038d0c2723e784d27d044feeb9abce5a6baf3cf0d784cb"
   license "BSD-3-Clause"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "8587b62a916c5cfb03482a7c19da6a623b0d7b75376c3e58f4f84dce8e9a1847"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe

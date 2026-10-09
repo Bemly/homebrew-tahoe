@@ -7,6 +7,11 @@ class Caddy < Formula
   sha256 "110c53e5c093e4cfce6eda787f94f23bef913c309f620fab26b4f678031841ad"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "2354c70fd0ec1384426e8706ffaa792c2d4a6f01dc1ddaa04d5e8d1754e629e5"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
