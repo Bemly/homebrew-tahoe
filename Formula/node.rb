@@ -1,17 +1,13 @@
 class Node < Formula
   desc "JavaScript runtime built on V8 (Intel x86_64 for macOS Tahoe)"
   homepage "https://nodejs.org/"
-  url "https://nodejs.org/dist/v26.11.0/node-v26.11.0-darwin-x64.tar.gz"
+  url "https://nodejs.org/dist/v26.11.1/node-v26.11.1-darwin-x64.tar.gz"
   # brew 从 URL 尾部 darwin-x64.tar.gz 只能扫出 "64"，与真实版本不符，
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余）
-  version "26.11.0"
-  sha256 "dcc3cdaa71744ebce8db2c5005e791eb27e214818a5289f4dd520a7321160297"
+  version "26.11.1"
+  sha256 "9a8129bd9ab08039793dd1143a7aedee6b5d60ac06592ad938d8bddf36142f3a"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "5430bea4c7748736e37d48a52f3262fb4e315e8d7e5463f04c31cdffcc374e67"
-  end
 
 
 
