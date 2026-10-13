@@ -8,6 +8,11 @@ class Scrcpy < Formula
   sha256 "31a5467a9e907f162b093267cbbab1276b15c6e709c2ea8159566a8d165beb50"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "c7427dbdc8eb33e8e58135777aece438bdca515e8e51633ebd106e645741ac91"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
