@@ -213,6 +213,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `dsh-gui` | 2026.10.09（镜像日期） | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；`dsh-latest-macos-x64.dmg` 浮动直链，thin x86_64，公证签名零拦截）；版本即镜像日（UTC，浮动上游无版本信号，见 11.43）；镜像到本仓 Release（`dsh-gui-<ver>`）；检查器 customRelease + `alwaysUpdate` 必触发（每次检查必走完全链路） | 已收录 |
 | `cmake` | 4.4.4 | 官方 `cmake-<ver>-macos-universal.tar.gz`（universal 双切片；core 无 Intel 瓶，Tier 3 只能源码编，见 11.44）；主 url 用 Kitware GitHub（避版本目录段坑），cmake.org 作 http(s) 双镜像；`install` 尾部做 file 架构 + `--version` 自检（`post_install` 已废弃）；检查器 brew 流模板式（sha 走官方 `SHA-256.txt` 精确匹配） | 已收录 |
 | `grok-bot` | 0.68.1 | cask——Cursor Grok Bot 桌面 agent（`Grok_Bot_<ver>_x64.dmg`，thin x86_64，公证签名零拦截）；**Intel-only**；镜像到本仓 Release（`grok-bot-<ver>`）；检查器 customRelease 抓 cursor 下载页的 Intel 行判新（页内另有无关版本，必须锚定，见 11.45） | 已收录 |
+| `scrcpy` | 5.0.1 | 官方 `scrcpy-macos-x86_64-v<ver>.tar.gz`（thin x86_64，SDL/ffmpeg 静态链入，零 brew 依赖；附 universal adb + 设备端 scrcpy-server；见 11.47）；整包进 libexec（扁平布局不可拆，server 按执行文件定位）+ `bin` wrapper；core 在 Intel 无瓶且依赖树（openssl@4/python@3.15/ffmpeg…）全源码编；检查器 brew 模板流（sha 走官方 `SHA256SUMS.txt`） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1545,6 +1546,25 @@ cask url 首版即用 `#{version}` 双插值（11.42 教训前置）。
    （11.24 的 gh 重切是反例：当时 checksums 与实物双双已变，必须等一致）。
 4. 本批另有 grok-bot/konsole 报 check-failed（runner 当时抓 cursor 页/KDE listing
    失败，瞬时网络问题）：无 status 即跳过、文件不动，下次自动恢复，不开 issue。
+
+### 11.47 scrcpy 预编译直引 + write_exec_script 无执行位（2026-10-13 实测）
+
+core scrcpy 5.0.1 在 Intel 无瓶，依赖树（openssl@4/python@3.15/libvmaf/libvpx/
+sdl3/sdl2-compat/x264/x265/ffmpeg…11 装 5 升）全源码编，用户实测卡在 openssl@4
+的 `make`（Tier 3 意料之中）。本 tap 改直引上游官方 `scrcpy-macos-x86_64-v<ver>.tar.gz`
+（thin x86_64，otool 全系统库，SDL/ffmpeg 静态链入，实测零 brew 依赖；core 自家
+都用 `scrcpy--prebuilt-server` 资源，整包拿更没问题），4 秒装完。
+
+1. **扁平布局不可拆**：`scrcpy` 按自身所在目录定位 `scrcpy-server` 与 `adb`——
+   整包进 `libexec`，`bin` 用 `write_exec_script` 指过去，不猜 symlink 解析
+   （SDL_GetBasePath 对 symlink 的行为不可靠，wrapper exec 后即真实路径，确定对）。
+2. **`write_exec_script` 只写文件不给执行位**（644，实测 `ls -la` 确认；隔壁
+   `write_env_script` 显式 `chmod 0555`，本函数漏了）：install 尾的 `--version`
+   自检以 exit 1 静默失败（无输出，keg 回滚），/tmp 手测因顺手 `chmod +x` 没暴露。
+   修法：install 里显式 `chmod 0555, bin/"scrcpy"`（frida 的 xz 无执行位是同类，
+   见 11.37）。教训：凡 wrapper/垫片，进 install 尾自检前先确认模式位。
+3. 文件名 `-v5.0.1` 尾缀不致盲版本扫描（实测 stable 即 5.0.1，不写 version 行；
+   buildx/docker-compose 同例，以 audit 为准）。
 
 ## 12. 待办 / 后续演进
 

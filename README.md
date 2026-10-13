@@ -109,6 +109,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `dsh-gui` | DeepSeek Harness desktop app (Intel only, floating upstream link mirrored by date); refreshed on every check, version is the mirror date |
 | `cmake` | Cross-platform build tool, upstream universal macOS package (Intel slice); core has no Intel bottle, installs in seconds instead of compiling |
 | `grok-bot` | Cursor Grok Bot desktop agent (Intel only); mirrored to this repo's releases, version tracked from Cursor's download page |
+| `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero dependencies); core has no Intel bottle and its dependency tree builds from source |
 
 ## Switching sources (same-name conflict)
 
