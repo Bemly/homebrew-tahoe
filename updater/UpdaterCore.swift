@@ -358,7 +358,13 @@ func compareVersions(_ a: String, _ b: String) -> Int {
         let av = sa[i]
         let bv = sb[i]
         if av == bv { continue }
-        if let ai = Int(av), let bi = Int(bv), ai != bi { return ai < bi ? -1 : 1 }
+        // 纯数字段按数值比：前导零只影响字面（如 yt-dlp 的 brew 判据 "2026.8.19"
+        // vs GitHub tag "2026.08.19"，数值相等即同一版本；11.48）。
+        // 不这么判则每次都误报更新，重写出 404 URL（brew 侧无零可补）。
+        if let ai = Int(av), let bi = Int(bv) {
+            if ai != bi { return ai < bi ? -1 : 1 }
+            continue
+        }
         // 预发布 < 正式版：一段是另一段 + "-后缀" 时，带后缀的小。
         // 如本地 0.1.2-rc.1 vs 上游 0.1.2 final，必须判"有更新"而非"本地更新"——
         // 纯字符串比较会得出 "2-rc" > "2" 的反结论，rc 一旦装上就永远升不到 final。
@@ -1038,6 +1044,15 @@ func runCheck(_ config: CheckConfig) {
     if compareVersions(current, stable) > 0 {
         print("本地版本(\(current)) 比 上游版本(\(stable)) 更新，保持不动。")
         emit("status=newer-than-brew")
+        emit("current_version=\(current)")
+        return
+    }
+    // 数值相等但字面不同（如 yt-dlp 本地 "2026.08.19" vs brew "2026.8.19"）：
+    // 同一版本，不更新——否则每次都误报并写出 404 URL（11.48）。
+    // 必触发包不受影响（上式 current == stable 已提前分流，alwaysUpdate 不到此）。
+    if current != stable, compareVersions(current, stable) == 0 {
+        print("已是最新（数值相等，字面差异：本地 \(current) vs 上游 \(stable)），无需更新。")
+        emit("status=up-to-date")
         emit("current_version=\(current)")
         return
     }

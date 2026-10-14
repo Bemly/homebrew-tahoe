@@ -103,6 +103,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `cmake` | 跨平台构建工具，上游 universal macOS 包（Intel 切片）；core 无 Intel 瓶，秒装代替源码编译 |
 | `grok-bot` | Cursor Grok Bot 桌面 agent（仅 Intel）；镜像到本仓 Release，版本跟随 Cursor 下载页 |
 | `scrcpy` | 安卓投屏工具，上游 Intel 静态构建（零依赖）；core 无 Intel 瓶且依赖树全源码编 |
+| `yt-dlp` | 音视频下载器，上游 universal macOS 单二进制（零依赖）；core 无 Intel 瓶且拖 Python 栈 |
 
 ## 注意事项（同名冲突）
 

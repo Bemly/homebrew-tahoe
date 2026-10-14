@@ -213,7 +213,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `dsh-gui` | 2026.10.09（镜像日期） | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；`dsh-latest-macos-x64.dmg` 浮动直链，thin x86_64，公证签名零拦截）；版本即镜像日（UTC，浮动上游无版本信号，见 11.43）；镜像到本仓 Release（`dsh-gui-<ver>`）；检查器 customRelease + `alwaysUpdate` 必触发（每次检查必走完全链路） | 已收录 |
 | `cmake` | 4.4.4 | 官方 `cmake-<ver>-macos-universal.tar.gz`（universal 双切片；core 无 Intel 瓶，Tier 3 只能源码编，见 11.44）；主 url 用 Kitware GitHub（避版本目录段坑），cmake.org 作 http(s) 双镜像；`install` 尾部做 file 架构 + `--version` 自检（`post_install` 已废弃）；检查器 brew 流模板式（sha 走官方 `SHA-256.txt` 精确匹配） | 已收录 |
 | `grok-bot` | 0.68.1 | cask——Cursor Grok Bot 桌面 agent（`Grok_Bot_<ver>_x64.dmg`，thin x86_64，公证签名零拦截）；**Intel-only**；镜像到本仓 Release（`grok-bot-<ver>`）；检查器 customRelease 抓 cursor 下载页的 Intel 行判新（页内另有无关版本，必须锚定，见 11.45） | 已收录 |
-| `scrcpy` | 5.0.1 | 官方 `scrcpy-macos-x86_64-v<ver>.tar.gz`（thin x86_64，SDL/ffmpeg 静态链入，零 brew 依赖；附 universal adb + 设备端 scrcpy-server；见 11.47）；整包进 libexec（扁平布局不可拆，server 按执行文件定位）+ `bin` wrapper；core 在 Intel 无瓶且依赖树（openssl@4/python@3.15/ffmpeg…）全源码编；检查器 brew 模板流（sha 走官方 `SHA256SUMS.txt`） | 已收录 |
+| `scrcpy` | 5.0.1 | 官方 `scrcpy-macos-x86_64-v<ver>.tar.gz`（thin x86_64，SDL/ffmpeg 静态链入，零 brew 依赖；附 universal adb + 设备端 scrcpy-server；见 11.47）；整包进 libexec（扁平布局不可拆，server 按执行文件定位）+ `bin` wrapper；core 在 Intel 无瓶且依赖树（openssl@4/python@3.15/ffmpeg…）全源码编；检查器 brew 模板流（sha 走官方 `SHA2-256SUMS`） | 已收录 |
+| `yt-dlp` | 2026.08.19 | 官方 `yt-dlp_macos` 单二进制（universal 双切片，纯系统库，零依赖；此构建无补全参数不硬凑；见 11.48）；文件名无版本但路径段可扫，不写 version 行；core 在 Intel 无瓶且拖 python 栈（certifi/cffi/deno/python@3.15）；检查器 brew 模板流（sha 走官方 `SHA2-256SUMS`，模板内月日补零，版本按数值判等） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1565,6 +1566,24 @@ sdl3/sdl2-compat/x264/x265/ffmpeg…11 装 5 升）全源码编，用户实测�
    见 11.37）。教训：凡 wrapper/垫片，进 install 尾自检前先确认模式位。
 3. 文件名 `-v5.0.1` 尾缀不致盲版本扫描（实测 stable 即 5.0.1，不写 version 行；
    buildx/docker-compose 同例，以 audit 为准）。
+
+### 11.48 yt-dlp 的去零/补零版本差 + 无补全构建（2026-10-14 实测）
+
+core stable 取 PyPI 归一化值 `"2026.8.19"`（去零），GitHub tag 保持补零
+`"2026.08.19"`——同一 release 两种写法。不处理则每次误报更新、模板拼出
+404 URL（`.../download/2026.8.19/...` 不存在）。两处修：
+
+1. **核心数字段按数值判等**（`compareVersions`：`"08"` vs `"8"` 数值相等即
+   continue；纯字面 fallback 保留，预发布逻辑不动）。另补 `==0 但字面不同`
+   分支直接判 up-to-date（dual-arch 路径无此形态，不动）。52 个检查器全编译
+   回归通过（其他包行为不变：前导零差异只在此一种上游出现）。
+2. **yt-dlp 模板内补零**：brew 版月日补齐两位再拼 GitHub 路径（年不动）；
+   形态对不上则 HEAD 探测报 upstream-missing，不写坏文件。
+3. 公式不写 version 行：路径段即全版本，brew 扫描正确（写了判冗余；初版写过，
+   audit 指正后删，与 cmake 反向而同因——一律以 audit 为准）。
+4. 此 PyInstaller 构建无 `--print-completion`（`--help` 全文无 complet 字样，
+   exit 2），不硬凑补全文件；裸二进制无执行位，`chmod 0555`（frida/scrcpy 同例）。
+   test 只做 `--version` + file 断言（core 的下载实测涉网，沙箱必挂，见 11.30）。
 
 ## 12. 待办 / 后续演进
 
