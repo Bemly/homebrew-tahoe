@@ -10,6 +10,11 @@ class LibimobiledeviceGlue < Formula
   compatibility_version 1
   head "https://github.com/libimobiledevice/libimobiledevice-glue.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "691bf83c0a5ad08aa1c6f5d160450441f5c6458daf7f5c7ee3347542cbabb865"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on "autoconf" => :build
   depends_on "automake" => :build

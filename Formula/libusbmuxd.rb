@@ -11,6 +11,11 @@ class Libusbmuxd < Formula
   revision 1
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e8fa74dfca805b270d70356262d0bf76e5b445ff5f247220b83eaee098eaa0d7"
+  end
+
   head do
     url "https://github.com/libimobiledevice/libusbmuxd.git", branch: "master"
 
