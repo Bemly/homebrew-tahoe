@@ -111,6 +111,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `grok-bot` | Cursor Grok Bot desktop agent (Intel only); mirrored to this repo's releases, version tracked from Cursor's download page |
 | `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero dependencies); core has no Intel bottle and its dependency tree builds from source |
 | `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies); core has no Intel bottle and pulls a Python stack |
+| `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS device communication stack, compiled from source on Intel (core has no Intel bottles); leaf dependencies bottled, hub dependencies (`libtasn1`, `openssl@4`) left to core |
 
 ## Switching sources (same-name conflict)
 

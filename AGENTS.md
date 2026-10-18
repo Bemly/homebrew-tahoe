@@ -215,6 +215,11 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `grok-bot` | 0.68.1 | cask——Cursor Grok Bot 桌面 agent（`Grok_Bot_<ver>_x64.dmg`，thin x86_64，公证签名零拦截）；**Intel-only**；镜像到本仓 Release（`grok-bot-<ver>`）；检查器 customRelease 抓 cursor 下载页的 Intel 行判新（页内另有无关版本，必须锚定，见 11.45） | 已收录 |
 | `scrcpy` | 5.0.1 | 官方 `scrcpy-macos-x86_64-v<ver>.tar.gz`（thin x86_64，SDL/ffmpeg 静态链入，零 brew 依赖；附 universal adb + 设备端 scrcpy-server；见 11.47）；整包进 libexec（扁平布局不可拆，server 按执行文件定位）+ `bin` wrapper；core 在 Intel 无瓶且依赖树（openssl@4/python@3.15/ffmpeg…）全源码编；检查器 brew 模板流（sha 走官方 `SHA2-256SUMS`） | 已收录 |
 | `yt-dlp` | 2026.08.19 | 官方 `yt-dlp_macos` 单二进制（universal 双切片，纯系统库，零依赖；此构建无补全参数不硬凑；见 11.48）；文件名无版本但路径段可扫，不写 version 行；core 在 Intel 无瓶且拖 python 栈（certifi/cffi/deno/python@3.15）；检查器 brew 模板流（sha 走官方 `SHA2-256SUMS`，模板内月日补零，版本按数值判等） | 已收录 |
+| `libplist` | 2.8.0 | 代编译叶子：idevice 栈 plist 库（生态扇入 10，但依赖方全是 idevice 系叶子，无枢纽，故自瓶；见 11.49） | 已收录 |
+| `libimobiledevice-glue` | 1.3.3 | 代编译叶子：idevice 公共系统 API 库（扇入 3，全 idevice 系）；依赖本 tap 全名叶子 | 已收录 |
+| `libtatsu` | 1.0.5 | 代编译叶子：苹果 TSS 签名库（扇入 1，仅本体依赖）；`revision 1` 与 core 同步（掉 revision 手工删，见 11.49）；curl 走 `uses_from_macos` | 已收录 |
+| `libusbmuxd` | 2.1.1 | 代编译叶子：iOS USB 复用库（扇入 2，全 idevice 系）；`revision 1` 与 core 同步；test 走本机回环（公网用例沙箱必挂，见 11.30） | 已收录 |
+| `libimobiledevice` | 1.4.0 | 代编译主软件：iOS 设备通信库（`idevicedate` 等 30+ 工具）；`revision 2` 与 core 同步；依赖按 hub/叶子分流（glue/plist/tatsu/usbmuxd 全名，libtasn1/openssl@4 裸名留 core，见 11.49） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1566,6 +1571,30 @@ sdl3/sdl2-compat/x264/x265/ffmpeg…11 装 5 升）全源码编，用户实测�
    见 11.37）。教训：凡 wrapper/垫片，进 install 尾自检前先确认模式位。
 3. 文件名 `-v5.0.1` 尾缀不致盲版本扫描（实测 stable 即 5.0.1，不写 version 行；
    buildx/docker-compose 同例，以 audit 为准）。
+
+### 11.49 libimobiledevice 入库：idevice 栈分流 + curl3 静态库遮蔽系统 curl（2026-10-19 实测）
+
+用户跑 `brew install libimobiledevice`，core 侧 plist（48s）/glue（17s）现编通过，
+卡在 libtatsu 链接：`ld: symbol(s) not found for architecture x86_64`，`_uidna_*`
+来自 `libcurl.a`（libcurl_la-psl.o/libcurl_la-idn.o 引用，链接行无提供方）。
+根因是本机 `/usr/local/lib/libcurl.a`→curl3 的静态库（无配套 .dylib，
+`-lcurl` 被迫静态链接，而该 .a 缺 ICU/IDN 符号；11.33 的纯客户端形态遗留）。
+CI runner 的 /usr/local 无此文件，用 brew/系统 shared curl 正常链接——
+纯本机环境问题，不是上游 bug。本地验证时临时挪开该文件、装完原样恢复
+（curl3 运行时是静态链接好的二进制，不受影响；恢复后 `ls -la` 核对）。
+
+入库分流（全量 formula.json 反查扇入，Tier 3 上 `brew uses --eval-all` 已禁用）：
+自瓶 5 个——libplist（扇入 10，全 idevice 系）/glue（3）/tatsu（1）/
+usbmuxd（扇入 2：ios-webkit-debug-proxy/libimobiledevice）/本体；
+留 core 3 个——libtasn1（扇入 6：gnutls/p11-kit/samba/webkitgtk，枢纽）、
+openssl@4（扇入 524）、ca-certificates。依赖改写按 6 节规则（叶子全名、枢纽裸名）。
+`revision` 行（tatsu 1/usbmuxd 1/本体 2）照抄 core：watcher 只动 url/sha，
+上游发新版时若 core 掉 revision，此行必须手工删（核心不会自动同步）。
+
+本地 5 编 5 测全绿后入库；瓶由 bottle.yml 出（topo 自动排序，无需手工排）。
+另：core scrcpy 5.0.1 至今不依赖 libimobiledevice（`brew deps` 实测只有
+ffmpeg/libusb/sdl3）——用户日志里 scrcpy 头 + idevice 尾混在一起是两次安装
+的输出拼贴，不必深究；本 tap 的 scrcpy 零依赖预装包不受任何影响。
 
 ### 11.48 yt-dlp 的去零/补零版本差 + 无补全构建（2026-10-14 实测）
 
