@@ -1583,6 +1583,15 @@ CI runner 的 /usr/local 无此文件，用 brew/系统 shared curl 正常链接
 纯本机环境问题，不是上游 bug。本地验证时临时挪开该文件、装完原样恢复
 （curl3 运行时是静态链接好的二进制，不受影响；恢复后 `ls -la` 核对）。
 
+**后续（2026-10-19，用户拍板永久清除）**：删掉 `/usr/local/lib/libcurl.a`
+这个符号链接（Cellar 原件不动，`curl3` 自身静态运行无碍）。判据：扫全
+`/usr/local/lib` 的孤儿 `.a`，只有 `libcurl.a` 是"通用链接名被静态独占"
+（`-lcurl` 人人探；webp/shaderc/tcl stub 等孤儿库都是生僻名，无人裸 `-l`，
+不动）。清除后本机 `--build-from-source` 重编 libtatsu 一次过（16s），
+闭环证明。**复发预警**：下次 `reinstall/link curl3` 会重建该链接（瓶里带着
+`.a`），届时源码构建若再报同类 `ld: symbol(s) not found`，同一招（删链接）
+即可；`curl3` 二进制本身永远不受影响。
+
 入库分流（全量 formula.json 反查扇入，Tier 3 上 `brew uses --eval-all` 已禁用）：
 自瓶 5 个——libplist（扇入 10，全 idevice 系）/glue（3）/tatsu（1）/
 usbmuxd（扇入 2：ios-webkit-debug-proxy/libimobiledevice）/本体；
