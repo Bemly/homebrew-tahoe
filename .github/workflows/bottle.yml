@@ -183,6 +183,22 @@ jobs:
             done
             rm -f "${BREW_PREFIX}/share/man/man1/node.1"
 
+            # 全名依赖的同名 keg 冲突（2026-10-20 wabt 首例，node@24 预装同型，
+            # 见 AGENTS.md 11.10）：macos-26-intel 镜像预装了 core 的 cmake 同名
+            # keg，而 wabt 声明 depends_on "bemly/tahoe/cmake" => :build ——
+            # brew install 解析全名依赖时先撞「已装自别的 tap」odie：
+            #   "cmake is already installed from homebrew/core!"
+            # 处理：本公式依赖名若在本 tap 有对应公式（Formula/<dep>.rb 存在），
+            # 先强卸同名 keg，再交给 install 装回（全名依赖命中的是本 tap GHCR 瓶，
+            # core 侧现编一次无瓶的 cmake 也一并跳过）。只卸「本 tap 拥有的名字」，
+            # openssl@4 这类裸名枢纽不在清理范围，避免每次 all 制瓶多编一个枢纽。
+            for dep in $(sed -n 's/^[[:space:]]*depends_on "bemly\/tahoe\/\([^"]*\)".*/\1/p;s/^[[:space:]]*depends_on "\([^"]*\)".*/\1/p' "Formula/${f}.rb"); do
+              if [[ -n "$dep" && -f "Formula/${dep}.rb" ]]; then
+                brew uninstall --force --ignore-dependencies "$dep" >/dev/null 2>&1 || true
+                rm -f "${BREW_PREFIX}/bin/${dep}" >/dev/null 2>&1 || true
+              fi
+            done
+
             # 同名公式跨 tap 不能共存（check.rb:47 的 odie）：卸掉可能预装的 core 版。
             # 加 --ignore-dependencies 是因为 brew 会以「被其它已装包依赖」为由拒绝卸载
             # （如镜像预装的 ca-certificates）；runner 是一次性环境，强卸安全。

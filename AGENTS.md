@@ -1624,6 +1624,25 @@ openssl@4（扇入 524）、ca-certificates。依赖改写按 6 节规则（叶�
 ffmpeg/libusb/sdl3）——用户日志里 scrcpy 头 + idevice 尾混在一起是两次安装
 的输出拼贴，不必深究；本 tap 的 scrcpy 零依赖预装包不受任何影响。
 
+### 11.50 wabt 入库：runner 预装 core cmake 撞全名依赖（2026-10-20 实测）
+
+wabt 按 6 节 SOP 入库（core 拷入 + 双门槛；构建依赖写本 tap 全名
+`depends_on "bemly/tahoe/cmake" => :build`——core cmake 在 Intel Tahoe 无瓶，
+本 tap universal 包秒装，11.44 同因；`openssl@4` 枢纽裸名留 core）。本机
+`--build-from-source` 一次过（style/audit/fetch/test 全绿、检查器 59/59 编译回归），
+但触发制瓶 46 秒即挂：`cmake is already installed from homebrew/core!`。
+
+根因：macos-26-intel 镜像**预装了 core 的 cmake 同名 keg**（与 11.10 node@24
+同型），全名依赖解析时先撞「已装自别的 tap」的 odie。**本机不复现**（本机 cmake
+装的是本 tap 版）——预装 keg 撞名只在 CI 出现，「本地全绿 ≠ CI 不炸」同族
+（11.16/11.19 旧账再加一笔）。
+
+修法（bottle.yml 已落地，循环内每个公式装回前）：解析 `depends_on` 行抽依赖名，
+**只对「本 tap 拥有对应公式」的名字**（`Formula/<dep>.rb` 存在，即全名分流目标）
+先 `brew uninstall --force --ignore-dependencies` + 兜底删 bin 链接，再交给
+install 装回——全名依赖命中的是本 tap GHCR 瓶。裸名枢纽（openssl@4 等）不上
+清理名单，`all` 制瓶不会因此多编一个枢纽。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
