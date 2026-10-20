@@ -112,6 +112,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero dependencies); core has no Intel bottle and its dependency tree builds from source |
 | `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies); core has no Intel bottle and pulls a Python stack |
 | `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS device communication stack, compiled from source on Intel (core has no Intel bottles); leaf dependencies bottled, hub dependencies (`libtasn1`, `openssl@4`) left to core |
+| `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends), compiled from source on Intel (upstream's macOS asset is arm64-only and core has no Intel Tahoe bottle); cmake build dependency taken from this tap |
 
 ## Switching sources (same-name conflict)
 

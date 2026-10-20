@@ -105,6 +105,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `scrcpy` | 安卓投屏工具，上游 Intel 静态构建（零依赖）；core 无 Intel 瓶且依赖树全源码编 |
 | `yt-dlp` | 音视频下载器，上游 universal macOS 单二进制（零依赖）；core 无 Intel 瓶且拖 Python 栈 |
 | `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS 设备通信栈，Intel 现编出瓶（core 无 Intel 瓶）；叶子依赖自瓶，枢纽依赖（`libtasn1`、`openssl@4`）留 core |
+| `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等全套工具）——上游 macOS 资产仅 arm64、core 无 Intel Tahoe 瓶，core 拷入代编译；cmake 构建依赖走本 tap |
 
 ## 注意事项（同名冲突）
 

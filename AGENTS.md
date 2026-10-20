@@ -220,6 +220,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `libtatsu` | 1.0.5 | 代编译叶子：苹果 TSS 签名库（扇入 1，仅本体依赖）；`revision 1` 与 core 同步（掉 revision 手工删，见 11.49）；curl 走 `uses_from_macos` | 已收录 |
 | `libusbmuxd` | 2.1.1 | 代编译叶子：iOS USB 复用库（扇入 2，全 idevice 系）；`revision 1` 与 core 同步；test 走本机回环（公网用例沙箱必挂，见 11.30） | 已收录 |
 | `libimobiledevice` | 1.4.0 | 代编译主软件：iOS 设备通信库（`idevicedate` 等 30+ 工具）；`revision 2` 与 core 同步；依赖按 hub/叶子分流（glue/plist/tatsu/usbmuxd 全名，libtasn1/openssl@4 裸名留 core，见 11.49） | 已收录 |
+| `wabt` | 1.0.42 | 代编译模式：core 拷入（上游 GitHub Releases 的 macOS 资产仅 macos-arm64——1.0.38 的 macos-14 包也是纯 arm64，file 实测；core 无 Intel Tahoe 瓶）；CMake 全量构建（`BUILD_TESTS=OFF`），`cmake` 构建依赖走本 tap 全名、`openssl@4` 枢纽留 core；`wat2wasm`/`wasm2wat` 等全套工具 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
