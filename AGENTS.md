@@ -797,7 +797,6 @@ WorkBuddy 的接口 `sha256hash` 恰好是 dmg 的 sha（与 zip 实算不符）
   拉取即可恢复；`brew fetch --bottle-tag=tahoe` 也是排查瓶是否可拉的最快手段
   （成功标志：`✔︎ Bottle Manifest` + `✔︎ Bottle` 两行）。
 
-<<<<<<< HEAD
 ### 11.11 依赖树照搬进 tap 不可行：同名跨 tap 对依赖同样无条件 odie
 
 qemu 初版方案把 30 个依赖全复制进本 tap（依赖全名化 + 全量流检查器都做好了），
@@ -833,6 +832,7 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
   arm64_* 和更老的 sonoma）→ 代编译前提成立，别拿「core 有 tahoe 瓶」否定整套方案。
 - Actions 的 `GITHUB_TOKEN` 在 **public 仓库**建的 GHCR 包**默认即公开**（匿名
   curl 可直接拉 tags），「首推后需手动改 Public」不成立；删包重建也继承公开状态。
+
 ### 11.15 迁移 tap 公式 + raw 流的坑（2026-09-03 实测，opencode/sst/torpedo）
 
 1. **version 行去留以 `audit --strict` 为准，不要凭 URL 猜**。本以为
@@ -1017,6 +1017,37 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    下次自动恢复）。顺带给该路径加过 GH_TOKEN 认证（已 revert：限流就等下次，
    反复跑只会更限——保持匿名）。
 
+### 11.24 上游会重切同版本包：sha 可能出生即过期（2026-09-04 实测，gh 2.100.0）
+
+watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
+`Formula reports different checksum`——当时 checksums.txt 与实包都已变成
+`fcd7…`（cli 团队重传了同名资产）。症状即 `reports different checksum`；
+修法：重下实物算 sha，再核对 checksums.txt **当下**值，三方
+（下载实物/当下 checksums/公式）一致才改公式，改完重跑 bottle。
+教训：checksums.txt 不是不可变快照，同版本重切只认三方一致，不认"watcher 当时看到的值"。
+
+### 11.25 全仓扫手滑：装后审计 + 豁免回归 + 风格腐化（2026-09-04 实测）
+
+1. **架构审计只查已安装的 keg**：`audit --strict` 的异架构检查在公式未安装时
+   直接跳过——收录时"audit 全过"不代表二进制没问题。fish（11.19.4）与
+   deepseek-harness 都是装完重审才暴露。结论：新包 SOP 的 audit 必须在
+   `install` **之后**再跑一遍（`fetch` 前跑的那遍只审文本）。
+2. **dsh 的 arm64 预编译件走 tap 豁免**：`node-pty/prebuilds/darwin-arm64/`
+   （随包附带、Intel 运行时用不到，WorkBuddy 公式时代同款，见 11.9.4）——
+   `audit_exceptions/` 机制随 workbuddy 转 cask 被删过，本次为公式加回：
+   `audit_exceptions/mismatched_binary_allowlist.json`，格式
+   `{"<formula>": ["<相对 prefix 的 glob>", ...]}`，多级目录必须用
+   `/**/*` 结尾（FNM_PATHNAME 下 `**` 不跨目录，实测）。豁免只给"用不到才
+   无害"的文件，明知跑不起来的（fish 那俩 helper）不许进豁免，直接不装。
+3. **风格会腐化**：本机 brew 会自动更新（只有 CI 锁了 `HOMEBREW_NO_AUTO_UPDATE`），
+   rubocop cops 会变严——qemu 链 5 个公式（core 拷入 + 门禁改写）攒了几十个
+   `DependencyOrder`/`ComponentsOrder`/`EmptyLines` 才被发现。修法就
+   `brew style --fix`，但必须 review diff：本次它顺手删了 qemu.rb 从 core 带回的
+   两行注释（`bison # >= 3.0`、`python@3.14 # keep aligned with meson`），
+   已手动补回——autocorrect 的 diff 要逐行看，不能无脑提交。
+4. **README 会漏行**：AGENTS §6 全，但 README 中英都漏了 qemu 链 5 包 + neofetch
+   （早期合并时没同步）。以后新增软件顺手把三处表格（AGENTS/中/英）一次填齐。
+
 ### 11.26 双架构产物分支 + url 改写语义修正（2026-09-04 实测，zcode 双架构化）
 
 1. **UpdaterCore 新增双架构维度**（版本来源正交）：`archArtifacts: [token]`
@@ -1051,37 +1082,6 @@ expected 0, have 3`。本机 clang 21 默认标准下复现不了——用
    直链 cask 出生几天即坏——`customRelease` 抓双 listing 交集最大构建号判新，
    双包镜像到本仓 Release（`konsole-<构建号>`，旧快照自动清理），cask 永远指
    Release。按月手动跑 watcher（不设 cron，见 §5）。
-
-### 11.24 上游会重切同版本包：sha 可能出生即过期（2026-09-04 实测，gh 2.100.0）
-
-watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
-`Formula reports different checksum`——当时 checksums.txt 与实包都已变成
-`fcd7…`（cli 团队重传了同名资产）。症状即 `reports different checksum`；
-修法：重下实物算 sha，再核对 checksums.txt **当下**值，三方
-（下载实物/当下 checksums/公式）一致才改公式，改完重跑 bottle。
-教训：checksums.txt 不是不可变快照，同版本重切只认三方一致，不认"watcher 当时看到的值"。
-
-### 11.25 全仓扫手滑：装后审计 + 豁免回归 + 风格腐化（2026-09-04 实测）
-
-1. **架构审计只查已安装的 keg**：`audit --strict` 的异架构检查在公式未安装时
-   直接跳过——收录时"audit 全过"不代表二进制没问题。fish（11.19.4）与
-   deepseek-harness 都是装完重审才暴露。结论：新包 SOP 的 audit 必须在
-   `install` **之后**再跑一遍（`fetch` 前跑的那遍只审文本）。
-2. **dsh 的 arm64 预编译件走 tap 豁免**：`node-pty/prebuilds/darwin-arm64/`
-   （随包附带、Intel 运行时用不到，WorkBuddy 公式时代同款，见 11.9.4）——
-   `audit_exceptions/` 机制随 workbuddy 转 cask 被删过，本次为公式加回：
-   `audit_exceptions/mismatched_binary_allowlist.json`，格式
-   `{"<formula>": ["<相对 prefix 的 glob>", ...]}`，多级目录必须用
-   `/**/*` 结尾（FNM_PATHNAME 下 `**` 不跨目录，实测）。豁免只给"用不到才
-   无害"的文件，明知跑不起来的（fish 那俩 helper）不许进豁免，直接不装。
-3. **风格会腐化**：本机 brew 会自动更新（只有 CI 锁了 `HOMEBREW_NO_AUTO_UPDATE`），
-   rubocop cops 会变严——qemu 链 5 个公式（core 拷入 + 门禁改写）攒了几十个
-   `DependencyOrder`/`ComponentsOrder`/`EmptyLines` 才被发现。修法就
-   `brew style --fix`，但必须 review diff：本次它顺手删了 qemu.rb 从 core 带回的
-   两行注释（`bison # >= 3.0`、`python@3.14 # keep aligned with meson`），
-   已手动补回——autocorrect 的 diff 要逐行看，不能无脑提交。
-4. **README 会漏行**：AGENTS §6 全，但 README 中英都漏了 qemu 链 5 包 + neofetch
-   （早期合并时没同步）。以后新增软件顺手把三处表格（AGENTS/中/英）一次填齐。
 
 ### 11.27 opencode 双架构：摘 arch 门槛的例外（2026-09-04 实测）
 
@@ -1150,51 +1150,6 @@ watcher 用 checksums.txt 取到 `39d5…` 写入公式，接着 bottle 就报
    查选项必须 `--help all`（`proxy-http3` 在 all 里）；hyperfine 1.20 输出
    改版（`Time (mean ± σ)`），test 只锁 `Benchmark 1` 这种稳定锚点。
 
-### 11.34 全 cask 镜像政策 + 空格资产名坑（2026-09-05 定稿，硬规则）
-
-**政策（用户拍板，此后所有 cask 无例外）**：11 个 cask 全部把最新版镜像到
-本仓 GitHub Release（tag `<name>-<ver>`，资产名沿用上游 basename），cask
-url 一律指本仓 Release；上游直引只做新收录时的过渡，首轮即镜像。
-旧政策（"链接稳定的直引即可，如 zcode/brewui"）已废弃。pinned 不检查更新
-的 cask（checkra1n/palera1n/macos-tskmgr/heliport/winstart）同样镜像当前
-锁定版——只是没有检查器，靠人工重做（下载→核 sha→传 Release→改 url）。
-winstart 早就是这个形态（无公开链接，只能如此）。
-
-1. **GitHub 存资产时把空格换成点**：`checkra1n beta 0.12.4.dmg` 存成
-   `checkra1n.beta.0.12.4.dmg`，`Wireshark 4.4.18 Intel 64.dmg` 存成
-   `Wireshark.4.4.18.Intel.64.dmg`——cask url 照抄直引的 `%20` 形态必 404
-   （本轮 checkra1n/wireshark 双双中招，`fetch --cask` 现形）。
-   修法：cask url 写点分隔形态；`UpdaterCore` 单/双架构两条上传链路同步做
-   `空格→点` 替换（`%20` 先解码，wireshark 的 appcast 直链是编码形态），
-   上传用名与 finalURL 保持一致。
-2. **zcode 顺手真升了一次**：翻镜像开关后跑检查器，正撞上游 3.10.2→3.11.2，
-   双包下载实算、上传 `zcode-3.11.2`、改写 version + 双 sha、旧 release
-   自动清理——双架构 + 镜像全链路一次跑通，比摆拍更硬的 proof。
-3. **旧 release 只留最新**：沿用 workbuddy 机制（`deleteOldCaskReleases`），
-   每个 cask 的 Release 永远只有一个，11 个 cask 对 11 个 release。
-
-### 11.35 wireshark 不装 ChmodBPF 就抓不了包（2026-09-05 实测）
-
-1. 现象：`tshark -D` 能列接口（列接口不要权限），但一抓就
-   `cannot open BPF device /dev/bpf0: Permission denied`——`/dev/bpf*`
-   默认 `root:wheel 600`，且根本没有 `access_bpf` 组，本 tap 首版 cask
-   只装了 app，权限链是断的。
-2. 修法：cask 加 `pkg "Install ChmodBPF.pkg"`（同 dmg 内的官方包，已拆包
-   验过 postinstall 实物：建 `access_bpf` 组、把 admin 组 + 当前用户加进去、
-   装 LaunchDaemon 开机改 bpf 设备组归属）+ `uninstall` 配
-   `launchctl`/`pkgutil` + caveats。装 pkg 要弹密码（写 `/Library`），
-   属正常行为。非交互装可用 `SUDO_ASKPASS` 喂密码跑通
-   （`brew reinstall --cask` 全程无人值守实测）。
-3. **"注销重登"是错的，当场推翻**：原以为组身份要重新登录才生效，实测
-   旧 shell（组建好之前就开着的）装完直接抓到包——macOS 对本地组成员的
-   判定是动态查目录服务的（且 postinstall 把 admin 组整个拉进
-   access_bpf，admin 用户天然命中），daemon 一 bootstrap 改完
-   `/dev/bpf*` 归属即全会话生效。官方当年"不用重登"不是运气，是机制如此；
-   本 tap 首版 caveats 照抄 classical Unix 经验写错了，已订正。
-   附加：sudo 下 postinstall 的 `$USER` 未必是你本人，装完顺手显式补一次
-   `sudo dseditgroup -o edit -a <你> -t user access_bpf` 最稳（幂等）；
-   非 admin 用户同样靠这条手动进组，进组即生效，也不用重登。
-
 ### 11.31 本轮链路备忘（curl3 栈 / iperf3 / wireshark）
 
 1. **libnghttp2 是枢纽（扇入 19：node 家族/curl/wget2…），不能自瓶**：
@@ -1252,6 +1207,51 @@ winstart 早就是这个形态（无公开链接，只能如此）。
    瓶块 sha 有效 → brew 直接倒旧瓶，新布局根本不生效（本地一度"修了个寂寞"：
    bin/curl3 不存在、头文件又回来了）。验证布局改动必须
    `brew install --build-from-source`；GHCR 侧靠重跑 bottle 覆盖。
+
+### 11.34 全 cask 镜像政策 + 空格资产名坑（2026-09-05 定稿，硬规则）
+
+**政策（用户拍板，此后所有 cask 无例外）**：11 个 cask 全部把最新版镜像到
+本仓 GitHub Release（tag `<name>-<ver>`，资产名沿用上游 basename），cask
+url 一律指本仓 Release；上游直引只做新收录时的过渡，首轮即镜像。
+旧政策（"链接稳定的直引即可，如 zcode/brewui"）已废弃。pinned 不检查更新
+的 cask（checkra1n/palera1n/macos-tskmgr/heliport/winstart）同样镜像当前
+锁定版——只是没有检查器，靠人工重做（下载→核 sha→传 Release→改 url）。
+winstart 早就是这个形态（无公开链接，只能如此）。
+
+1. **GitHub 存资产时把空格换成点**：`checkra1n beta 0.12.4.dmg` 存成
+   `checkra1n.beta.0.12.4.dmg`，`Wireshark 4.4.18 Intel 64.dmg` 存成
+   `Wireshark.4.4.18.Intel.64.dmg`——cask url 照抄直引的 `%20` 形态必 404
+   （本轮 checkra1n/wireshark 双双中招，`fetch --cask` 现形）。
+   修法：cask url 写点分隔形态；`UpdaterCore` 单/双架构两条上传链路同步做
+   `空格→点` 替换（`%20` 先解码，wireshark 的 appcast 直链是编码形态），
+   上传用名与 finalURL 保持一致。
+2. **zcode 顺手真升了一次**：翻镜像开关后跑检查器，正撞上游 3.10.2→3.11.2，
+   双包下载实算、上传 `zcode-3.11.2`、改写 version + 双 sha、旧 release
+   自动清理——双架构 + 镜像全链路一次跑通，比摆拍更硬的 proof。
+3. **旧 release 只留最新**：沿用 workbuddy 机制（`deleteOldCaskReleases`），
+   每个 cask 的 Release 永远只有一个，11 个 cask 对 11 个 release。
+
+### 11.35 wireshark 不装 ChmodBPF 就抓不了包（2026-09-05 实测）
+
+1. 现象：`tshark -D` 能列接口（列接口不要权限），但一抓就
+   `cannot open BPF device /dev/bpf0: Permission denied`——`/dev/bpf*`
+   默认 `root:wheel 600`，且根本没有 `access_bpf` 组，本 tap 首版 cask
+   只装了 app，权限链是断的。
+2. 修法：cask 加 `pkg "Install ChmodBPF.pkg"`（同 dmg 内的官方包，已拆包
+   验过 postinstall 实物：建 `access_bpf` 组、把 admin 组 + 当前用户加进去、
+   装 LaunchDaemon 开机改 bpf 设备组归属）+ `uninstall` 配
+   `launchctl`/`pkgutil` + caveats。装 pkg 要弹密码（写 `/Library`），
+   属正常行为。非交互装可用 `SUDO_ASKPASS` 喂密码跑通
+   （`brew reinstall --cask` 全程无人值守实测）。
+3. **"注销重登"是错的，当场推翻**：原以为组身份要重新登录才生效，实测
+   旧 shell（组建好之前就开着的）装完直接抓到包——macOS 对本地组成员的
+   判定是动态查目录服务的（且 postinstall 把 admin 组整个拉进
+   access_bpf，admin 用户天然命中），daemon 一 bootstrap 改完
+   `/dev/bpf*` 归属即全会话生效。官方当年"不用重登"不是运气，是机制如此；
+   本 tap 首版 caveats 照抄 classical Unix 经验写错了，已订正。
+   附加：sudo 下 postinstall 的 `$USER` 未必是你本人，装完顺手显式补一次
+   `sudo dseditgroup -o edit -a <你> -t user access_bpf` 最稳（幂等）；
+   非 admin 用户同样靠这条手动进组，进组即生效，也不用重登。
 
 ### 11.36 tap 改名 tahoe-intel → tahoe（2026-09-05 实测）
 
@@ -1572,6 +1572,24 @@ sdl3/sdl2-compat/x264/x265/ffmpeg…11 装 5 升）全源码编，用户实测�
 3. 文件名 `-v5.0.1` 尾缀不致盲版本扫描（实测 stable 即 5.0.1，不写 version 行；
    buildx/docker-compose 同例，以 audit 为准）。
 
+### 11.48 yt-dlp 的去零/补零版本差 + 无补全构建（2026-10-14 实测）
+
+core stable 取 PyPI 归一化值 `"2026.8.19"`（去零），GitHub tag 保持补零
+`"2026.08.19"`——同一 release 两种写法。不处理则每次误报更新、模板拼出
+404 URL（`.../download/2026.8.19/...` 不存在）。两处修：
+
+1. **核心数字段按数值判等**（`compareVersions`：`"08"` vs `"8"` 数值相等即
+   continue；纯字面 fallback 保留，预发布逻辑不动）。另补 `==0 但字面不同`
+   分支直接判 up-to-date（dual-arch 路径无此形态，不动）。52 个检查器全编译
+   回归通过（其他包行为不变：前导零差异只在此一种上游出现）。
+2. **yt-dlp 模板内补零**：brew 版月日补齐两位再拼 GitHub 路径（年不动）；
+   形态对不上则 HEAD 探测报 upstream-missing，不写坏文件。
+3. 公式不写 version 行：路径段即全版本，brew 扫描正确（写了判冗余；初版写过，
+   audit 指正后删，与 cmake 反向而同因——一律以 audit 为准）。
+4. 此 PyInstaller 构建无 `--print-completion`（`--help` 全文无 complet 字样，
+   exit 2），不硬凑补全文件；裸二进制无执行位，`chmod 0555`（frida/scrcpy 同例）。
+   test 只做 `--version` + file 断言（core 的下载实测涉网，沙箱必挂，见 11.30）。
+
 ### 11.49 libimobiledevice 入库：idevice 栈分流 + curl3 静态库遮蔽系统 curl（2026-10-19 实测）
 
 用户跑 `brew install libimobiledevice`，core 侧 plist（48s）/glue（17s）现编通过，
@@ -1604,24 +1622,6 @@ openssl@4（扇入 524）、ca-certificates。依赖改写按 6 节规则（叶�
 另：core scrcpy 5.0.1 至今不依赖 libimobiledevice（`brew deps` 实测只有
 ffmpeg/libusb/sdl3）——用户日志里 scrcpy 头 + idevice 尾混在一起是两次安装
 的输出拼贴，不必深究；本 tap 的 scrcpy 零依赖预装包不受任何影响。
-
-### 11.48 yt-dlp 的去零/补零版本差 + 无补全构建（2026-10-14 实测）
-
-core stable 取 PyPI 归一化值 `"2026.8.19"`（去零），GitHub tag 保持补零
-`"2026.08.19"`——同一 release 两种写法。不处理则每次误报更新、模板拼出
-404 URL（`.../download/2026.8.19/...` 不存在）。两处修：
-
-1. **核心数字段按数值判等**（`compareVersions`：`"08"` vs `"8"` 数值相等即
-   continue；纯字面 fallback 保留，预发布逻辑不动）。另补 `==0 但字面不同`
-   分支直接判 up-to-date（dual-arch 路径无此形态，不动）。52 个检查器全编译
-   回归通过（其他包行为不变：前导零差异只在此一种上游出现）。
-2. **yt-dlp 模板内补零**：brew 版月日补齐两位再拼 GitHub 路径（年不动）；
-   形态对不上则 HEAD 探测报 upstream-missing，不写坏文件。
-3. 公式不写 version 行：路径段即全版本，brew 扫描正确（写了判冗余；初版写过，
-   audit 指正后删，与 cmake 反向而同因——一律以 audit 为准）。
-4. 此 PyInstaller 构建无 `--print-completion`（`--help` 全文无 complet 字样，
-   exit 2），不硬凑补全文件；裸二进制无执行位，`chmod 0555`（frida/scrcpy 同例）。
-   test 只做 `--version` + file 断言（core 的下载实测涉网，沙箱必挂，见 11.30）。
 
 ## 12. 待办 / 后续演进
 
