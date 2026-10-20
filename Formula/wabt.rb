@@ -19,6 +19,11 @@ class Wabt < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "ce984267d68f7f58f146091058faf3ccc2c8728c52736aeb6b6c319bd7a065aa"
+  end
+
   # 构建依赖走本 tap 全名：core 的 cmake 在 Intel Tahoe 无瓶（用户侧只能源码编，
   # 11.44），本 tap 的 cmake 是官方 universal 包、已出 GHCR 瓶，秒装。裸名按
   # brew 6 的 FromNameLoader 永远解析到 core（11.27），故指向本 tap 必须写全名。
