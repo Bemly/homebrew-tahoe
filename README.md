@@ -113,6 +113,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies); core has no Intel bottle and pulls a Python stack |
 | `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS device communication stack, compiled from source on Intel (core has no Intel bottles); leaf dependencies bottled, hub dependencies (`libtasn1`, `openssl@4`) left to core |
 | `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends), compiled from source on Intel (upstream's macOS asset is arm64-only and core has no Intel Tahoe bottle); cmake build dependency taken from this tap |
+| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps left to core (`bdw-gc`/`guile`/`python@3.14` build from source on first install, `zstd` bottled); version tracked via GitHub releases with `.sha256` sidecar |
 
 ## Switching sources (same-name conflict)
 
