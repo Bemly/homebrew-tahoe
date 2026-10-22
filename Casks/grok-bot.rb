@@ -1,6 +1,6 @@
 cask "grok-bot" do
-  version "0.68.1"
-  sha256 "1caeb3f8d343666b24b32f6284eb8fd21ed185507a68326d404327d333754ca5"
+  version "0.72.1"
+  sha256 "6f4b9517d0fa7f1cba9eb41e29e4a287d1a33758e1f9e7fc6e3967c70a1e5d9e"
 
   # 镜像到本仓 Release（tag grok-bot-<ver>，资产名沿用上游 basename）：
   # 本 tap 政策是所有 cask 都镜像最新版；url 用 #{version} 双插值（tag 与资产名
