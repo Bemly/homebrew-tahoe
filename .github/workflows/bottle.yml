@@ -214,7 +214,8 @@ jobs:
                ! grep -Eq 'depends_on "([^"]*/)?cmake"' "Formula/${f}.rb"; then
               brew uninstall --force --ignore-dependencies "cmake" >/dev/null 2>&1 || true
               for b in cmake ccmake cpack ctest; do rm -f "${BREW_PREFIX}/bin/${b}"; done
-              brew install "bemly/tahoe/cmake" >/dev/null 2>&1 || true
+              brew install "bemly/tahoe/cmake" 2>&1 | tail -n 3
+              hash -r; command -v cmake && { cmake --version 2>&1 | head -n 1 || true; }
             fi
             # 先用普通模式装齐依赖再制瓶：--build-bottle 下任一依赖无瓶即硬拒
             # （UnbottledError，如 python 大版本升级要现编；llvm/z3 实测）；普通模式
