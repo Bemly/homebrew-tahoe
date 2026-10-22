@@ -13,6 +13,11 @@ class Llvm < Formula
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余）。
   license "Apache-2.0" => { with: "LLVM-exception" }
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "f5c732e532e910b37be1255c9667a1a58a2ce9be5bfc912a3a441687823ced82"
+  end
+
   keg_only :provided_by_macos
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
