@@ -342,6 +342,13 @@ func currentVersion(in content: String) -> String? {
            let r = Range(m.range(at: 1), in: s) {
             return String(s[r])
         }
+        // 日期版回退（llvm-mingw 首例：tag/文件名均为 20261020，无点分段）：
+        // brew 能从 URL 扫出纯数字日期版（audit 不允许多写 version 行），核心也要认，
+        // 否则 currentVersion 为 nil 直接 fail。只认 20 开头 8 位日期，避免误吞 x64 的 64。
+        if let m = firstMatch(#"[^0-9](20[0-9]{6})(?![0-9])"#, in: s),
+           let r = Range(m.range(at: 1), in: s) {
+            return String(s[r])
+        }
     }
     return nil
 }
