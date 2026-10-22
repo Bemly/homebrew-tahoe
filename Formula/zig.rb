@@ -28,9 +28,11 @@ class Zig < Formula
 
   def install
     # 上游 tar.xz 内是单一顶层目录 zig-x86_64-macos-<ver>/，brew 会自动下降进入；
-    # 用 ** 通配兼容下降与否。布局：zig 二进制 + lib/（与二进制相对位置固定，bin/zig 对 prefix/lib）。
-    bin.install Dir["**/zig"].fetch(0)
-    prefix.install Dir["**/lib"].fetch(0)
+    # 二进制必须只取文件：Dir["**/zig"] 会先命中 lib/std/zig/ 目录（fetch(0) 即装错目录，
+    # 制瓶 39741781774 实锤），故用 File.file? 过滤。
+    # 布局：zig 二进制 + lib/（与二进制相对位置固定，bin/zig 对 prefix/lib）。
+    bin.install Dir["**/zig"].select { |f| File.file?(f) }.fetch(0)
+    prefix.install Dir["**/lib"].select { |f| File.directory?(f) }.fetch(0)
 
     license = Dir["**/LICENSE"].first
     doc.install license if license
