@@ -49,8 +49,10 @@ class Z3 < Formula
       -DZ3_BUILD_DOTNET_BINDINGS=OFF
       -DZ3_BUILD_JAVA_BINDINGS=OFF
       -DZ3_USE_LIB_GMP=OFF
-      -DPYTHON_EXECUTABLE=#{python3}
-      -DCMAKE_INSTALL_PYTHON_PKG_DIR=#{Language::Python.site_packages(python3)}
+      # 不用 Formula#python3 helper（2026-09-02 才进 brew，runner 镜像是 8 月版没有它，
+      # NameError 实锤）：下面两行就是该 helper 对 python@3.14 的展开结果。
+      -DPYTHON_EXECUTABLE=#{formula_opt_bin("python@3.14")}/python3.14
+      -DCMAKE_INSTALL_PYTHON_PKG_DIR=#{Language::Python.site_packages("python3.14")}
     ]
 
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
@@ -67,6 +69,7 @@ class Z3 < Formula
     system ENV.cc, pkgshare/"examples/c/test_capi.c", "-I#{include}",
                    "-L#{lib}", "-lz3", "-o", testpath/"test"
     system "./test"
-    assert_equal version.to_s, shell_output("#{python3} -c 'import z3; print(z3.get_version_string())'").strip
+    assert_equal version.to_s,
+shell_output("#{formula_opt_bin("python@3.14")}/python3.14 -c 'import z3; print(z3.get_version_string())'").strip
   end
 end

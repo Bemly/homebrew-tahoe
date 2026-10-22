@@ -754,8 +754,8 @@ class Llvm < Formula
       shell_output("#{bin}/clang-format -style=google clangformattest.c")
 
     # This will fail if the clang bindings cannot find `libclang`.
-    with_env(PYTHONPATH: prefix/Language::Python.site_packages(python3)) do
-      system python3, "-c", <<~PYTHON
+    with_env(PYTHONPATH: prefix/Language::Python.site_packages("python3.14")) do
+      system formula_opt_bin("python@3.14")/"python3.14", "-c", <<~PYTHON
         from clang import cindex
         cindex.Config().get_cindex_library()
       PYTHON

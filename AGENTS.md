@@ -1681,6 +1681,12 @@ llvm 的 z3 依赖改全名；z3 自己的 cmake 改全名、python 退 3.14（r
 再 `--build-bottle`。失败要红，不加 `|| true`（11.10）。三板斧缺一不可：
 去声明 + PATH 预装 + 先装依赖，llvm/z3/wabt 三形各自对应，见 bottle.yml 注释。
 
+附带（同轮）：runner 镜像是 8 月 baked 的，凡 8 月之后进 brew 的 API 一律不能用——
+`Formula#python3`（2026-09-02 才有）让 z3 制瓶死在 `NameError`。修法是内联展开
+（`formula_opt_bin("python@3.14")` 是 6 月 API，安全），llvm/z3 的三处 `python3`
+调用已全改。以后抄 core 新公式时，先 `git log -S` 查所用 helper 的年龄，
+8 月 19 日之后的全部展开手写。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
