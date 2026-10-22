@@ -1681,6 +1681,14 @@ llvm 的 z3 依赖改全名；z3 自己的 cmake 改全名、python 退 3.14（r
 再 `--build-bottle`。失败要红，不加 `|| true`（11.10）。三板斧缺一不可：
 去声明 + PATH 预装 + 先装依赖，llvm/z3/wabt 三形各自对应，见 bottle.yml 注释。
 
+订正（同轮）：workflow 预装光把瓶倒进 Cellar 不够——superenv 构建隔离了
+`/usr/local/bin`，未声明的依赖 brew 不会注入 PATH，`system "cmake"` 照样
+`ENOENT` 空死（wabt 因声明了才没事，天然对照组）。最终形态是公式 `install`
+首行显式 `ENV.prepend_path "PATH", Formula["bemly/tahoe/cmake"].opt_bin`
+（引用不产生依赖边，不进锁数组，flock 依然干净）。记住：**构建工具要么声明
+（无锁对时，wabt 形），要么声明摘掉 + 公式内 prepend + workflow 预装三件套
+（与 python 共存时，llvm/z3 形），只有 workflow 预装是半吊子，必空死**。
+
 附带（同轮）：runner 镜像是 8 月 baked 的，凡 8 月之后进 brew 的 API 一律不能用——
 `Formula#python3`（2026-09-02 才有）让 z3 制瓶死在 `NameError`。修法是内联展开
 （`formula_opt_bin("python@3.14")` 是 6 月 API，安全），llvm/z3 的三处 `python3`
