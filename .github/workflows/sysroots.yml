@@ -1,0 +1,179 @@
+name: Build cross sysroots and publish to Release
+
+# 给隔壁交叉编译用的预构建 sysroot（不进 GHCR 瓶、不进 Formula/Casks）：
+#   - openssl-macos-arm64：arm64 macOS 的 OpenSSL（与本机 openssl@4 同版本），给 macA64 的 openssl-sys 用
+#     （Apple clang 本身支持 -arch arm64，无需额外编译器；配 OPENSSL_DIR + PKG_CONFIG_ALLOW_CROSS=1）
+#   - linux-sysroot-x64 / linux-sysroot-a64：x86_64/aarch64 Linux 的 openssl+alsa 头+库，
+#     给 linX64/linA64 的 openssl-sys/alsa-sys 用（配 PKG_CONFIG_SYSROOT_DIR + CC_<target>）
+#
+# 仅手动触发（本 tap 所有 workflow 一律 workflow_dispatch，见 AGENTS.md §5）。
+# 产物走本仓 GitHub Release（tag sysroots-openssl-<ver>-alsa-<ver>，资产 --clobber 覆盖），
+# 不走 GHCR（GHCR 是 Homebrew 瓶专属；sysroot 是目标端头库，不是 macOS 可执行物，进不了 §1）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 打哪个包（openssl-macos-arm64 / linux-sysroot / all）
+        required: true
+        default: all
+        type: string
+      openssl_version:
+        description: OpenSSL 版本（与本机 openssl@4 对齐）
+        required: true
+        default: 4.0.3
+        type: string
+      alsa_version:
+        description: alsa-lib 版本（alsa-sys 0.4.x 对应 1.2.x）
+        required: true
+        default: 1.2.14
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sysroots
+  cancel-in-progress: false
+
+jobs:
+  openssl-macos-arm64:
+    # ARM 原生打 arm64，不交叉（macos-26 是 ARM64，macos-26-intel 才是 Intel）。
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - name: 决策是否跑
+        id: gate
+        run: |
+          case "${{ inputs.target }}" in
+            all|openssl-macos-arm64|openssl*) echo "run=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "run=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: 下载 OpenSSL 源码
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          VER="${{ inputs.openssl_version }}"
+          curl -fsSL --retry 2 --retry-delay 3 --max-time 300 \
+            -o /tmp/openssl.tar.gz \
+            "https://github.com/openssl/openssl/releases/download/openssl-${VER}/openssl-${VER}.tar.gz"
+          tar -tzf /tmp/openssl.tar.gz | head -n 5
+      - name: 编译安装到 staging
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          VER="${{ inputs.openssl_version }}"
+          rm -rf /tmp/osrc /tmp/staging-arm64
+          mkdir -p /tmp/osrc /tmp/staging-arm64
+          tar -xzf /tmp/openssl.tar.gz -C /tmp/osrc --strip-components=1
+          cd /tmp/osrc
+          ./Configure darwin64-arm64-cc --prefix=/tmp/staging-arm64 no-docs
+          make -j"$(sysctl -n hw.ncpu)"
+          make install_sw
+          /tmp/staging-arm64/bin/openssl version
+          file -b /tmp/staging-arm64/lib/libssl.* /tmp/staging-arm64/lib/libcrypto.* | head -n 5
+      - name: 打包并发布到 Release
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VER="${{ inputs.openssl_version }}"
+          ALSA="${{ inputs.alsa_version }}"
+          TAG="sysroots-openssl-${VER}-alsa-${ALSA}"
+          PKG="openssl-macos-arm64-${VER}.tar.gz"
+          tar -czf "/tmp/${PKG}" -C /tmp/staging-arm64 .
+          (cd /tmp && shasum -a 256 "${PKG}" > "${PKG}.sha256")
+          cat "/tmp/${PKG}.sha256"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" "/tmp/${PKG}" "/tmp/${PKG}.sha256" \
+              --repo "$GITHUB_REPOSITORY" --generate-notes \
+              --title "cross sysroots (openssl ${VER} + alsa ${ALSA})"
+          else
+            gh release upload "$TAG" "/tmp/${PKG}" "/tmp/${PKG}.sha256" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          fi
+          echo "TAG=$TAG PKG=$PKG"
+
+  linux-sysroot:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    steps:
+      - name: 决策是否跑
+        id: gate
+        run: |
+          case "${{ inputs.target }}" in
+            all|linux*|sysroot*) echo "run=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "run=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: 装交叉编译器
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu pkg-config perl
+          x86_64-linux-gnu-gcc --version | head -n 1
+          aarch64-linux-gnu-gcc --version | head -n 1
+      - name: 下载源码
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          VER="${{ inputs.openssl_version }}"
+          ALSA="${{ inputs.alsa_version }}"
+          curl -fsSL --retry 2 --retry-delay 3 --max-time 300 \
+            -o /tmp/openssl.tar.gz \
+            "https://github.com/openssl/openssl/releases/download/openssl-${VER}/openssl-${VER}.tar.gz"
+          curl -fsSL --retry 2 --retry-delay 3 --max-time 300 \
+            -o /tmp/alsa.tar.bz2 \
+            "https://www.alsa-project.org/files/pub/lib/alsa-lib-${ALSA}.tar.bz2"
+          tar -tzf /tmp/openssl.tar.gz | head -n 3
+          tar -tjf /tmp/alsa.tar.bz2 | head -n 3
+      - name: 编译 openssl+alsa（x64+a64 双 arch）
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          VER="${{ inputs.openssl_version }}"
+          ALSA="${{ inputs.alsa_version }}"
+          rm -rf /tmp/build /tmp/sysroot-x64 /tmp/sysroot-a64
+          mkdir -p /tmp/build /tmp/sysroot-x64 /tmp/sysroot-a64
+          # ---- openssl x86_64 ----
+          rm -rf /tmp/build/ossl-x64 && mkdir -p /tmp/build/ossl-x64
+          tar -xzf /tmp/openssl.tar.gz -C /tmp/build/ossl-x64 --strip-components=1
+          (cd /tmp/build/ossl-x64 && ./Configure linux-x86_64 --prefix=/tmp/sysroot-x64/usr no-docs && make -j"$(nproc)" && make install_sw)
+          # ---- openssl aarch64 ----
+          rm -rf /tmp/build/ossl-a64 && mkdir -p /tmp/build/ossl-a64
+          tar -xzf /tmp/openssl.tar.gz -C /tmp/build/ossl-a64 --strip-components=1
+          (cd /tmp/build/ossl-a64 && ./Configure linux-aarch64 --cross-compile-prefix=aarch64-linux-gnu- --prefix=/tmp/sysroot-a64/usr no-docs && make -j"$(nproc)" && make install_sw)
+          # ---- alsa x86_64 ----
+          rm -rf /tmp/build/alsa-x64 && mkdir -p /tmp/build/alsa-x64
+          tar -xjf /tmp/alsa.tar.bz2 -C /tmp/build/alsa-x64 --strip-components=1
+          (cd /tmp/build/alsa-x64 && ./configure --host=x86_64-linux-gnu --prefix=/tmp/sysroot-x64/usr && make -j"$(nproc)" && make install)
+          # ---- alsa aarch64 ----
+          rm -rf /tmp/build/alsa-a64 && mkdir -p /tmp/build/alsa-a64
+          tar -xjf /tmp/alsa.tar.bz2 -C /tmp/build/alsa-a64 --strip-components=1
+          (cd /tmp/build/alsa-a64 && ./configure --host=aarch64-linux-gnu --prefix=/tmp/sysroot-a64/usr CC=aarch64-linux-gnu-gcc && make -j"$(nproc)" && make install)
+          echo "=== x64 ==="; ls /tmp/sysroot-x64/usr/lib/pkgconfig/ | grep -E "openssl|alsa" | head
+          echo "=== a64 ==="; ls /tmp/sysroot-a64/usr/lib/pkgconfig/ | grep -E "openssl|alsa" | head
+          echo "=== file ==="; file -b /tmp/sysroot-x64/usr/lib/libssl.* /tmp/sysroot-a64/usr/lib/libssl.* | head -n 6
+      - name: 打包并发布到 Release
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VER="${{ inputs.openssl_version }}"
+          ALSA="${{ inputs.alsa_version }}"
+          TAG="sysroots-openssl-${VER}-alsa-${ALSA}"
+          tar -czf /tmp/linux-sysroot-x64-openssl-${VER}-alsa-${ALSA}.tar.gz -C /tmp/sysroot-x64 .
+          tar -czf /tmp/linux-sysroot-a64-openssl-${VER}-alsa-${ALSA}.tar.gz -C /tmp/sysroot-a64 .
+          (cd /tmp && shasum -a 256 linux-sysroot-*.tar.gz > linux-sysroot.sha256)
+          cat /tmp/linux-sysroot.sha256
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" /tmp/linux-sysroot-x64-*.tar.gz /tmp/linux-sysroot-a64-*.tar.gz /tmp/linux-sysroot.sha256 \
+              --repo "$GITHUB_REPOSITORY" --generate-notes \
+              --title "cross sysroots (openssl ${VER} + alsa ${ALSA})"
+          else
+            gh release upload "$TAG" /tmp/linux-sysroot-x64-*.tar.gz /tmp/linux-sysroot-a64-*.tar.gz /tmp/linux-sysroot.sha256 \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          fi
+          echo "TAG=$TAG"
