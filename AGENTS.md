@@ -223,7 +223,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `wabt` | 1.0.42 | 代编译模式：core 拷入（上游 GitHub Releases 的 macOS 资产仅 macos-arm64——1.0.38 的 macos-14 包也是纯 arm64，file 实测；core 无 Intel Tahoe 瓶）；CMake 全量构建（`BUILD_TESTS=OFF`），`cmake` 构建依赖走本 tap 全名、`openssl@4` 枢纽留 core；`wat2wasm`/`wasm2wat` 等全套工具 | 已收录 |
 | `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译直引，只留 Intel host 段（`x86_64-unknown-linux-gnu-x86_64-darwin.tar.gz` 203MB，thin x86_64；gcc/g++ 纯系统库，gdb 链 `python@3.14`/xz）；依赖裸名留 core（`bdw-gc`/`guile`/`python@3.14` 无 Tahoe 瓶首次源码编，`zstd` 有瓶）；检查器 github 流 + `.sha256` sidecar（免 203MB 实算，见下） | 已收录 |
 | `mirage-wallpaper` | 1.1.5 | cask——Mirage 原生动态壁纸管理器（Wallpaper Engine 兼容运行时）；上游按架构分包，取 Intel 段（`Mirage-<build>-<hash>-macOS-x86_64.zip`，文件名无版本、版本只在 tag）；thin x86_64 + 公证签名（`spctl accepted`，零拦截）；**Intel-only**；镜像到本仓 Release（`mirage-wallpaper-<ver>`）；检查器 customRelease（/latest 定 tag + expanded_assets 抓 Intel 资产名，不耗 API 限额，iperf3 同例）+ uploadRelease，sha 取上游 `.sha256` sidecar；tag 段 `#{version}` 插值过审（字面 tag 新 audit 不认，写回字面后须手动改回插值） | 已收录 |
-| `llvm` | 23.1.4 | 代编译模式：core 拷入（上游 23.x 起砍掉 Intel mac 预编译——19.1.7 是最后一个 macOS-X64 包，20+ 仅 macOS-ARM64，core 无 Intel Tahoe 瓶）；`cmake`/`ninja` 构建依赖走本 tap 全名瓶，`python@3.15`/`z3`/`zstd` 枢纽留 core 裸名；core 的 unofficial patch 已 vendor 到本仓 `Patches/llvm/`（LocalPatch 按 tap 根解析）；`keg-only`（与 core 一致，系统 clang 不动） | 已收录 |
+| `llvm` | 23.1.4 | 代编译模式：core 拷入（上游 23.x 起砍掉 Intel mac 预编译——19.1.7 是最后一个 macOS-X64 包，20+ 仅 macOS-ARM64，core 无 Intel Tahoe 瓶）；**pinned 预编译**：23.x 走源码代编译 PGO 三阶段 6 小时起步即超时，故锁死 19.1.7（最后一个 Intel mac 包），不跟检查器（无 updater/llvm.swift，ffserver 同例）；本仓要的是 bindgen 0.73 运行时的 libclang 9+（thin x86_64，`dlopen` 实测过，全后端含 AArch64/X86），19 够用；只链系统库零依赖；文件名尾 `X64` 致盲版本扫描（扫成 `"64"`，node 同款）故显式 `version` 行；包 1.6GB/解包 8.3GB，门槛 18GB；`keg-only`（系统 clang 不动），`LIBCLANG_PATH` 指 `opt_lib` 即用 | 已收录 |
 | `z3` | 5.3.1 | 代编译叶子：llvm 的求解器依赖（扇入 11：alive2/civl/cryptol/dafny/esbmc/klee/lldb/llvm/openshell/solidity/wuppiefuzz，全小众验证工具，无枢纽，libplist 同例见 11.49）；自瓶的第二理由是裸名会让 llvm 递归依赖同时含本 tap 与 core 的 cmake（后者经 z3 构建依赖进来），`uniq!` 按 full_name 去重留俩，同进程 flock 双开自锁（见 11.51）；`cmake` 走本 tap 全名、`python` 退 3.14 | 已收录 |
 
 ### gh 发布包结构（已实测）
@@ -1694,6 +1694,21 @@ llvm 的 z3 依赖改全名；z3 自己的 cmake 改全名、python 退 3.14（r
 （`formula_opt_bin("python@3.14")` 是 6 月 API，安全），llvm/z3 的三处 `python3`
 调用已全改。以后抄 core 新公式时，先 `git log -S` 查所用 helper 的年龄，
 8 月 19 日之后的全部展开手写。
+
+### 11.52 llvm 转向 pinned 预编译 19.1.7（2026-10-23 实测决策）
+
+23.x PGO 三阶段在 runner 上实测 6.5~7 小时（stage1/stage2 各 72 分钟，尾巴 3 小时
+没啃完），平台硬上限 6 小时，此路不通。而本仓对 llvm 的真实需求只是 bindgen 0.73
+运行时的 libclang 9+（用户亲口：16~23 都吃，无版本绑定），回头翻预编译：
+19.1.7 是最后一个 macOS-X64 官方包（20+ 全 ARM64；conda 有 23.x osx-64 但要
+十来个包手工拼，又贵又脆；NDK 自带 libclang 可零安装顶着）。
+故 `llvm` 改走 pinned 预编译（ffserver 同例：锁版本、无 updater、不跟 brew）：
+thin x86_64（`clang-19` 与 `libclang.dylib` 双验）+ 全后端（`--print-targets` 含
+AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dlopen` 实测过。
+`llc` 单二进制上游自带瑕疵（`unknown imports format` 起不来，dev 工具不影响 bindgen）。
+包 1.6GB/解包 8.3GB（门槛 18GB，CI 磁盘已证够用）；文件名尾 `X64` 致盲版本扫描
+（扫成 `"64"`）故显式 `version` 行；23.x 的 patch/检查器一并删除。
+`z3` 不受影响（瓶已在 GHCR，单跑落瓶块即可）。
 
 ## 12. 待办 / 后续演进
 

@@ -108,7 +108,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等全套工具）——上游 macOS 资产仅 arm64、core 无 Intel Tahoe 瓶，core 拷入代编译；cmake 构建依赖走本 tap |
 | `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖留 core（`bdw-gc`/`guile`/`python@3.14` 首次需源码编，`zstd` 有瓶）；版本跟随 GitHub release，sha 走 `.sha256` sidecar |
 | `mirage-wallpaper` | Mirage 原生动态壁纸管理器，兼容 Wallpaper Engine（仅 Intel cask，thin x86_64，公证签名）；上游按架构分包，镜像到本仓 Release，版本由自定义检查器跟踪 |
-| `llvm` | 新一代编译器基础设施——上游 19.x 后砍掉 Intel mac 预编译、core 无 Intel Tahoe 瓶，core 拷入代编译；cmake/ninja 构建依赖走本 tap，枢纽依赖留 core；与 core 一致 keg-only |
+| `llvm` | 新一代编译器基础设施——上游 19.1.7 Intel 预编译 pinned（之后只有 ARM64 包；23.x 源码编超 6 小时上限）；thin x86_64，零依赖，keg-only；bindgen 用 `LIBCLANG_PATH` 指过去即用 |
 | `z3` | 高性能定理证明器，本 tap llvm 的求解器依赖（依赖方全小众、无枢纽）；cmake 构建依赖走本 tap |
 
 ## 注意事项（同名冲突）
