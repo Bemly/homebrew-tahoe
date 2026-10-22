@@ -107,6 +107,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS 设备通信栈，Intel 现编出瓶（core 无 Intel 瓶）；叶子依赖自瓶，枢纽依赖（`libtasn1`、`openssl@4`）留 core |
 | `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等全套工具）——上游 macOS 资产仅 arm64、core 无 Intel Tahoe 瓶，core 拷入代编译；cmake 构建依赖走本 tap |
 | `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖留 core（`bdw-gc`/`guile`/`python@3.14` 首次需源码编，`zstd` 有瓶）；版本跟随 GitHub release，sha 走 `.sha256` sidecar |
+| `mirage-wallpaper` | Mirage 原生动态壁纸管理器，兼容 Wallpaper Engine（仅 Intel cask，thin x86_64，公证签名）；上游按架构分包，镜像到本仓 Release，版本由自定义检查器跟踪 |
 
 ## 注意事项（同名冲突）
 
