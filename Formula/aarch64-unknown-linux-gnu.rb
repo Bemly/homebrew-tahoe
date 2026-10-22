@@ -7,6 +7,11 @@ class Aarch64UnknownLinuxGnu < Formula
   sha256 "7fa485313b7049d57c5de56bf876d5c4648ebfd736f86a8f4739596218523127"
   license "GPL-3.0-or-later" => { with: "GCC-exception-3.1" }
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "1cfd486e9430849654b874cd967695750d0438e0bac10380522f4aaebe418930"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # 运行时依赖照抄上游（裸名留 core，枢纽不自瓶，见 AGENTS.md 6 节）：
   # bdw-gc/guile/python@3.14 在 core 无 x86_64_tahoe 瓶，首次安装由 core 源码构建；
