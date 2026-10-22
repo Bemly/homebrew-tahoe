@@ -27,7 +27,10 @@ class Llvm < Formula
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on "bemly/tahoe/cmake" => :build
   depends_on "bemly/tahoe/ninja" => :build
-  depends_on "python@3.15" => [:build, :test]
+  # core 跟的是 python@3.15（2026-10 刚进 core），runner 镜像与用户旧 brew 未必认得
+  # （39755321416 实锤 No available formula）；3.14 处处可解析，bindings 版本由
+  # 下方 Formula.names 动态探测，编出来行为一致，故退到 3.14。
+  depends_on "python@3.14" => [:build, :test]
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
