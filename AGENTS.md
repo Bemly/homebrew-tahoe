@@ -1672,6 +1672,15 @@ llvm 的 z3 依赖改全名；z3 自己的 cmake 改全名、python 退 3.14（r
 否则就是给 CI 埋一颗确定性地雷**——与 11.11（同名跨 tap odie）并列为依赖分流的
 第二条铁律：同名不同 tap 在锁层面同样互斥。
 
+后续（同轮）：自瓶 z3 后发现光去重还不够——`python@3.14` 的递归树**自带裸 cmake**
+（`brew ruby` 打印 `recursive_dependencies` 实锤），tap-cmake + python 共存即原罪，
+故 llvm/z3 改为**不声明 cmake**（ninja 只此一份，保留声明），构建走 PATH。
+另 `--build-bottle` 下任一依赖无瓶即硬拒（`UnbottledError`，2020 年旧逻辑，
+满足的依赖才被 `expand` 排除；如 python 大版本升级要现编），而普通模式无此检查——
+故循环里先 `brew install --only-dependencies` 装齐（缺的倒瓶、没瓶的现编，幂等），
+再 `--build-bottle`。失败要红，不加 `|| true`（11.10）。三板斧缺一不可：
+去声明 + PATH 预装 + 先装依赖，llvm/z3/wabt 三形各自对应，见 bottle.yml 注释。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。

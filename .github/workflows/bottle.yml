@@ -206,6 +206,20 @@ jobs:
             # 只有确定可被卸载、不会被生态其他包依赖的包才自己制瓶，
             # 生态枢纽包（openssl@3 / glib / gettext 等）一律走 core 不进本 tap。
             brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
+            # 构建工具走 PATH（llvm/z3，见 AGENTS.md 11.51）：公式里用 system "cmake"
+            # 但刻意不声明 cmake 依赖——树里已有 python 拖入的裸 cmake，再挂全名会让
+            # 同一 Cellar 名以两个 full_name 进锁数组，macOS flock 同进程双开自锁。
+            # 这里预装本 tap cmake 瓶（幂等，已装即 no-op），构建走 PATH 即可。
+            if grep -q 'system "cmake"' "Formula/${f}.rb" && \
+               ! grep -Eq 'depends_on "([^"]*/)?cmake"' "Formula/${f}.rb"; then
+              brew uninstall --force --ignore-dependencies "cmake" >/dev/null 2>&1 || true
+              for b in cmake ccmake cpack ctest; do rm -f "${BREW_PREFIX}/bin/${b}"; done
+              brew install "bemly/tahoe/cmake" >/dev/null 2>&1 || true
+            fi
+            # 先用普通模式装齐依赖再制瓶：--build-bottle 下任一依赖无瓶即硬拒
+            # （UnbottledError，如 python 大版本升级要现编；llvm/z3 实测）；普通模式
+            # 无此检查，缺的倒瓶、没瓶的现编。幂等（满足即 no-op）；失败要红，不加 || true。
+            brew install --only-dependencies "bemly/tahoe/$f"
             brew install --build-bottle "bemly/tahoe/$f"
             brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe/$f"
             # GHCR 镜像名不允许 @：node@22 → node/22（与 brew image_formula_name 一致）

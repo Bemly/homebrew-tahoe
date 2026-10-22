@@ -25,7 +25,11 @@ class Llvm < Formula
   keg_only :provided_by_macos
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
-  depends_on "bemly/tahoe/cmake" => :build
+  # 注意：刻意不声明 cmake 构建依赖——本树已有 python（它经 core 递归拖入裸 cmake），
+  # 再挂 bemly/tahoe/cmake 会让同一 Cellar 名在锁数组里出现两个 full_name，
+  # macOS flock 同进程双开自锁（11.51 三连红实锤）。cmake 由 bottle.yml 在制瓶前
+  # 预装本 tap 瓶、走 PATH 供构建用（ninja 只此一份，照常声明）；瓶用户不受影响
+  # （:build 依赖本来就不随瓶倒包）。
   depends_on "bemly/tahoe/ninja" => :build
   # core 跟的是 python@3.15（2026-10 刚进 core），runner 镜像与用户旧 brew 未必认得
   # （39755321416 实锤 No available formula）；3.14 处处可解析，bindings 版本由

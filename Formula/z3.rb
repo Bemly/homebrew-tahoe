@@ -13,7 +13,8 @@ class Z3 < Formula
     strategy :github_latest
   end
 
-  depends_on "bemly/tahoe/cmake" => :build
+  # 刻意不声明 cmake（同 llvm.rb：树里已有 python 拖入的裸 cmake，再挂全名必
+  # 触发同进程 flock 自锁，见 11.51）；cmake 由 bottle.yml 制瓶前预装本 tap 瓶走 PATH。
   # Has Python bindings but are supplementary to the main library
   # which does not need Python.
   depends_on "python@3.14" => [:build, :test]
