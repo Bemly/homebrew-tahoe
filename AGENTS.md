@@ -224,6 +224,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译直引，只留 Intel host 段（`x86_64-unknown-linux-gnu-x86_64-darwin.tar.gz` 203MB，thin x86_64；gcc/g++ 纯系统库，gdb 链 `python@3.14`/xz）；依赖裸名留 core（`bdw-gc`/`guile`/`python@3.14` 无 Tahoe 瓶首次源码编，`zstd` 有瓶）；检查器 github 流 + `.sha256` sidecar（免 203MB 实算，见下） | 已收录 |
 | `mirage-wallpaper` | 1.1.5 | cask——Mirage 原生动态壁纸管理器（Wallpaper Engine 兼容运行时）；上游按架构分包，取 Intel 段（`Mirage-<build>-<hash>-macOS-x86_64.zip`，文件名无版本、版本只在 tag）；thin x86_64 + 公证签名（`spctl accepted`，零拦截）；**Intel-only**；镜像到本仓 Release（`mirage-wallpaper-<ver>`）；检查器 customRelease（/latest 定 tag + expanded_assets 抓 Intel 资产名，不耗 API 限额，iperf3 同例）+ uploadRelease，sha 取上游 `.sha256` sidecar；tag 段 `#{version}` 插值过审（字面 tag 新 audit 不认，写回字面后须手动改回插值） | 已收录 |
 | `llvm` | 23.1.4 | 代编译模式：core 拷入（上游 23.x 起砍掉 Intel mac 预编译——19.1.7 是最后一个 macOS-X64 包，20+ 仅 macOS-ARM64，core 无 Intel Tahoe 瓶）；`cmake`/`ninja` 构建依赖走本 tap 全名瓶，`python@3.15`/`z3`/`zstd` 枢纽留 core 裸名；core 的 unofficial patch 已 vendor 到本仓 `Patches/llvm/`（LocalPatch 按 tap 根解析）；`keg-only`（与 core 一致，系统 clang 不动） | 已收录 |
+| `z3` | 5.3.1 | 代编译叶子：llvm 的求解器依赖（扇入 11：alive2/civl/cryptol/dafny/esbmc/klee/lldb/llvm/openshell/solidity/wuppiefuzz，全小众验证工具，无枢纽，libplist 同例见 11.49）；自瓶的第二理由是裸名会让 llvm 递归依赖同时含本 tap 与 core 的 cmake（后者经 z3 构建依赖进来），`uniq!` 按 full_name 去重留俩，同进程 flock 双开自锁（见 11.51）；`cmake` 走本 tap 全名、`python` 退 3.14 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1645,6 +1646,31 @@ wabt 按 6 节 SOP 入库（core 拷入 + 双门槛；构建依赖写本 tap 全
 先 `brew uninstall --force --ignore-dependencies` + 兜底删 bin 链接，再交给
 install 装回——全名依赖命中的是本 tap GHCR 瓶。裸名枢纽（openssl@4 等）不上
 清理名单，`all` 制瓶不会因此多编一个枢纽。
+
+### 11.51 同名依赖双 tap 混写必死锁：llvm/z3 实锤（2026-10-22 实测）
+
+llvm `brew install --build-bottle` 三连红 `has already locked Cellar/cmake`
+（两次 CI + 一次本机，次次 60 秒内死在依赖倒包阶段，与编译无关）。
+用 lsof + 给 brew 源码临时打 backtrace 补丁（打完即还原）抓到现行，根因三段：
+
+1. **macOS 的 flock 同进程双开也互斥**（实测：同一进程 open 两次同一 lockfile，
+   第二个 `LOCK_EX|LOCK_NB` 必回 false）——所以只要同一进程里同一把锁被拿两次，
+   必死，与有没有别的 brew 进程无关（`ps` 干干净净也照死）。
+2. **触发条件是递归依赖里同一软件出现两个 full_name**：llvm 直挂
+   `bemly/tahoe/cmake`，又经裸 `z3`（core z3 的构建依赖是裸 `cmake`）把
+   `homebrew/core/cmake` 拉进来；`locked.uniq!` 按 full_name 去重留俩，
+   `each(&:lock)` 第一把成功（fd 一直开着）、第二把当场 EWOULDBLOCK。
+   堆栈两次逐行一致（`install→lock→each`），`lsof` 显示持锁 fd 与报错同 pid。
+3. **裸名对照组一次过**（把 cmake/ninja 换裸名后锁点消失，死在后面的 bottle
+   可行性检查——那是另一个预期行为），wabt 没事是因为它的树里没有第二份 cmake。
+
+修法（已落地）：**z3 自瓶**（扇入 11 全小众工具+llvm/lldb，无枢纽，libplist 同例），
+llvm 的 z3 依赖改全名；z3 自己的 cmake 改全名、python 退 3.14（runner 旧 core
+不认 3.15，39755321416 实锤）。此后 llvm 树里 cmake 只有 tap 这一份，`uniq!`
+正常去重。教训：**以后凡是全名依赖，必须反查它的递归树里有没有同名裸依赖
+（`grep depends_on` core 原文 + 全量 formula.json 扇入），有就把那一整条一起自瓶，
+否则就是给 CI 埋一颗确定性地雷**——与 11.11（同名跨 tap odie）并列为依赖分流的
+第二条铁律：同名不同 tap 在锁层面同样互斥。
 
 ## 12. 待办 / 后续演进
 

@@ -43,7 +43,10 @@ class Llvm < Formula
   # Z3 needs C++20 std::format which is only available in Xcode 15.3 or later.
   # To avoid a dependency loop, we disable Z3 support on older macOS.
   on_system :linux, macos: :sonoma_or_newer do
-    depends_on "z3"
+    # z3 自瓶（扇入 11，全小众验证工具+llvm/lldb，无枢纽，libplist 同例见 11.49）：
+    # 全名避与 core z3 同 Cellar 冲突；且裸名会在递归依赖里与 z3 自己的裸 cmake
+    # 撞出双 cmake（uniq! 按 full_name 去重留俩，flock 同进程双开自锁，见 11.51）。
+    depends_on "bemly/tahoe/z3"
   end
 
   on_linux do

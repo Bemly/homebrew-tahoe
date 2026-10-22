@@ -116,6 +116,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps left to core (`bdw-gc`/`guile`/`python@3.14` build from source on first install, `zstd` bottled); version tracked via GitHub releases with `.sha256` sidecar |
 | `mirage-wallpaper` | Mirage native live wallpaper engine, compatible with Wallpaper Engine (Intel-only cask, thin x86_64, notarized); upstream per-arch builds mirrored to this repo's releases, version tracked via custom checker |
 | `llvm` | Next-gen compiler infrastructure, compiled from source on Intel (upstream dropped Intel macOS prebuilts after 19.x and core has no Intel Tahoe bottle); cmake/ninja build dependencies taken from this tap, hub dependencies left to core; keg-only like core |
+| `z3` | Theorem prover, SMT solver and dependency of this tap's llvm (niche reverse dependencies only, no hubs); cmake build dependency taken from this tap |
 
 ## Switching sources (same-name conflict)
 
