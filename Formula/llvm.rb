@@ -64,6 +64,8 @@ class Llvm < Formula
   deny_network_access!
 
   def install
+    # 同 z3.rb：cmake 不声明、走 PATH（bottle.yml 预装本 tap 瓶），避 flock 双锁，见 11.51。
+    ENV.prepend_path "PATH", formula_opt_bin("bemly/tahoe/cmake")
     # The clang bindings need a little help finding keg-only libclang.
     inreplace "clang/bindings/python/clang/cindex.py",
               "= os.environ.get(\"LIBCLANG_LIBRARY_PATH\")",

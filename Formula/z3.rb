@@ -38,6 +38,10 @@ class Z3 < Formula
   deny_network_access!
 
   def install
+    # cmake 刻意不声明（见文件头注释）：这里显式把本 tap cmake 瓶的 bin 塞进构建 PATH。
+    # superenv 构建隔离了 /usr/local/bin，未声明的依赖 brew 不会自动注入（11.51）；
+    # Formula[] 引用不产生依赖边，不进锁数组。bottle.yml 会预装好该瓶。
+    ENV.prepend_path "PATH", formula_opt_bin("bemly/tahoe/cmake")
     args = %W[
       -DZ3_LINK_TIME_OPTIMIZATION=ON
       -DZ3_INCLUDE_GIT_DESCRIBE=OFF
