@@ -57,7 +57,7 @@ jobs:
           curl -fsSL --retry 2 --retry-delay 3 --max-time 300 \
             -o /tmp/openssl.tar.gz \
             "https://github.com/openssl/openssl/releases/download/openssl-${VER}/openssl-${VER}.tar.gz"
-          tar -tzf /tmp/openssl.tar.gz | head -n 5
+          tar -tzf /tmp/openssl.tar.gz | head -n 5 || true
       - name: 编译安装到 staging
         if: steps.gate.outputs.run == 'true'
         run: |
@@ -71,7 +71,7 @@ jobs:
           make -j"$(sysctl -n hw.ncpu)"
           make install_sw
           /tmp/staging-arm64/bin/openssl version
-          file -b /tmp/staging-arm64/lib/libssl.* /tmp/staging-arm64/lib/libcrypto.* | head -n 5
+          file -b /tmp/staging-arm64/lib/libssl.* /tmp/staging-arm64/lib/libcrypto.* | head -n 5 || true
       - name: 打包并发布到 Release
         if: steps.gate.outputs.run == 'true'
         env:
@@ -112,8 +112,8 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y build-essential gcc-aarch64-linux-gnu pkg-config perl
-          x86_64-linux-gnu-gcc --version | head -n 1
-          aarch64-linux-gnu-gcc --version | head -n 1
+          x86_64-linux-gnu-gcc --version | head -n 1 || true
+          aarch64-linux-gnu-gcc --version | head -n 1 || true
       - name: 下载源码
         if: steps.gate.outputs.run == 'true'
         run: |
@@ -126,8 +126,8 @@ jobs:
           curl -fsSL --retry 2 --retry-delay 3 --max-time 300 \
             -o /tmp/alsa.tar.bz2 \
             "https://www.alsa-project.org/files/pub/lib/alsa-lib-${ALSA}.tar.bz2"
-          tar -tzf /tmp/openssl.tar.gz | head -n 3
-          tar -tjf /tmp/alsa.tar.bz2 | head -n 3
+          tar -tzf /tmp/openssl.tar.gz | head -n 3 || true
+          tar -tjf /tmp/alsa.tar.bz2 | head -n 3 || true
       - name: 编译 openssl+alsa（x64+a64 双 arch）
         if: steps.gate.outputs.run == 'true'
         run: |
@@ -152,9 +152,9 @@ jobs:
           rm -rf /tmp/build/alsa-a64 && mkdir -p /tmp/build/alsa-a64
           tar -xjf /tmp/alsa.tar.bz2 -C /tmp/build/alsa-a64 --strip-components=1
           (cd /tmp/build/alsa-a64 && ./configure --host=aarch64-linux-gnu --prefix=/tmp/sysroot-a64/usr CC=aarch64-linux-gnu-gcc && make -j"$(nproc)" && make install)
-          echo "=== x64 ==="; ls /tmp/sysroot-x64/usr/lib/pkgconfig/ | grep -E "openssl|alsa" | head
-          echo "=== a64 ==="; ls /tmp/sysroot-a64/usr/lib/pkgconfig/ | grep -E "openssl|alsa" | head
-          echo "=== file ==="; file -b /tmp/sysroot-x64/usr/lib/libssl.* /tmp/sysroot-a64/usr/lib/libssl.* | head -n 6
+          echo "=== x64 ==="; ls /tmp/sysroot-x64/usr/lib/pkgconfig/ | grep -E "openssl|alsa" | head || true
+          echo "=== a64 ==="; ls /tmp/sysroot-a64/usr/lib/pkgconfig/ | grep -E "openssl|alsa" | head || true
+          echo "=== file ==="; file -b /tmp/sysroot-x64/usr/lib/libssl.* /tmp/sysroot-a64/usr/lib/libssl.* | head -n 6 || true
       - name: 打包并发布到 Release
         if: steps.gate.outputs.run == 'true'
         env:
