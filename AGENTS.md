@@ -223,6 +223,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `wabt` | 1.0.42 | 代编译模式：core 拷入（上游 GitHub Releases 的 macOS 资产仅 macos-arm64——1.0.38 的 macos-14 包也是纯 arm64，file 实测；core 无 Intel Tahoe 瓶）；CMake 全量构建（`BUILD_TESTS=OFF`），`cmake` 构建依赖走本 tap 全名、`openssl@4` 枢纽留 core；`wat2wasm`/`wasm2wat` 等全套工具 | 已收录 |
 | `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译直引，只留 Intel host 段（`x86_64-unknown-linux-gnu-x86_64-darwin.tar.gz` 203MB，thin x86_64；gcc/g++ 纯系统库，gdb 链 `python@3.14`/xz）；依赖裸名留 core（`bdw-gc`/`guile`/`python@3.14` 无 Tahoe 瓶首次源码编，`zstd` 有瓶）；检查器 github 流 + `.sha256` sidecar（免 203MB 实算，见下） | 已收录 |
 | `mirage-wallpaper` | 1.1.5 | cask——Mirage 原生动态壁纸管理器（Wallpaper Engine 兼容运行时）；上游按架构分包，取 Intel 段（`Mirage-<build>-<hash>-macOS-x86_64.zip`，文件名无版本、版本只在 tag）；thin x86_64 + 公证签名（`spctl accepted`，零拦截）；**Intel-only**；镜像到本仓 Release（`mirage-wallpaper-<ver>`）；检查器 customRelease（/latest 定 tag + expanded_assets 抓 Intel 资产名，不耗 API 限额，iperf3 同例）+ uploadRelease，sha 取上游 `.sha256` sidecar；tag 段 `#{version}` 插值过审（字面 tag 新 audit 不认，写回字面后须手动改回插值） | 已收录 |
+| `llvm` | 23.1.4 | 代编译模式：core 拷入（上游 23.x 起砍掉 Intel mac 预编译——19.1.7 是最后一个 macOS-X64 包，20+ 仅 macOS-ARM64，core 无 Intel Tahoe 瓶）；`cmake`/`ninja` 构建依赖走本 tap 全名瓶，`python@3.15`/`z3`/`zstd` 枢纽留 core 裸名；core 的 unofficial patch 已 vendor 到本仓 `Patches/llvm/`（LocalPatch 按 tap 根解析）；`keg-only`（与 core 一致，系统 clang 不动） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
