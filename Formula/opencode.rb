@@ -8,14 +8,10 @@ class Opencode < Formula
   # ARM 段在 on_macos 内覆盖（结构照源文件）。
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 11.3）。
   # 实测本系列 URL（v 前缀 + darwin-x64/mac-x86_64 尾部）能正确扫出版本，与 node 的 x64 坑不同。
-  url "https://github.com/anomalyco/opencode/releases/download/v1.19.3/opencode-darwin-x64.zip"
-  sha256 "4e29dbe2f61ace728370523c88027d0742b3a79edcdd2c70e404f616d4ef8f36"
+  url "https://github.com/anomalyco/opencode/releases/download/v1.19.4/opencode-darwin-x64.zip"
+  sha256 "123ebd72609c4f8dbae0485cdac39b9aedfeb6576b2eef64f2e73152b1de82f4"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "aaaaa393573594dbbefc8332c32481d65e3fe5c6498ae6a6c97eef52f371c3f2"
-  end
 
 
 
@@ -33,8 +29,8 @@ class Opencode < Formula
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/anomalyco/opencode/releases/download/v1.19.3/opencode-darwin-arm64.zip"
-      sha256 "c2d0fecd27acf6e08be02c1f5d384614d07495587766bcc4a6bff3971749bb64"
+      url "https://github.com/anomalyco/opencode/releases/download/v1.19.4/opencode-darwin-arm64.zip"
+      sha256 "c400a2f8c8ab7e99478a7f4dd1a466b57bf33888e520d85c55780a5464c4b689"
     end
   end
 

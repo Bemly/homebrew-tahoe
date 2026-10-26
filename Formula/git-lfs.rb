@@ -5,14 +5,10 @@ class GitLfs < Formula
   # man 页；自带的 install.sh 要写 /usr/local 不用，直接拆文件装）。
   # 版本号由 brew 从 URL 扫描得出（amd64-v 形态实测可扫，buildx 同例），
   # 不重复声明 version（否则 audit 判为冗余）。
-  url "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-darwin-amd64-v3.8.0.zip"
-  sha256 "f1c17aeca0b4eaab9ea606226477dbed3b84b56fe0811a9f967d2ea2b2393c53"
+  url "https://github.com/git-lfs/git-lfs/releases/download/v3.8.1/git-lfs-darwin-amd64-v3.8.1.zip"
+  sha256 "4292b3518e717e53c20a6c2c0696e2069a21e97500ad14b80b06bd52de8f3b72"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "a902646b6b4074b5205726a069a3116511d3640a018bb5660a2ea7ecf14a9dbc"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

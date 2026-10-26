@@ -12,10 +12,10 @@ class Curl3 < Formula
   # 镜像只留点分段格式的 fresh-center 两行：core 的 GitHub 镜像 tag 用下划线
   # （curl-8_22_0），watcher 的版本子串替换够不着，会留旧版本，故不保留；
   # audit --strict 要求至少一个镜像，见 11.28。
-  url "https://curl.se/download/curl-8.22.0.tar.bz2"
-  mirror "http://fresh-center.net/linux/www/curl-8.22.0.tar.bz2"
-  mirror "http://fresh-center.net/linux/www/legacy/curl-8.22.0.tar.bz2"
-  sha256 "5d956a6a22b3c279f50c421ee5d3c9e9d660cb6f115dcf881b579e952130549c"
+  url "https://curl.se/download/curl-8.23.0.tar.bz2"
+  mirror "http://fresh-center.net/linux/www/curl-8.23.0.tar.bz2"
+  mirror "http://fresh-center.net/linux/www/legacy/curl-8.23.0.tar.bz2"
+  sha256 "95b22eb32bf6d1fa6e3e9463bdb61cece3efc56d86576a9b3cbd428246a6d854"
   license "curl"
   compatibility_version 1
 
@@ -24,10 +24,6 @@ class Curl3 < Formula
     regex(/href=.*?curl[._-]v?(.*?)\.t/i)
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "8d53ed4599c79037e537aee06271db3741792cf4b09b4dd3c5dd60ee6aa3f31b"
-  end
 
   head do
     url "https://github.com/curl/curl.git", branch: "master"

@@ -1,8 +1,8 @@
 class Z3 < Formula
   desc "High-performance theorem prover"
   homepage "https://github.com/Z3Prover/z3"
-  url "https://github.com/Z3Prover/z3/archive/refs/tags/z3-5.3.1.tar.gz"
-  sha256 "c007089dd8d92298d2a7d14105b14e8dddfbb540062ce471c3111e0741edd8da"
+  url "https://github.com/Z3Prover/z3/archive/refs/tags/z3-5.3.2.tar.gz"
+  sha256 "df91b87822f5f8b6710af1f2419ba98758cd647dee3a8f0d070f128b47024dbe"
   license "MIT"
   compatibility_version 5
   head "https://github.com/Z3Prover/z3.git", branch: "master"
@@ -13,10 +13,6 @@ class Z3 < Formula
     strategy :github_latest
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "f4396e83e17b3d69fb77c876c04c02acea9b3a63a731651b903b2334b183d178"
-  end
 
   # 刻意不声明 cmake（同 llvm.rb：树里已有 python 拖入的裸 cmake，再挂全名必
   # 触发同进程 flock 自锁，见 11.51）；cmake 由 bottle.yml 制瓶前预装本 tap 瓶走 PATH。

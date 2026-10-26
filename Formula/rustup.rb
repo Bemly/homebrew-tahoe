@@ -11,14 +11,10 @@ class Rustup < Formula
   # 曾用名 rustup-init：撞 core 改名别名（rustup-init→rustup，全局生效），
   # 任何 tap 再叫它都会报 migrate 错，故废弃（见 11.32）。
   # 版本在路径段（/archive/1.29.1/），brew 可扫描，无需 version 行（compose 同例）。
-  url "https://static.rust-lang.org/rustup/archive/1.29.1/x86_64-apple-darwin/rustup-init"
-  sha256 "259e2b84274434085163fe8d556510571772cda2aa6d87ca6aa664f57bc644e3"
+  url "https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-apple-darwin/rustup-init"
+  sha256 "b9610730ddeef52765723847866fd1e3540b2bf7d5ab0c324aa143a5edf25ba0"
   license any_of: ["Apache-2.0", "MIT"]
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "ae4932eb6b6343934bd97e257aceeaaffb989aadf8c144f2edf258abfe183732"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
