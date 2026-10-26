@@ -44,7 +44,6 @@ jobs:
     # 无 x86_64_tahoe 瓶）要现编 1–2.5 小时，qemu 自身全量 68 目标再 2–3 小时。
     # 取平台上限 360 分钟（GitHub 单 job 硬上限 6 小时）。
     # 注：本仓是 public 仓库，标准 runner（含 macOS）不消耗付费额度。
-    timeout-minutes: 360
 
     steps:
       - name: 检出仓库

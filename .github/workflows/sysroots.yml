@@ -40,7 +40,6 @@ jobs:
   openssl-macos-arm64:
     # ARM 原生打 arm64，不交叉（macos-26 是 ARM64，macos-26-intel 才是 Intel）。
     runs-on: macos-26
-    timeout-minutes: 120
     steps:
       - name: 决策是否跑
         id: gate
@@ -97,7 +96,6 @@ jobs:
 
   linux-sysroot:
     runs-on: ubuntu-22.04
-    timeout-minutes: 180
     steps:
       - name: 决策是否跑
         id: gate

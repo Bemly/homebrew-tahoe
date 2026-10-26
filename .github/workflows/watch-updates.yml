@@ -34,7 +34,6 @@ jobs:
   check:
     # 用 ubuntu-latest：macOS runner 的分钟数按 10 倍计费，这里完全不需要 macOS
     runs-on: ubuntu-latest
-    timeout-minutes: 10
 
     steps:
       - name: 检出仓库
