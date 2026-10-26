@@ -9,6 +9,11 @@ class GitLfs < Formula
   sha256 "4292b3518e717e53c20a6c2c0696e2069a21e97500ad14b80b06bd52de8f3b72"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "47fe3ad6f7c9b70f3d065d196a8226cd636edc8e5cd9b5f05ee96451854acaef"
+  end
+
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

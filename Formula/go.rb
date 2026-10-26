@@ -12,6 +12,11 @@ class Go < Formula
   sha256 "b6f8e931e4ab497fcde6da8ae4499a58f9d258e55c8a80824a516eae5950a750"
   license "BSD-3-Clause"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "6fcded690b0a47a06e4c74eb5f519afc26c09a49b710bdfea64d89e1caff91a1"
+  end
+
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。

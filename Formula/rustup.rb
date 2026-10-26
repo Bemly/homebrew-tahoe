@@ -15,6 +15,11 @@ class Rustup < Formula
   sha256 "b9610730ddeef52765723847866fd1e3540b2bf7d5ab0c324aa143a5edf25ba0"
   license any_of: ["Apache-2.0", "MIT"]
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "85a077f76ebbde9a19da5cf8301bd1958f5b33dae337acf96fd28f4bef4aed34"
+  end
+
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

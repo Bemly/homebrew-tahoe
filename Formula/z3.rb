@@ -13,6 +13,11 @@ class Z3 < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "a61cfe6f3a074b55eecec4d20c4af43e96cc82c4c626eb8d565611f9c7da0a57"
+  end
+
 
   # 刻意不声明 cmake（同 llvm.rb：树里已有 python 拖入的裸 cmake，再挂全名必
   # 触发同进程 flock 自锁，见 11.51）；cmake 由 bottle.yml 制瓶前预装本 tap 瓶走 PATH。

@@ -9,6 +9,11 @@ class DockerCompose < Formula
   sha256 "245c191b11a6345dd3b32b8f6eadeed1e1dcd5147aa46dfa423462e95f587e93"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "1323489b7d38c71ad3f7e975039663c36d201f11927e49992b177bfaf973fb93"
+  end
+
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。

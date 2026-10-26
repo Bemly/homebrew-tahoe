@@ -12,6 +12,11 @@ class Libslirp < Formula
     regex(/^v(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e6f7bcccd7369142d1e3b8e1cd2481217b0bdd0147b02a0e98d463b4b5367a2d"
+  end
+
 
   depends_on "meson" => :build
   depends_on "ninja" => :build

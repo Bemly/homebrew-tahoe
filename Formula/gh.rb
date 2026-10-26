@@ -6,6 +6,11 @@ class Gh < Formula
   sha256 "2dc7f1fc4761f96732995f6e4f4c6b4d705f2635da4126620c8b30eaa67b9c98"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "48852728e23dd2130238245bb224c13f72e8e6eb6aa2559e98a87953ca3cd840"
+  end
+
 
 
 
