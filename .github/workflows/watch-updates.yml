@@ -24,6 +24,7 @@ on:
 permissions:
   contents: write
   actions: write   # 用 gh workflow run 触发 bottle.yml
+  issues: write    # 告警步骤创建 label / issue 需要
 
 # 同一时间只允许一个检查任务，避免重复消耗
 concurrency:
@@ -209,7 +210,8 @@ jobs:
         run: |
           set -euo pipefail
           gh label create "automated-alert" --color "d93f0b" \
-            --description "自动告警" 2>/dev/null || true
+            --description "自动告警" \
+            || { echo "::error::automated-alert label 创建失败（检查 issues 权限），本次放弃告警"; exit 1; }
           IFS=',' read -ra ITEMS <<< "$MISSING"
           for item in "${ITEMS[@]}"; do
             f="${item%%:*}"
