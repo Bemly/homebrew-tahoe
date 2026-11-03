@@ -1,7 +1,7 @@
 cask "zcode" do
   arch arm: "arm64", intel: "x64"
 
-  version "3.16.3"
+  version "3.17.2"
   # 上游按架构分包（core 的 zcode cask 给的只是 macos-arm64 版）。
   # 镜像到本仓 Release（tag zcode-<ver>，双资产名沿用上游
   # ZCode-<ver>-mac-<arch>.dmg）：本 tap 政策是所有 cask 都镜像最新版；
@@ -11,8 +11,8 @@ cask "zcode" do
   # （url 行插值已覆盖新版本，不动）。
   # 注：dmg 内含 Applications -> /Applications 符号链接，公式的 DmgUnpackStrategy
   # 会崩（AGENTS 11.8），cask 走自己的挂载流程不受影响——这也是它做成 cask 的原因。
-  sha256 arm:   "f010c3434ede382409976567ea0523cd66798dfb3bb999dd28bcdbe79812729d",
-         intel: "68a613af637caa5a50ef601f32845d3da19cb29e952b12eea856f1580b641f7e"
+  sha256 arm:   "53fdd9151a31df347ab7af598948c2b1d353039fcc2a77e272414da2373df391",
+         intel: "ebfe13719a357e47b45d74f87816dbf67bfa5798bd28f98b452a39a0762325ec"
 
   url "https://github.com/Bemly/homebrew-tahoe/releases/download/zcode-#{version}/ZCode-#{version}-mac-#{arch}.dmg"
   name "ZCode"
