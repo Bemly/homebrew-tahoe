@@ -15,9 +15,9 @@ struct FastfetchCheck {
         let config = CheckConfig(
             formula: "fastfetch",
             brewName: "fastfetch",
-            asset: { _ in "fastfetch-macos-amd64.tar.gz" },
+            asset: { _ in "fastfetch-macos-universal.tar.gz" },
             downloadURL: { version in
-                "https://github.com/fastfetch-cli/fastfetch/releases/download/\(version)/fastfetch-macos-amd64.tar.gz"
+                "https://github.com/fastfetch-cli/fastfetch/releases/download/\(version)/fastfetch-macos-universal.tar.gz"
             },
             checksumsURL: nil
         )

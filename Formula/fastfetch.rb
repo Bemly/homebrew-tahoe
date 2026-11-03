@@ -2,14 +2,12 @@ class Fastfetch < Formula
   desc "Neofetch-like system info tool (Intel x86_64 for macOS Tahoe)"
   homepage "https://github.com/fastfetch-cli/fastfetch"
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）
-  url "https://github.com/fastfetch-cli/fastfetch/releases/download/2.69.0/fastfetch-macos-amd64.tar.gz"
-  sha256 "ec6ea2aed26df0561c9331526f1f4289f4285b11f7e3910c29f0b66766b635f1"
+  url "https://github.com/fastfetch-cli/fastfetch/releases/download/2.70.0/fastfetch-macos-universal.tar.gz"
+  sha256 "8e3e2f3583a5b43ea20c451edfe0dac7172835c5b7de97a96347168f31106558"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "4e6fa1dcd19e8b747d549cec2d5bf6622fbae5f9d232ff62d725ad82c1c5b0c2"
-  end
+  # 上游 2.70.0 起 macOS 只发布 universal 包（x86_64 + arm64 fat binary），
+  # 安装前由 post_install 强制校验为 x86_64 原生，防止误装纯 arm64。
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
@@ -17,7 +15,7 @@ class Fastfetch < Formula
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
-  # 上游 tar.gz 解压后是单一顶层目录 fastfetch-macos-amd64/usr/...，
+  # 上游 tar.gz 解压后是单一顶层目录 fastfetch-macos-universal/usr/...，
   # brew 会自动下降进入该目录，因此下面用 ** 通配、不硬编码顶层目录名。
   def install
     bin.install Dir["**/usr/bin/fastfetch"].fetch(0)
