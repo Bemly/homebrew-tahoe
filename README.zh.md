@@ -167,3 +167,5 @@ workflow 会：信任 tap → 以 `--build-bottle` 安装 → 跑 `brew bottle` 
 | `bottle` | 制瓶并推 GHCR，把瓶块提回公式 | `macos-26-intel` |
 
 开发者约定见 [AGENTS.md](AGENTS.md)。
+
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)

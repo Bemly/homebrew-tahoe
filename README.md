@@ -180,3 +180,5 @@ Two workflows, **both manually triggered only** (no scheduled jobs):
 | `bottle` | Builds the bottle, pushes to GHCR, writes the bottle block back | `macos-26-intel` |
 
 Developer conventions: see [AGENTS.md](AGENTS.md).
+
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
