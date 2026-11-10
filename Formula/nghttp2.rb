@@ -5,6 +5,11 @@ class Nghttp2 < Formula
   sha256 "0cdd35ecec77919b4b7b245f87fe8d2216e3d62da854eb0838c594ff058042fc"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "51efb05003fbae97ff3abff07f31abcb2d7e129f7b54431608bf263ddd73da5d"
+  end
+
 
   head do
     url "https://github.com/nghttp2/nghttp2.git", branch: "master"

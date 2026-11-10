@@ -13,6 +13,11 @@ class Z3 < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e9d4dd18cf3419ceeb801407a6036fed09681828bddf9b9fa8b0ae573ea3a0b3"
+  end
+
 
 
   # 刻意不声明 cmake（同 llvm.rb：树里已有 python 拖入的裸 cmake，再挂全名必

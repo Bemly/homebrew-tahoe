@@ -9,6 +9,11 @@ class YtDlp < Formula
   sha256 "0f922c15ccc0b83eefa1c8bc9104e434318c4bf16e408e1ee93b7745a6efe0aa"
   license "Unlicense"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "a773a8b66a96e5ac152b3b564c606be3b05298469445f5c9c688a9b842b14965"
+  end
+
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。

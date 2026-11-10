@@ -8,6 +8,11 @@ class Libnghttp3 < Formula
   compatibility_version 1
   head "https://github.com/ngtcp2/nghttp3.git", branch: "main"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e4b0dc2c45b91e60e2a4cae13c9e2a9a0407c30affdb92514c261dbdb9ce6c24"
+  end
+
 
   depends_on "cmake" => :build
   depends_on arch: :x86_64

@@ -14,6 +14,11 @@ class Qemu < Formula
     regex(/href=.*?qemu[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "047bd1eec09559f949430bc779e701d0727396540bff01a319307d028e9d9657"
+  end
+
 
   depends_on "bison" => :build # >= 3.0
   depends_on "libtool" => :build
