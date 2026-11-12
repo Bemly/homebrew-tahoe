@@ -110,6 +110,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `mirage-wallpaper` | Mirage 原生动态壁纸管理器，兼容 Wallpaper Engine（仅 Intel cask，thin x86_64，公证签名）；上游按架构分包，镜像到本仓 Release，版本由自定义检查器跟踪 |
 | `llvm` | 新一代编译器基础设施——上游 19.1.7 Intel 预编译 pinned（之后只有 ARM64 包；23.x 源码编超 6 小时上限）；thin x86_64，零依赖，keg-only；bindgen 用 `LIBCLANG_PATH` 指过去即用 |
 | `z3` | 高性能定理证明器，本 tap llvm 的求解器依赖（依赖方全小众、无枢纽）；cmake 构建依赖走本 tap |
+| `toshllm` | ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速；仅 Intel cask，thin x86_64，公证签名，app 自带更新器）；上游 dmg 镜像到本仓 Release，版本跟随上游 releases |
 
 ## 注意事项（同名冲突）
 

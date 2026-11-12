@@ -225,6 +225,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `mirage-wallpaper` | 1.1.5 | cask——Mirage 原生动态壁纸管理器（Wallpaper Engine 兼容运行时）；上游按架构分包，取 Intel 段（`Mirage-<build>-<hash>-macOS-x86_64.zip`，文件名无版本、版本只在 tag）；thin x86_64 + 公证签名（`spctl accepted`，零拦截）；**Intel-only**；镜像到本仓 Release（`mirage-wallpaper-<ver>`）；检查器 customRelease（/latest 定 tag + expanded_assets 抓 Intel 资产名，不耗 API 限额，iperf3 同例）+ uploadRelease，sha 取上游 `.sha256` sidecar；tag 段 `#{version}` 插值过审（字面 tag 新 audit 不认，写回字面后须手动改回插值） | 已收录 |
 | `llvm` | 23.1.4 | 代编译模式：core 拷入（上游 23.x 起砍掉 Intel mac 预编译——19.1.7 是最后一个 macOS-X64 包，20+ 仅 macOS-ARM64，core 无 Intel Tahoe 瓶）；**pinned 预编译**：23.x 走源码代编译 PGO 三阶段 6 小时起步即超时，故锁死 19.1.7（最后一个 Intel mac 包），不跟检查器（无 updater/llvm.swift，ffserver 同例）；本仓要的是 bindgen 0.73 运行时的 libclang 9+（thin x86_64，`dlopen` 实测过，全后端含 AArch64/X86），19 够用；只链系统库零依赖；文件名尾 `X64` 致盲版本扫描（扫成 `"64"`，node 同款）故显式 `version` 行；包 1.6GB/解包 8.3GB，门槛 18GB；`keg-only`（系统 clang 不动），`LIBCLANG_PATH` 指 `opt_lib` 即用 | 已收录 |
 | `z3` | 5.3.1 | 代编译叶子：llvm 的求解器依赖（扇入 11：alive2/civl/cryptol/dafny/esbmc/klee/lldb/llvm/openshell/solidity/wuppiefuzz，全小众验证工具，无枢纽，libplist 同例见 11.49）；自瓶的第二理由是裸名会让 llvm 递归依赖同时含本 tap 与 core 的 cmake（后者经 z3 构建依赖进来），`uniq!` 按 full_name 去重留俩，同进程 flock 双开自锁（见 11.51）；`cmake` 走本 tap 全名、`python` 退 3.14 | 已收录 |
+| `toshllm` | 0.87.34 | cask——ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速）；上游 `ToshLLM-v<ver>.dmg`（标准 AVX2 构建，thin x86_64，公证签名，零 arm64 切片），镜像到本仓 Release（`toshllm-<ver>`）；**Intel-only**；app 自带更新器（`auto_updates true`）；检查器 github 流（tag `v` 前缀，sha 取上游 `checksums.txt`） | 已收录 |
 
 ### gh 发布包结构（已实测）
 

@@ -117,6 +117,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `mirage-wallpaper` | Mirage native live wallpaper engine, compatible with Wallpaper Engine (Intel-only cask, thin x86_64, notarized); upstream per-arch builds mirrored to this repo's releases, version tracked via custom checker |
 | `llvm` | Next-gen compiler infrastructure, upstream 19.1.7 Intel macOS prebuilt pinned (later versions are ARM64-only; building 23.x from source exceeds the 6h CI limit); thin x86_64, zero dependencies, keg-only like core; point bindgen at it via `LIBCLANG_PATH` |
 | `z3` | Theorem prover, SMT solver and dependency of this tap's llvm (niche reverse dependencies only, no hubs); cmake build dependency taken from this tap |
+| `toshllm` | ToshLLM local LLM runner with Metal acceleration for Intel AMD GPUs (Intel-only cask, thin x86_64, notarized, self-updating); upstream dmg mirrored to this repo's releases, version tracked from upstream releases |
 
 ## Switching sources (same-name conflict)
 
