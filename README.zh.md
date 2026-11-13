@@ -111,6 +111,8 @@ brew install --cask bemly/tahoe/doubao-ime
 | `llvm` | 新一代编译器基础设施——上游 19.1.7 Intel 预编译 pinned（之后只有 ARM64 包；23.x 源码编超 6 小时上限）；thin x86_64，零依赖，keg-only；bindgen 用 `LIBCLANG_PATH` 指过去即用 |
 | `z3` | 高性能定理证明器，本 tap llvm 的求解器依赖（依赖方全小众、无枢纽）；cmake 构建依赖走本 tap |
 | `toshllm` | ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速；仅 Intel cask，thin x86_64，公证签名，app 自带更新器）；上游 dmg 镜像到本仓 Release，版本跟随上游 releases |
+| `lceda-pro` | 嘉立创EDA专业版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release（zip 内套 dmg 自动解包），版本跟随官网下载页 Intel(x64) 行 |
+| `lceda` | 嘉立创EDA标准版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release，版本跟随官网下载页 Intel(x64) 行 |
 
 ## 注意事项（同名冲突）
 

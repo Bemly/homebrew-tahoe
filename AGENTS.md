@@ -2,6 +2,10 @@
 
 > 本文件是 `bemly/tahoe` 仓库的开发约定与执行计划。
 > 任何人（或 Agent）改动本仓库前，先读完这份文档。
+>
+> **提交与推送（硬性约定，2026-11-14 起）**：每次改动完成（代码 / 公式 / cask / 文档）后，
+> 一律立即 `git add` + `commit` + `git push origin main`，不需要用户再明确要求。
+> 旧的「无明确要求不 commit」规则已废除。
 
 ## 1. 项目定位
 
@@ -226,6 +230,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `llvm` | 23.1.4 | 代编译模式：core 拷入（上游 23.x 起砍掉 Intel mac 预编译——19.1.7 是最后一个 macOS-X64 包，20+ 仅 macOS-ARM64，core 无 Intel Tahoe 瓶）；**pinned 预编译**：23.x 走源码代编译 PGO 三阶段 6 小时起步即超时，故锁死 19.1.7（最后一个 Intel mac 包），不跟检查器（无 updater/llvm.swift，ffserver 同例）；本仓要的是 bindgen 0.73 运行时的 libclang 9+（thin x86_64，`dlopen` 实测过，全后端含 AArch64/X86），19 够用；只链系统库零依赖；文件名尾 `X64` 致盲版本扫描（扫成 `"64"`，node 同款）故显式 `version` 行；包 1.6GB/解包 8.3GB，门槛 18GB；`keg-only`（系统 clang 不动），`LIBCLANG_PATH` 指 `opt_lib` 即用 | 已收录 |
 | `z3` | 5.3.1 | 代编译叶子：llvm 的求解器依赖（扇入 11：alive2/civl/cryptol/dafny/esbmc/klee/lldb/llvm/openshell/solidity/wuppiefuzz，全小众验证工具，无枢纽，libplist 同例见 11.49）；自瓶的第二理由是裸名会让 llvm 递归依赖同时含本 tap 与 core 的 cmake（后者经 z3 构建依赖进来），`uniq!` 按 full_name 去重留俩，同进程 flock 双开自锁（见 11.51）；`cmake` 走本 tap 全名、`python` 退 3.14 | 已收录 |
 | `toshllm` | 0.87.34 | cask——ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速）；上游 `ToshLLM-v<ver>.dmg`（标准 AVX2 构建，thin x86_64，公证签名，零 arm64 切片），镜像到本仓 Release（`toshllm-<ver>`）；**Intel-only**；app 自带更新器（`auto_updates true`）；检查器 github 流（tag `v` 前缀，sha 取上游 `checksums.txt`） | 已收录 |
+| `lceda-pro` | 4.1.100 | cask——嘉立创EDA专业版，取官网下载页 mac Intel(x64) 行的 `lceda-pro-mac-x64-<ver>.zip`（zip 内套 dmg，cask `container nested:` 解包；thin x86_64，公证签名），镜像到本仓 Release（`lceda-pro-<ver>`）；**Intel-only**；检查器 customRelease 抓下载页并按产品前缀锚定（见 11.53） | 已收录 |
+| `lceda` | 6.5.61 | cask——嘉立创EDA标准版，取官网下载页 mac Intel(x64) 行的 `lceda-mac-x64-<ver>.zip`（单顶层目录，app 路径带目录名；thin x86_64，公证签名），镜像到本仓 Release（`lceda-<ver>`）；**Intel-only**；检查器 customRelease 同页锚定（见 11.53） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1710,6 +1716,36 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
 包 1.6GB/解包 8.3GB（门槛 18GB，CI 磁盘已证够用）；文件名尾 `X64` 致盲版本扫描
 （扫成 `"64"`）故显式 `version` 行；23.x 的 patch/检查器一并删除。
 `z3` 不受影响（瓶已在 GHCR，单跑落瓶块即可）。
+
+### 11.53 嘉立创EDA 双版入库：zip 套 dmg 的 cask 用 `container nested:`（2026-11-14 实测）
+
+1. **专业版 zip 不是 app 直包**：`lceda-pro-mac-x64-<ver>.zip` 内是
+   `嘉立创EDA(专业版).dmg` + 脚本/文档（多文件），brew 的 `extract_nestedly`
+   只对「单文件容器」自动下钻，这里必须显式声明
+   `container nested: "嘉立创EDA(专业版).dmg"`——cask 原生 DSL 会先解 zip 再挂载
+   dmg 提取 app（core 的 orca 同例），切不可用公式装（app 会进 Cellar，
+   Launchpad/Spotlight 不可见）。
+2. **标准版 zip 是单顶层目录**：解包后停在 `lceda-mac-x64-<ver>/` 这一层
+   （与公式不同，cask 不会自动下降进顶层目录），`app` 路径必须带目录名：
+   `app "lceda-mac-x64-#{version}/嘉立创EDA.app"`（cask 文件是 Ruby，插值在
+   加载时由 Ruby 完成，audit 也认）。
+3. **下载页多产品多平台混排**：页面同时列出专业版/标准版、x64/arm64/linux/
+   windows 的直链，检查器必须按产品专属文件名前缀锚定
+   （`lceda-pro-mac-x64-` / `lceda-mac-x64-`），裸扫点分段版本必误抓
+   （grok-bot 的 cursor 页同型）。
+4. **版本以页面 Intel(x64) 行文件名为准**：专业版 4.1.100 与包内 `version`
+   文件（36.3.2）、app 的 `CFBundleShortVersionString`（2.2.32.4）互不相同，
+   那是上游自己的多套编号，cask 只认下载页文件名。
+5. 两包均 thin x86_64 + 公证签名（`spctl accepted`，零 Gatekeeper 摩擦）；
+   上游无 checksums 清单 → 有更新时下载实算（专业版约 373MB / 标准版约
+   135MB，仅新版本时发生）。`brew install --cask` 双版实测通过
+   （pro 的 nested dmg 解包 + 标准版顶层目录路径均正确）。
+6. **镜像流写回后要手动恢复插值**：updater 把 url 整条换成字面版本，
+   `brew audit --strict` 会判「URL is unversioned」要求 `sha256 :no_check`——
+   提交前把 url 行改回 `lceda-<ver>` / `lceda-mac-x64-<ver>` 的 `#{version}`
+   插值（mirage-wallpaper 同例，11.26）。另：`deleteOldCaskReleases` 的旧版
+   清理已加「前缀后必须是数字」守卫，避免 `lceda-` 前缀误删 `lceda-pro-*`
+   的 Release（双版同前缀实测中招）。
 
 ## 12. 待办 / 后续演进
 

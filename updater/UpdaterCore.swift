@@ -1250,6 +1250,12 @@ private func deleteOldCaskReleases(repo: String, formula: String, keepTag: Strin
     let prefix = "\(formula)-"
     for tag in tags {
         guard tag != keepTag, tag.hasPrefix(prefix) else { continue }
+        // 前缀可能撞到另一个 cask 的名字（lceda vs lceda-pro）：
+        // `lceda-` 也匹配 `lceda-pro-4.1.100`，无脑删会把隔壁 cask 的
+        // Release 清掉。版本号一律以数字开头，只认「前缀 + 数字」才算本 cask
+        // 的旧版（2026-11-14 实测，嘉立创双版入库时发现）。
+        let remainder = tag.dropFirst(prefix.count)
+        guard remainder.first?.isNumber == true else { continue }
         print("清理旧版 Release：\(tag)")
         let (delStatus, _) = run(gh, ["release", "delete", tag, "--repo", repo, "--yes"])
         if delStatus == 0 {
