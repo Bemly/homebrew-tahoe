@@ -7,6 +7,11 @@ class Chisel < Formula
   sha256 "4aeae36c867f11c8e8c3f2b913a0e063ea3c6d29e1c14a52ed2e6eef8cfc4395"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "2c45cf8964b075981f164bbc5aaebe09553e25acddedcee876dd524ce910acb9"
+  end
+
   # bottle do 块不要手填：由 bottle.yml 制瓶后自动写回（见 AGENTS.md 4/8.5）。
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
