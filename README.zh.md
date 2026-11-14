@@ -113,6 +113,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `toshllm` | ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速；仅 Intel cask，thin x86_64，公证签名，app 自带更新器）；上游 dmg 镜像到本仓 Release，版本跟随上游 releases |
 | `lceda-pro` | 嘉立创EDA专业版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release（zip 内套 dmg 自动解包），版本跟随官网下载页 Intel(x64) 行 |
 | `lceda` | 嘉立创EDA标准版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release，版本跟随官网下载页 Intel(x64) 行 |
+| `chisel` | 基于 HTTP(S) 的快速 TCP/UDP 隧道工具，官方 Intel 裸二进制（`chisel_<ver>_darwin_amd64.gz`，零依赖）；版本跟随 GitHub release；与 core 同名异物（core 版是 Facebook 的 LLDB 命令集），二者先卸一方再装 |
 
 ## 注意事项（同名冲突）
 

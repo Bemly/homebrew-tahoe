@@ -120,6 +120,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `toshllm` | ToshLLM local LLM runner with Metal acceleration for Intel AMD GPUs (Intel-only cask, thin x86_64, notarized, self-updating); upstream dmg mirrored to this repo's releases, version tracked from upstream releases |
 | `lceda-pro` | LCEDA Pro electronic design automation software (Intel x64 only, thin x86_64, notarized); cask mirrored to this repo's releases (zip wraps a dmg, unpacked automatically), version tracked from the official download page's Intel(x64) row |
 | `lceda` | LCEDA Standard electronic design automation software (Intel x64 only, thin x86_64, notarized); cask mirrored to this repo's releases, version tracked from the official download page's Intel(x64) row |
+| `chisel` | Fast TCP/UDP tunnel over HTTP(S), official Intel bare binary (`chisel_<ver>_darwin_amd64.gz`, zero dependencies); version tracked from GitHub releases; shares its name with core's unrelated LLDB command set — uninstall one before installing the other |
 
 ## Switching sources (same-name conflict)
 

@@ -232,6 +232,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `toshllm` | 0.87.34 | cask——ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速）；上游 `ToshLLM-v<ver>.dmg`（标准 AVX2 构建，thin x86_64，公证签名，零 arm64 切片），镜像到本仓 Release（`toshllm-<ver>`）；**Intel-only**；app 自带更新器（`auto_updates true`）；检查器 github 流（tag `v` 前缀，sha 取上游 `checksums.txt`） | 已收录 |
 | `lceda-pro` | 4.1.100 | cask——嘉立创EDA专业版，取官网下载页 mac Intel(x64) 行的 `lceda-pro-mac-x64-<ver>.zip`（zip 内套 dmg，cask `container nested:` 解包；thin x86_64，公证签名），镜像到本仓 Release（`lceda-pro-<ver>`）；**Intel-only**；检查器 customRelease 抓下载页并按产品前缀锚定（见 11.53） | 已收录 |
 | `lceda` | 6.5.61 | cask——嘉立创EDA标准版，取官网下载页 mac Intel(x64) 行的 `lceda-mac-x64-<ver>.zip`（单顶层目录，app 路径带目录名；thin x86_64，公证签名），镜像到本仓 Release（`lceda-<ver>`）；**Intel-only**；检查器 customRelease 同页锚定（见 11.53） | 已收录 |
+| `chisel` | 1.12.0 | 官方 `chisel_<ver>_darwin_amd64.gz`（gzip 单文件裸二进制，gunzip 还原为 `chisel`，零依赖；gz 解出无执行位需 install 里 chmod，见 11.54）；检查器 github 流（tag `v` 前缀，sha 取同 release 的 `chisel_<ver>_checksums.txt`）；与 core 同名异物（core 版是 Facebook 的 LLDB 命令集），先卸 core 版才能装 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1746,6 +1747,23 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    插值（mirage-wallpaper 同例，11.26）。另：`deleteOldCaskReleases` 的旧版
    清理已加「前缀后必须是数字」守卫，避免 `lceda-` 前缀误删 `lceda-pro-*`
    的 Release（双版同前缀实测中招）。
+
+### 11.54 chisel 入库：gzip 裸二进制 + core 同名异物（2026-11-14 实测）
+
+1. **gz 解包单文件 + 无执行位**：`chisel_<ver>_darwin_amd64.gz` 用 brew 原生
+   Gzip 策略（系统 `gunzip -N`，无额外公式依赖），头里原名即 `chisel`；
+   gunzip 不还原 mode，解出 0644 → `bin.install` 装成 0444，必须
+   `chmod 0555`（frida-server 的 xz 同例，11.37）。
+2. **core 同名异物**：homebrew/core 的 `chisel` 是 Facebook 的 LLDB 命令集
+   （2.0.1，源码包），与 jpillora/chisel 完全无关但共用
+   `Cellar/chisel`——同 tap 不能共存，caveats 写明先 `brew uninstall chisel`
+   （h2spec/rustup 同型）。检查器不能走 brew 流（会拿错版本），走 github 流。
+3. **checksums 形状**：`chisel_<ver>_checksums.txt` 是标准
+   `<sha256>  <filename>`，核心按资产名精确匹配可用（约 8KB），不必下载
+   4.8MB 实算；tag 带 `v` 前缀，默认 `githubTagPrefix` 即可。
+4. 本机全链路实测：style/audit（装前装后）/fetch/install/test 全绿，
+   `chisel --version` 输出裸版本号 `1.12.0`；摆拍 1.11.2 → 1.12.0
+   改写（双处 url + sha + 摘瓶）逐字节正确。
 
 ## 12. 待办 / 后续演进
 
