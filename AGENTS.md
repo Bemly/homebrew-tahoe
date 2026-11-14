@@ -233,6 +233,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `lceda-pro` | 4.1.100 | cask——嘉立创EDA专业版，取官网下载页 mac Intel(x64) 行的 `lceda-pro-mac-x64-<ver>.zip`（zip 内套 dmg，cask `container nested:` 解包；thin x86_64，公证签名），镜像到本仓 Release（`lceda-pro-<ver>`）；**Intel-only**；检查器 customRelease 抓下载页并按产品前缀锚定（见 11.53） | 已收录 |
 | `lceda` | 6.5.61 | cask——嘉立创EDA标准版，取官网下载页 mac Intel(x64) 行的 `lceda-mac-x64-<ver>.zip`（单顶层目录，app 路径带目录名；thin x86_64，公证签名），镜像到本仓 Release（`lceda-<ver>`）；**Intel-only**；检查器 customRelease 同页锚定（见 11.53） | 已收录 |
 | `chisel` | 1.12.0 | 官方 `chisel_<ver>_darwin_amd64.gz`（gzip 单文件裸二进制，gunzip 还原为 `chisel`，零依赖；gz 解出无执行位需 install 里 chmod，见 11.54）；检查器 github 流（tag `v` 前缀，sha 取同 release 的 `chisel_<ver>_checksums.txt`）；与 core 同名异物（core 版是 Facebook 的 LLDB 命令集），先卸 core 版才能装 | 已收录 |
+| `exiftool` | 13.55 | 上游官方纯 Perl tar.gz 直装（core 拷入精简版：不跑 `Makefile.PL`、不编译，省去 brotli/xz + CPAN XS 资源树，那些在 Intel Tahoe 无瓶，见 11.55）；`url` 与 core 同（SourceForge）+ CPAN 镜像（同 tarball 同 sha，SourceForge dl 跳转偶发不可达）；检查器 brew 全量流（`urls.stable.url`/`.checksum`，免下载实算）；与 core 同名同物，先卸 core 版才能装 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1764,6 +1765,36 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
 4. 本机全链路实测：style/audit（装前装后）/fetch/install/test 全绿，
    `chisel --version` 输出裸版本号 `1.12.0`；摆拍 1.11.2 → 1.12.0
    改写（双处 url + sha + 摘瓶）逐字节正确。
+
+### 11.55 exiftool 入库：纯 Perl 直装 + core 同名同物 + SourceForge 镜像兜底（2026-11-14 实测）
+
+1. **纯 Perl 不算「代编译」**：上游 `Image-ExifTool-<ver>.tar.gz` 里 `exiftool`
+   脚本 + `lib/` 就是全部运行时，零编译。core 公式为支持 JXL BrotliEXIF /
+   LZMA 等可选元数据，额外 `depends_on "brotli"`/`"xz"` 并用 `Makefile.PL`
+   编译 5 个 CPAN XS 模块（其中一个还要 patch）——在 Intel Tahoe 全无瓶，
+   会拖出一整串源码编译。本 tap 只要常规 EXIF 读写，直接
+   `libexec.install "exiftool", "lib"` + `write_env_script` 暴露 `bin/exiftool`：
+   脚本 BEGIN 块按自身所在目录 `unshift @INC, "$dir/lib"`，两者必须同级放进
+   libexec（core 同款 wrapper）。精简范围写进 caveats。
+2. **没有 Mach-O 可校验**：`file(1)` + x86_64 断言不适用（neofetch 同例），
+   `install` 尾部只做 `exiftool -ver` 版本自检；Intel + Tahoe 门槛仍由顶部
+   `depends_on` 硬性保证。
+3. **core 同名同物**（与 chisel 的「同名异物」不同）：core `exiftool` 有
+   arm64_tahoe 等 `cellar: :any` 瓶，但**没有 `x86_64_tahoe`**；同 Cellar
+   路径不能共存，caveats / README 写明先 `brew uninstall exiftool`。
+4. **原料直链双保险**：core 的 `urls.stable.url` 是 `downloads.sourceforge.net`
+   （302 跳 `*.dl.sourceforge.net`）；本机实测该 dl 主机偶发 SSL/超时不可达，
+   而 core 自带的 CPAN 镜像 `cpan.metacpan.org/.../Image-ExifTool-<ver>.tar.gz`
+   同版本同 sha256 可下。故公式 `url` 用 SourceForge、`mirror` 用 CPAN：
+   全量式检查器整条替换 url，mirror 行靠版本子串替换同步（11.28），
+   二者始终指向同一 tarball。`curlHeadOK` 不带 `-L`，302 本身即判可达，
+   watcher 不受影响；直链失败时 brew 的 `CurlDownloadStrategy` 会打印
+   `Trying a mirror...` 自动回落到 CPAN。
+5. **版本跟随 core**：核对时上游 exiftool.org 已到 13.63，core 仍停在
+   13.55（2026-10-21 最后更新）。按 SOP 9.1 的 brew 流判据取 13.55，
+   core 升版后 watcher 自动跟上，不另接上游页面判新。
+6. 本机全链路实测：style / audit --strict（装前装后）/ fetch / install / test
+   （`exiftool -ver` + `test.jpg` 的 `MIME Type`）全绿。
 
 ## 12. 待办 / 后续演进
 
