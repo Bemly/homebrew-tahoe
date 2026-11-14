@@ -12,6 +12,11 @@ class Exiftool < Formula
   sha256 "5f4c81d34ad406538c2871ad72dbfceb5d9b412b2f16cbbeb4d712d270846667"
   license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "62e49532979a38b7a5d2d59038a173cb365e5a3744eda6442bee19fd4013afb4"
+  end
+
   # bottle do 块不要手填：由 bottle.yml 制瓶后自动写回（见 AGENTS.md 4/8.5）。
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的软件。
