@@ -10,6 +10,11 @@ class Libplist < Formula
   compatibility_version 2
   head "https://github.com/libimobiledevice/libplist.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "d471fc8eac88bc903e36cd5b0f578c01add9398151924f42508c5548534f332f"
+  end
+
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on "autoconf" => :build

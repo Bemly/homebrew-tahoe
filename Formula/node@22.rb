@@ -8,6 +8,11 @@ class NodeAT22 < Formula
   sha256 "c53383238206b9ae4db23c5d8a63645e2e753bec8ab51a49cc81939aa64e9422"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "7f4e34d4cc2a1f177496969a5ac6a103b0f6ba4988306f7b861c7bc73c5b5458"
+  end
+
 
 
 

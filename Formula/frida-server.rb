@@ -8,6 +8,11 @@ class FridaServer < Formula
   # 根 COPYING 是 wxWindows Library Licence 3.1（= LGPL-2.1 + 静态链接例外）。
   license "LGPL-2.1-only" => { with: "WxWindows-exception-3.1" }
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "6ca0ee86050fa886772fe6111f55623ebaba1532c8039cb45df34f3adaa91a28"
+  end
+
 
 
 

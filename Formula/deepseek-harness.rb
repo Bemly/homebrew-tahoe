@@ -7,6 +7,11 @@ class DeepseekHarness < Formula
   sha256 "ad21968aed0337a326b853507a23b30eacbbec4d67ab07f3b6fde69b75b19cd6"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "013d7a3e1819650600cad7a7247fba36d013157af1aa166ef88e7b0be1c9b70a"
+  end
+
 
 
 

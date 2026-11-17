@@ -13,6 +13,11 @@ class Z3 < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "fdba6499ad09a75fe6c53ff35abe538b546135187cdcd6dad7d258803c7c5b47"
+  end
+
 
 
 

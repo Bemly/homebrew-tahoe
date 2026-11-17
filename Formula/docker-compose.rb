@@ -9,6 +9,11 @@ class DockerCompose < Formula
   sha256 "c28b37c7bf1cc315acdf511c2c0f34ce19d4d33b6038611617063a99c45417c6"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "4652d3eee7b95c462efe9222e0984201126cd81b08ff2b6f1d17771753149b56"
+  end
+
 
 
 

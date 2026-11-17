@@ -8,6 +8,11 @@ class Libngtcp2 < Formula
   compatibility_version 1
   head "https://github.com/ngtcp2/ngtcp2.git", branch: "main"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "6946d5947cf50a717b11f7d6d4d5b0769becf72054ee851563c6e48dfcf6f3f6"
+  end
+
 
   depends_on "pkgconf" => :build
   depends_on arch: :x86_64

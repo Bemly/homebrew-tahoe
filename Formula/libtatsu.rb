@@ -12,6 +12,11 @@ class Libtatsu < Formula
   revision 1
   head "https://github.com/libimobiledevice/libtatsu.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "d77b8e2187ebc7a6bdeb4589aae1a1492a8baee91372d40e3546ea89bf2368a1"
+  end
+
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on "autoconf" => :build

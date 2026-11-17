@@ -12,6 +12,11 @@ class Opencode < Formula
   sha256 "39aabb10005059f80f007a119a33405dcd46325300993eb6cbcc961c7243dd31"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "5f1e88f37a03ef607922f1f5acd89bb77e7b16c3a3758c989e3cdef416a9601f"
+  end
+
 
 
 

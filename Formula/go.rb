@@ -12,6 +12,11 @@ class Go < Formula
   sha256 "2b799377704ef12db39bd254995d5c348c9cc8d86562ca817724390e56c38f43"
   license "BSD-3-Clause"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "c8755edfe6f5fbf1747b64ddd21e3090456b8282c777c34836c48f3ac326e72a"
+  end
+
 
 
 

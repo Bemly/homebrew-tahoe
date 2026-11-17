@@ -6,6 +6,11 @@ class Fastfetch < Formula
   sha256 "6e503980ac268b072259f00e5c439eb90a420535f3593704c096b5b3bea64199"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "aaeaf833dfea05d29d2e8a388d2000b27535ec21dec76a7bfac763a0e9dfc12a"
+  end
+
 
   # 上游 2.70.0 起 macOS 只发布 universal 包（x86_64 + arm64 fat binary），
   # 安装前由 post_install 强制校验为 x86_64 原生，防止误装纯 arm64。
