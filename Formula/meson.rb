@@ -8,6 +8,11 @@ class Meson < Formula
   compatibility_version 1
   head "https://github.com/mesonbuild/meson.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "09aaaaa9af556ba39d6a43c60454cbe56899d18db6dbe685db2759739c7f8674"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的构建。
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/ninja"
