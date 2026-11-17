@@ -122,6 +122,8 @@ brew install --cask bemly/tahoe/doubao-ime
 | `lceda` | LCEDA Standard electronic design automation software (Intel x64 only, thin x86_64, notarized); cask mirrored to this repo's releases, version tracked from the official download page's Intel(x64) row |
 | `chisel` | Fast TCP/UDP tunnel over HTTP(S), official Intel bare binary (`chisel_<ver>_darwin_amd64.gz`, zero dependencies); version tracked from GitHub releases; shares its name with core's unrelated LLDB command set — uninstall one before installing the other |
 | `exiftool` | Read/write/edit image metadata, pure Perl with zero compilation; official `Image-ExifTool-<ver>.tar.gz` bottled for Intel Tahoe, version tracked from homebrew/core; core's optional Brotli/LZMA Perl modules are omitted; shares its name with core's formula — uninstall one before installing the other |
+| `python@3.15` | Python 3.15 interpreter, compiled once on Intel (core has no Intel Tahoe bottle); shares its name with core's formula — uninstall core's first; this tap's meson depends on it so meson updates no longer rebuild Python from source |
+| `meson` | Fast build system, shares its name with core's formula — uninstall core's first; depends on this tap's `ninja` and `python@3.15`, bottled for Intel Tahoe so it no longer pulls core's source-built Python |
 | `lody` | Lody desktop app for sharing coding agent sessions across desktop and mobile; cask mirrored from the official Intel dmg (`Lody-<ver>-x64.dmg`), version tracked from the core cask |
 | `qoder` | Qoder CN (China edition) agentic coding platform by Alibaba; cask mirrored from the official Intel dmg (`Qoder-CN-mac-x64.dmg`), version tracked from the qoder.cn changelog; shares its token with core's international `qoder` cask — uninstall one before installing the other |
 
@@ -140,13 +142,23 @@ brew unlink bemly/tahoe/gh && brew link gh
 brew unlink bemly/tahoe/fastfetch && brew link fastfetch
 ```
 
+`python@3.15` / `meson` are version-paired and must be switched by uninstalling:
+
+```bash
+brew uninstall meson
+brew uninstall --ignore-dependencies python@3.15
+brew install bemly/tahoe/meson
+```
+
 ## GHCR bottles
 
 Packages are distributed from **GHCR**: `ghcr.io/v2/bemly/tahoe`
 (Homebrew strips the `homebrew-` prefix from the repository name, mirroring the
 structure of `ghcr.io/v2/homebrew/core`).
 
-Bottles are built directly from the upstream prebuilt packages — **no recompilation**.
+Bottles are built directly from the upstream prebuilt packages where available.
+Source-only packages (e.g. `qemu`, `python@3.15`, `meson`) are compiled once on the
+same Intel runner — users still install bottles and never compile locally.
 The bottle tag is determined by the build machine's architecture and OS; to produce
 `x86_64_tahoe` the bottling job runs on a `macos-26-intel` runner.
 

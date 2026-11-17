@@ -115,6 +115,8 @@ brew install --cask bemly/tahoe/doubao-ime
 | `lceda` | 嘉立创EDA标准版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release，版本跟随官网下载页 Intel(x64) 行 |
 | `chisel` | 基于 HTTP(S) 的快速 TCP/UDP 隧道工具，官方 Intel 裸二进制（`chisel_<ver>_darwin_amd64.gz`，零依赖）；版本跟随 GitHub release；与 core 同名异物（core 版是 Facebook 的 LLDB 命令集），二者先卸一方再装 |
 | `exiftool` | 读写/编辑图片元数据的 Perl 工具（纯脚本，零编译）；官方 `Image-ExifTool-<ver>.tar.gz` 直装出瓶，版本跟随 homebrew/core；精简掉 core 版那套 brotli/xz + CPAN XS 可选模块（Intel Tahoe 无瓶）；与 core 同名同物，二者先卸一方再装 |
+| `python@3.15` | Python 3.15 解释器，Intel 现编出瓶（core 无 Intel Tahoe 瓶）；与 core 同名同物，先卸 core 版；本 tap 的 meson 依赖它，避免每次 meson 更新都源码编 Python |
+| `meson` | 快速构建系统，与 core 同名同物，先卸 core 版；依赖本 tap 的 `ninja` + `python@3.15`，出 Intel Tahoe 瓶，不再拖 core 的源码 Python |
 | `lody` | Lody 桌面 app（跨桌面/移动端同步 coding agent 会话）；cask 镜像官方 Intel dmg（`Lody-<ver>-x64.dmg`），版本跟随 core cask |
 | `qoder` | 阿里巴巴 Qoder CN（国内版）AI 编程平台；cask 镜像官网 Intel dmg（`Qoder-CN-mac-x64.dmg`），版本跟随 qoder.cn 更新日志；与 core 的国际版 `qoder` 同名，二者先卸一方再装 |
 
@@ -133,13 +135,22 @@ brew unlink bemly/tahoe/gh && brew link gh
 brew unlink bemly/tahoe/fastfetch && brew link fastfetch
 ```
 
+`python@3.15` / `meson` 是配套版本，必须卸载切换：
+
+```bash
+brew uninstall meson
+brew uninstall --ignore-dependencies python@3.15
+brew install bemly/tahoe/meson
+```
+
 ## GHCR 瓶
 
 安装包从 **GHCR** 分发：`ghcr.io/v2/bemly/tahoe`
 （Homebrew 会剥掉仓库名的 `homebrew-` 前缀，与核心的 `ghcr.io/v2/homebrew/core` 同构）。
 
-瓶的内容直接来自上游预构建包，**不重新编译**。瓶标签由构建机的架构与系统决定，
-为了产出 `x86_64_tahoe`，制瓶跑在 `macos-26-intel` runner 上。
+瓶的内容优先直接来自上游预构建包；只有源码包（如 `qemu`、`python@3.15`、`meson`）
+才在同一个 Intel runner 上代编译一次——用户端始终装瓶，不在本地编译。
+瓶标签由构建机的架构与系统决定，为了产出 `x86_64_tahoe`，制瓶跑在 `macos-26-intel` runner 上。
 
 | 场景 | 处理 |
 | --- | --- |

@@ -68,6 +68,8 @@ homebrew-tahoe/
 ├── README.md                          # 面向用户的使用说明
 ├── Formula/
 │   └── gh.rb                          # 公式，一个软件一个文件
+├── Patches/
+│   └── python/3.13-sysconfig.diff      # 公式引用的本地补丁（core 公式的 patch 需随 tap 入库）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本比对 / 公式改写 / 输出协议）
 │   └── gh.swift                       # 每包一个检查器入口，与 Formula/*.rb 一一同名
@@ -236,6 +238,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `exiftool` | 13.55 | 上游官方纯 Perl tar.gz 直装（core 拷入精简版：不跑 `Makefile.PL`、不编译，省去 brotli/xz + CPAN XS 资源树，那些在 Intel Tahoe 无瓶，见 11.55）；`url` 与 core 同（SourceForge）+ CPAN 镜像（同 tarball 同 sha，SourceForge dl 跳转偶发不可达）；检查器 brew 全量流（`urls.stable.url`/`.checksum`，免下载实算）；与 core 同名同物，先卸 core 版才能装 | 已收录 |
 | `lody` | 0.112.0 | cask——Lody（coding agent 会话跨桌面/移动端同步）；core cask 按架构分包，本 tap 取 Intel `Lody-<ver>-x64.dmg`（thin x86_64，公证签名），镜像到本仓 Release（`lody-<ver>`）；版本跟 core cask（brewCask 流 + uploadRelease，见 11.56） | 已收录 |
 | `qoder` | 0.5.13 | cask——Qoder CN（qoder.cn 国内版，区别于 core 的国际版 `qoder`）；官网下载页给浮动 installer，真身另取版本化 `Qoder-CN-mac-x64.dmg`（thin x86_64，公证签名），镜像到本仓 Release（`qoder-<ver>`）；版本跟 qoder.cn 更新日志（customRelease 抓最新锚点，见 11.56）；与 core 的 `qoder` 同名，先卸一方再装 | 已收录 |
+| `python@3.15` | 3.15.2 | 代编译模式：core 拷入 + 双门槛；core 在 Intel Tahoe 无瓶，meson 等更新时 Python 会源码编译；`pkgconf` 构建依赖、`ca-certificates`/`mpdecimal`/`openssl@4`/`sqlite`/`xz`/`zstd` 枢纽依赖裸名留 core；`pypi_packages` 装 pip/flit-core；补丁 `Patches/python/3.13-sysconfig.diff` 随公式入库；与 core 同名同物，先卸 core 版（见 11.58） | 已收录 |
+| `meson` | 1.12.1_1 | core 拷入 + 双门槛；本体是 `all` 瓶，但依赖 core 的 `python@3.15` 会源码编，故随本 tap 出 tahoe 瓶；依赖改全名 `bemly/tahoe/ninja` + `bemly/tahoe/python@3.15`；`revision 1` 与 core 同步（掉 revision 手工删，见 11.49）；与 core 同名同物，先卸 core 版（见 11.58） | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1846,6 +1850,33 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    子串替换，cmake 的 `/files/v4.4/` 换不到；现额外把 mirror 行里的旧
    `v<major>.<minor>/` 路径段换成新值（仅完整路径段，不碰文件名），
    cmake 4.4.4→4.5.0 实测两行镜像同时变为 `/v4.5/`。
+
+### 11.58 python@3.15 / meson 入源：同名接管 + 全名依赖（2026-11-17 实测）
+
+1. **需要编的是 `python@3.15`，不是 meson**：core 的 meson 瓶是 `all`（架构无关），
+   但它裸依赖 `python@3.15`；python 3.15.2 在 core 只有 arm64/x86_64_linux 瓶，
+   Intel Tahoe 上 meson 一更新就把 Python 拖进源码编译（`openssl@4` 等依赖同缺瓶）。
+2. **按 node 同款同名接管**：`Formula/python@3.15.rb` 从 core 拷入，摘 bottle、
+   加 `arch: :x86_64` + `macos: :tahoe`；`Formula/meson.rb` 同样处理，但依赖改
+   `bemly/tahoe/python@3.15` 与 `bemly/tahoe/ninja`，确保 meson 真正用上 tap 瓶。
+   python 是 730 个公式的反依赖枢纽，装 tap 版前必须先卸 core 版；core 公式后续
+   裸依赖 python@3.15 时可能报跨 tap 冲突（用户已知并接受，node 同款）。
+3. **补丁必须随 tap 入库**：core 公式引用的 `patches/python/3.13-sysconfig.diff`
+   不会自动带过来；已复制到 tap 根 `Patches/python/3.13-sysconfig.diff`
+   （`LocalPatch` 按 tap 根解析）。
+4. **runner 没有 `python3` helper**（11.51 同款 API 年龄问题）：meson 首轮制瓶
+   （`44098767439`）python 瓶成功、meson 在 install 起始报
+   `NameError: undefined local variable or method 'python3'`。修法是显式定位：
+   `python = formula_opt_bin("bemly/tahoe/python@3.15")/"python3.15"`，
+   `Language::Python.site_packages(python)` 也传这条路径；`formula_opt_bin`
+   是 2026-06-22 API，runner 可用。第二轮 `44102485426` meson 出瓶成功。
+5. **瓶块提交的 `if: always()` 已救场**：首轮 meson 失败仍把已推的 python 瓶块
+   提交（`e3ce9aa`），第二轮只补 meson 瓶块（`b7782ad`），无需重制 python。
+6. 检查器都用 brew 全量流：python/meson 直取 formulae.brew.sh 的
+   `urls.stable.url`/checksum；meson 的 `revision 1` 与 core 同步，core 升版掉
+   revision 时手工删（11.49）。
+7. `lz4`/`pkgconf` 不单独入源：Intel 上源码编译仅 25–36 秒，且 pkgconf 只是
+   python 的构建依赖；真正的瓶颈是 python 本体。
 
 ## 12. 待办 / 后续演进
 
