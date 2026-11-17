@@ -162,6 +162,18 @@ same Intel runner — users still install bottles and never compile locally.
 The bottle tag is determined by the build machine's architecture and OS; to produce
 `x86_64_tahoe` the bottling job runs on a `macos-26-intel` runner.
 
+**A GHCR bottle contains only the formula itself, not its dependencies.** If a
+formula needs dependencies, those dependencies must be bottled in this tap too and
+referenced by full name (`bemly/tahoe/<name>`), never left to `homebrew/core`: core
+ships no Intel Tahoe bottles, so a bare dependency falls back to a local source build
+(this is why upgrading `graphviz` once triggered `libpng`/`librsvg`/`rust` builds).
+`bottle.yml` now recursively expands every formula's dependency closure before
+building: tap dependencies without a bottle (and not being built in the same run)
+fail the job, and core dependencies without a `tahoe`/`x86_64_tahoe`/`all` bottle
+are listed and fail too. For legacy hub dependencies you can explicitly check
+`allow_unbottled_core` when triggering the workflow, but that reintroduces local
+source compilation and should only be a temporary escape hatch.
+
 | Scenario | Action |
 | --- | --- |
 | New version | `watch-updates` rewrites the formula and auto-triggers `bottle.yml` (manual triggering also works) |

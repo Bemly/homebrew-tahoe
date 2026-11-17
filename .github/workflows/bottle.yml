@@ -18,6 +18,11 @@ on:
         required: true
         default: gh
         type: string
+      allow_unbottled_core:
+        description: 临时豁免递归依赖门控——允许 core 依赖在 Intel Tahoe 无瓶（会在用户端源码编译）
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -87,6 +92,64 @@ jobs:
       # 必须在这里就红掉，而不是编译几小时后才发现（见 AGENTS.md 11.10）。
       - name: 公式体检（防白跑）
         run: brew readall bemly/tahoe
+
+      # GHCR 瓶只含本体；依赖必须一并入本源、写全名引用，否则 core 依赖会在用户端
+      # 现场源码编译（graphviz 16.1.1 实测，见 AGENTS.md 11.59）。这里递归展开每批
+      # 公式的依赖闭包，开编前就红掉，而不是等用户装瓶时才发现要编译几十分钟。
+      - name: 递归检查依赖瓶覆盖
+        env:
+          ALLOW_UNBOTTLED_CORE: ${{ inputs.allow_unbottled_core }}
+        run: |
+          set -euo pipefail
+          FORMULAS=()
+          while IFS= read -r line; do
+            [[ -n "$line" ]] && FORMULAS+=("$line")
+          done < /tmp/formulas.txt
+          tap_missing="/tmp/tap_deps_missing.txt"
+          core_unbottled="/tmp/core_deps_unbottled.txt"
+          : > "$tap_missing"
+          : > "$core_unbottled"
+          for f in "${FORMULAS[@]}"; do
+            while IFS= read -r dep; do
+              [[ -z "$dep" ]] && continue
+              case "$dep" in
+                bemly/tahoe/*)
+                  short="${dep#bemly/tahoe/}"
+                  # 同批公式由拓扑排序在本轮出瓶，此刻还没有瓶块属正常
+                  case " ${FORMULAS[*]} " in
+                    *" $short "*) continue ;;
+                  esac
+                  if [[ ! -f "Formula/${short}.rb" ]]; then
+                    echo "$f -> $dep (Formula 不存在)" >> "$tap_missing"
+                  elif ! grep -Eq '^[[:space:]]*sha256[^#]*tahoe:' "Formula/${short}.rb"; then
+                    echo "$f -> $dep (公式无 tahoe 瓶块)" >> "$tap_missing"
+                  fi
+                  ;;
+                *)
+                  if brew info --json=v2 "$dep" 2>/dev/null | grep -Eq '"(all|x86_64_tahoe|tahoe)"[[:space:]]*:'; then
+                    continue
+                  fi
+                  echo "$f -> $dep" >> "$core_unbottled"
+                  ;;
+              esac
+            done < <(brew deps --full-name --include-build --union "bemly/tahoe/$f" 2>/dev/null | sort -u)
+          done
+          sort -u "$tap_missing" -o "$tap_missing"
+          sort -u "$core_unbottled" -o "$core_unbottled"
+          if [[ -s "$tap_missing" ]]; then
+            echo "::error::本仓依赖缺瓶：必须先把依赖入源并出瓶，再在公式里写全名引用"
+            cat "$tap_missing"
+            exit 1
+          fi
+          if [[ -s "$core_unbottled" ]]; then
+            echo "::error::core 依赖在 Intel Tahoe 无瓶，用户端会现场源码编译（应把依赖入本源并改全名引用）"
+            cat "$core_unbottled"
+            if [[ "${ALLOW_UNBOTTLED_CORE}" != "true" ]]; then
+              exit 1
+            fi
+            echo "::warning::allow_unbottled_core=true，已放行上述 core 依赖"
+          fi
+          echo "递归依赖检查通过：${#FORMULAS[@]} 个公式"
 
       - name: 安装 skopeo（推 GHCR 的依赖）
         run: brew install skopeo

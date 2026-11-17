@@ -146,6 +146,7 @@ end
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
 | `concurrency` + `timeout-minutes` | 防重复跑、防挂死 |
 | 批量制瓶只占一次 runner | `watch-updates.yml` 扫全部（唯一模式），只触发**一次** `bottle.yml`（逗号列表传参）；`bottle.yml` 在单个 `macos-26-intel` 任务里顺序出瓶，绝不逐个触发 |
+| 递归依赖门控 | `bottle.yml` 在 `brew readall` 后展开每批公式的完整依赖闭包：本仓依赖必须有瓶块（同批公式由拓扑排序在本轮出瓶，豁免）、core 依赖若无 `tahoe`/`x86_64_tahoe`/`all` 瓶则直接失败并列出名单；旧公式确需 compat 时手动勾 `allow_unbottled_core: true` 放行，见 8.1 / 11.59 |
 
 ### 5.1 批量模式的核心约束：一次 runner 出多个瓶
 
@@ -423,6 +424,12 @@ Homebrew 维护的校验和，上游换镜像自动跟随）。模板式（downl
 - 安装走 Homebrew 原生瓶机制，不依赖 GitHub Releases；
 - 上游万一改名/删档，GHCR 里还留着一份；
 - **不重新编译** —— 瓶的内容就是把上游预构建包拆进 Cellar 再打包。
+- **瓶只含本体，不含依赖**：GHCR 里每个 tag 只是该公式自己的 Cellar 内容。
+  公式若需要依赖，依赖也必须在本仓 `Formula/` 里出瓶，并以全名
+  `bemly/tahoe/<name>` 引用；**不能指望 core 的瓶**——core 在 Intel Tahoe 不出瓶，
+  裸名依赖会回落到 core，并在用户端现场源码编译（graphviz 16.1.1 实测，见 11.59）。
+  这与第 6 节 hub/叶子分流并不矛盾：hub 留 core 是历史妥协，新增/更新公式应把所需依赖
+  一并入源并指全名，才能兑现「用户端不编译」的承诺。
 
 ### 8.2 地址
 
@@ -1877,6 +1884,24 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    revision 时手工删（11.49）。
 7. `lz4`/`pkgconf` 不单独入源：Intel 上源码编译仅 25–36 秒，且 pkgconf 只是
    python 的构建依赖；真正的瓶颈是 python 本体。
+
+### 11.59 GHCR 瓶只含本体 + 递归依赖门控（2026-11-17 实测，graphviz 16.1.1）
+
+1. **现象**：`brew upgrade bemly/tahoe/graphviz`（16.1.0 → 16.1.1）时，本体瓶
+   `e708885…` 已在 GHCR，却开始源码编译一大串 core 依赖：`libpng 1.6.58→1.6.59`、
+   `librsvg 2.62.3→2.63.4_1`，而 librsvg 现编又要 `rust`/`cargo-c`/`libgit2`/
+   `gobject-introspection`/`help2man`/`llhttp` 等。查 API 这些公式的 `bottle` 全是 `{}`。
+2. **根因不是门控漏检，是此前门控根本没查依赖**：`bottle.yml` 只有 `brew readall`
+   （语法/门禁），制瓶循环又先用 `brew install --only-dependencies` 把缺瓶依赖在 runner 上
+   现编掉，再 `brew install --build-bottle` + `brew bottle` 只给目标公式出瓶。瓶不含依赖，
+   所以 CI 绿 ≠ 用户端免编译。
+3. **规则已写进文档（§8.1 / README / README.zh）**：GHCR 瓶只含本体；需要依赖就把依赖
+   一起放本仓出瓶，公式里写全名 `bemly/tahoe/<name>`，不要写裸名留 core。
+4. **门控已补递归检查**：`bottle.yml` 的「递归检查依赖瓶覆盖」步骤用
+   `brew deps --full-name --include-build --union` 展开每批公式依赖闭包；本仓依赖无瓶块
+   （且不在本批拓扑内）直接红，core 依赖查 `brew info --json=v2` 无 `tahoe`/`x86_64_tahoe`/`all`
+   瓶则列出并红掉。确需重建旧枢纽公式时，手动触发可勾 `allow_unbottled_core: true` 放行
+   （代价是重新引入用户端源码编译，违背本仓承诺，应尽快把依赖搬进本源）。
 
 ## 12. 待办 / 后续演进
 
