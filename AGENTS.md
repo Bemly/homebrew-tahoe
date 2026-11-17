@@ -234,6 +234,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `lceda` | 6.5.61 | cask——嘉立创EDA标准版，取官网下载页 mac Intel(x64) 行的 `lceda-mac-x64-<ver>.zip`（单顶层目录，app 路径带目录名；thin x86_64，公证签名），镜像到本仓 Release（`lceda-<ver>`）；**Intel-only**；检查器 customRelease 同页锚定（见 11.53） | 已收录 |
 | `chisel` | 1.12.0 | 官方 `chisel_<ver>_darwin_amd64.gz`（gzip 单文件裸二进制，gunzip 还原为 `chisel`，零依赖；gz 解出无执行位需 install 里 chmod，见 11.54）；检查器 github 流（tag `v` 前缀，sha 取同 release 的 `chisel_<ver>_checksums.txt`）；与 core 同名异物（core 版是 Facebook 的 LLDB 命令集），先卸 core 版才能装 | 已收录 |
 | `exiftool` | 13.55 | 上游官方纯 Perl tar.gz 直装（core 拷入精简版：不跑 `Makefile.PL`、不编译，省去 brotli/xz + CPAN XS 资源树，那些在 Intel Tahoe 无瓶，见 11.55）；`url` 与 core 同（SourceForge）+ CPAN 镜像（同 tarball 同 sha，SourceForge dl 跳转偶发不可达）；检查器 brew 全量流（`urls.stable.url`/`.checksum`，免下载实算）；与 core 同名同物，先卸 core 版才能装 | 已收录 |
+| `lody` | 0.112.0 | cask——Lody（coding agent 会话跨桌面/移动端同步）；core cask 按架构分包，本 tap 取 Intel `Lody-<ver>-x64.dmg`（thin x86_64，公证签名），镜像到本仓 Release（`lody-<ver>`）；版本跟 core cask（brewCask 流 + uploadRelease，见 11.56） | 已收录 |
+| `qoder` | 0.5.13 | cask——Qoder CN（qoder.cn 国内版，区别于 core 的国际版 `qoder`）；官网下载页给浮动 installer，真身另取版本化 `Qoder-CN-mac-x64.dmg`（thin x86_64，公证签名），镜像到本仓 Release（`qoder-<ver>`）；版本跟 qoder.cn 更新日志（customRelease 抓最新锚点，见 11.56）；与 core 的 `qoder` 同名，先卸一方再装 | 已收录 |
 
 ### gh 发布包结构（已实测）
 
@@ -1795,6 +1797,38 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    core 升版后 watcher 自动跟上，不另接上游页面判新。
 6. 本机全链路实测：style / audit --strict（装前装后）/ fetch / install / test
    （`exiftool -ver` + `test.jpg` 的 `MIME Type`）全绿。
+
+### 11.56 lody / Qoder CN 入库：core 同名 token 与 installer 套壳（2026-11-17 实测）
+
+1. **lody 走 core cask 版本 + Intel 变体**：core cask 默认 arm64，tahoe 变体是
+   `Lody-<ver>-x64.dmg`（sha 与 core cask API 的 intel 值一致，下载实测
+   `3cf968…`）；本 tap 自建 `lody` cask 锁 Intel + tahoe，镜像到 Release
+   `lody-0.112.0`。主二进制 thin x86_64，Sparkle 为 universal；包内另有
+   `better-sqlite3/prebuilds/darwin-arm64.node`（可选模块，Intel 运行用不到；
+   cask audit 不扫已装文件，无需 `audit_exceptions`）。检查器 brewCask 流
+   （版本跟 core）+ uploadRelease。
+2. **Qoder CN 的下载页链接是安装器，不是 app 本体**：qoder.cn/download 的
+   Mac Intel 行给 `.../releases/latest/Qoder-CN-Installer-mac-x64.zip`（浮动、
+   无版本），zip 里 `Qoder CN Installer.app/Contents/Resources/payload/` 才是
+   真身 `Qoder-CN-<ver>-mac-x64.zip`，同目录 `installer-manifest.json` 也给出
+   `qoderDmgDownloadUrl`。cask 不能装安装器，直接取版本化真身
+   `https://static.qoder.com.cn/qoder-app/releases/<ver>/Qoder-CN-mac-x64.dmg`
+   （0.5.13 实测 337.7MB，sha `18588f…`，thin x86_64，公证签名；app 名
+   `Qoder CN.app`，bundle `com.qodercn.app`）。
+3. **版本判据用官方更新日志锚点**：`https://changelog.qoder.cn/qoder` 是按
+   发布时间倒序的 Qoder CN 更新记录，首个 `<a id="x.y.z">` 即最新版（0.5.13）。
+   检查器 customRelease 抓该锚点拼版本化 DMG；日志先于安装包发布时 HEAD
+   探测 404 → `upstream-missing` 开 issue，不会写坏文件。上游无 checksums
+   → 有更新时下载实算（约 322MB），再镜像到 Release `qoder-<ver>`。
+4. **cask token 用 `qoder`（用户拍板）**：与 core 的国际版 cask 同名但不同物
+   （core 装 `Qoder.app`，本 tap 装 `Qoder CN.app`），二者共用 Caskroom/qoder，
+   先卸一方再装。本 tap 的 url 用 `#{version}` 插值过 audit；镜像流下次更新
+   会整条换成字面 Release URL，届时按 11.26/11.53 的做法手动改回插值再提交
+   （audit 的 unversioned 判定）。
+5. **验证**：`brew style` / `audit --strict --cask`（装前装后）/ `brew fetch
+   --cask` / `brew install --cask` 全绿；两 app 的 `file` 均 thin x86_64，
+   `spctl` 均 `accepted`（Notarized Developer ID）。Release 资产已上传
+   （`lody-0.112.0` / `qoder-0.5.13`）。
 
 ## 12. 待办 / 后续演进
 

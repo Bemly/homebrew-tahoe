@@ -115,6 +115,8 @@ brew install --cask bemly/tahoe/doubao-ime
 | `lceda` | 嘉立创EDA标准版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release，版本跟随官网下载页 Intel(x64) 行 |
 | `chisel` | 基于 HTTP(S) 的快速 TCP/UDP 隧道工具，官方 Intel 裸二进制（`chisel_<ver>_darwin_amd64.gz`，零依赖）；版本跟随 GitHub release；与 core 同名异物（core 版是 Facebook 的 LLDB 命令集），二者先卸一方再装 |
 | `exiftool` | 读写/编辑图片元数据的 Perl 工具（纯脚本，零编译）；官方 `Image-ExifTool-<ver>.tar.gz` 直装出瓶，版本跟随 homebrew/core；精简掉 core 版那套 brotli/xz + CPAN XS 可选模块（Intel Tahoe 无瓶）；与 core 同名同物，二者先卸一方再装 |
+| `lody` | Lody 桌面 app（跨桌面/移动端同步 coding agent 会话）；cask 镜像官方 Intel dmg（`Lody-<ver>-x64.dmg`），版本跟随 core cask |
+| `qoder` | 阿里巴巴 Qoder CN（国内版）AI 编程平台；cask 镜像官网 Intel dmg（`Qoder-CN-mac-x64.dmg`），版本跟随 qoder.cn 更新日志；与 core 的国际版 `qoder` 同名，二者先卸一方再装 |
 
 ## 注意事项（同名冲突）
 
