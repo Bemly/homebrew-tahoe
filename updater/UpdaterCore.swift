@@ -466,6 +466,14 @@ private func isMirrorDefinitionLine(_ line: String) -> Bool {
 /// 此时单 sha 参数忽略、url 行不动。找不到对应 key 的行直接 fail。
 /// version 行只有部分公式需要显式声明（brew 从 URL 扫不出正确版本时，如 node 的
 /// darwin-x64.tar.gz 会扫出 "64"），有则必须同步，否则 url 与 version 脱节。
+/// 镜像 URL 里常见的 `v<major>.<minor>/` 目录段（cmake.org 的 `/files/v4.4/`）。
+/// 版本子串替换只能换文件名，换不到目录段；major/minor 变化时单独同步这一层。
+private func versionDirectory(_ version: String) -> String? {
+    let parts = version.split(separator: ".")
+    guard parts.count >= 2 else { return nil }
+    return "v\(parts[0]).\(parts[1])"
+}
+
 func rewriteFormula(_ content: String, newURL: String, newVersion: String,
                     oldVersion: String, sha: String,
                     archShas: [(key: String, sha: String)]? = nil,
@@ -575,6 +583,16 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
             if oldVerPattern.firstMatch(in: replaced, range: range) != nil {
                 replaced = oldVerPattern.stringByReplacingMatches(
                     in: replaced, range: range, withTemplate: newVersion)
+            }
+            // 目录段版本（如 cmake.org/files/v4.4/）：子串替换够不到，major/minor
+            // 变化时同步。只处理完整路径段，避免误伤文件名里的 v4.4。
+            if let oldDir = versionDirectory(oldVersion),
+               let newDir = versionDirectory(newVersion),
+               oldDir != newDir {
+                let dirPattern = try! NSRegularExpression(
+                    pattern: "(?<=/)" + NSRegularExpression.escapedPattern(for: oldDir) + "(?=/)")
+                replaced = dirPattern.stringByReplacingMatches(
+                    in: replaced, range: fullRange(replaced), withTemplate: newDir)
             }
         }
         // 顶层 version 行同步（公式级唯一 version；fails_with 块内与 resource

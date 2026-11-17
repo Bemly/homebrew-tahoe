@@ -1527,9 +1527,9 @@ file 实测），15 秒装完。结论：**有上游 macOS 预编译就不走 qe
    `brew unpin cmake` 才能卸；`brew uninstall` 触发 autoremove 顺手带走了
    meson/bison（无依赖者）——完事后原样装回，环境零漂移。教训：动 pin 过的包
    先看 pin，动构建依赖先记清单。
-5. 小版本升级（4.4→4.5）时 cmake.org 镜像行的 `/v4.4/` 目录要手工跟（子串替换够不着），
-   主 url（GitHub，无目录段）不受影响；watcher 的 fetch 校验失败会安全跳过并告警，
-   到时改两行镜像即可。
+5. 小版本升级（4.4→4.5）时 cmake.org 镜像行的 `/v4.4/` 目录段曾要手工跟（子串替换
+   够不着）；2026-11-17 起 `rewriteFormula` 会同步镜像 URL 的 `vX.Y` 目录段（见 11.57），
+   不再需要手工改。主 url（GitHub，无目录段）本来就不受影响。
 
 ### 11.45 cursor 下载页锚定判新（2026-10-09 实测，grok-bot）
 
@@ -1829,6 +1829,23 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    --cask` / `brew install --cask` 全绿；两 app 的 `file` 均 thin x86_64，
    `spctl` 均 `accepted`（Notarized Developer ID）。Release 资产已上传
    （`lody-0.112.0` / `qoder-0.5.13`）。
+
+### 11.57 watcher 的 fetch 验证必须先 trust；cmake 模板必须同源（2026-11-17 实测）
+
+1. **brew 7 起未信任 tap 的公式拒绝加载**：`watch-updates` 在 ubuntu 上对更新的
+   公式逐个 `brew fetch` 做 url+sha 端到端校验，没 trust 时全部报
+   `Refusing to load formula bemly/tahoe/<name> from untrusted tap`，本轮 19 个
+   公式被误判为 fetch 失败并还原，只有 6 个 cask 进了提交。
+   修法：fetch 前先 `brew tap bemly/tahoe "$GITHUB_WORKSPACE"` +
+   `brew trust bemly/tahoe`（tap 级信任覆盖全部公式，不用逐个 `--formula`）。
+2. **模板流的 `downloadURL` 必须与公式主 url 同源**：cmake 主 url 是 Kitware
+   GitHub，检查器原模板却拼 cmake.org，改写后字面 url 对不上，自检直接 fail
+   （`url 未成功更新到 https://cmake.org/files/v4.5/...`）。已把 cmake 检查器
+   模板改成 GitHub；cmake.org 只保留在 `checksumsURL` 与 mirror 行。
+3. **镜像 URL 的 `vX.Y` 目录段同步已自动化**：`rewriteFormula` 原先只做版本
+   子串替换，cmake 的 `/files/v4.4/` 换不到；现额外把 mirror 行里的旧
+   `v<major>.<minor>/` 路径段换成新值（仅完整路径段，不碰文件名），
+   cmake 4.4.4→4.5.0 实测两行镜像同时变为 `/v4.5/`。
 
 ## 12. 待办 / 后续演进
 

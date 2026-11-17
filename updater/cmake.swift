@@ -26,8 +26,10 @@ struct CmakeCheck {
             formula: "cmake",
             brewName: "cmake",
             asset: { version in "cmake-\(version)-macos-universal.tar.gz" },
+            // 必须与公式主 url 同源（Kitware GitHub），否则模板流的改写自检
+            // 找不到字面 url 会 fail。cmake.org 仍在 checksumsURL 与 mirror 行里。
             downloadURL: { version in
-                "https://cmake.org/files/\(minorDir(version))/cmake-\(version)-macos-universal.tar.gz"
+                "https://github.com/Kitware/CMake/releases/download/v\(version)/cmake-\(version)-macos-universal.tar.gz"
             },
             checksumsURL: { version in
                 "https://cmake.org/files/\(minorDir(version))/cmake-\(version)-SHA-256.txt"

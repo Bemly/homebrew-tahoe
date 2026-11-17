@@ -143,10 +143,16 @@ jobs:
             echo "failed=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # brew 7 起未信任的 tap 公式会被拒绝加载（fetch 报 "Refusing to load
+          # formula ... from untrusted tap"），导致所有公式更新被误判为 fetch 失败。
+          # 先 tap 本仓并 trust，再逐个 fetch。
+          if ! brew tap bemly/tahoe "$GITHUB_WORKSPACE" >/dev/null 2>&1; then
+            echo "::warning::brew tap bemly/tahoe 失败（可能已存在），继续"
+          fi
+          brew trust bemly/tahoe
           for f in "${updated_formulae[@]}"; do
             # linuxbrew：tap 本仓后 fetch 只验直链（瓶块已摘、无 GHCR 可走），
             # 正好覆盖 url+sha。无同名 tap 冲突（ubuntu runner 干净），失败只可能是资源问题。
-            if brew tap bemly/tahoe "$GITHUB_WORKSPACE" >/dev/null 2>&1; then :; fi
             if ! brew fetch --force "bemly/tahoe/$f" 2>&1 | tail -n 3; then
               echo "::warning::$f fetch 验证失败（url 或 sha 不可用），还原并跳过提交"
               git checkout -- "Formula/$f.rb" 2>/dev/null || true
