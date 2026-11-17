@@ -12,13 +12,6 @@ class Graphviz < Formula
     regex(/href=.*?graphviz[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "e708885ba2935975b317f46e4ba65a7a5ec8d605d2e80fac5210a685c365cd5b"
-  end
-
-
-
   head do
     url "https://gitlab.com/graphviz/graphviz.git", branch: "main"
 
@@ -29,28 +22,11 @@ class Graphviz < Formula
   depends_on "bison" => :build
   depends_on "pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "cairo"
-  depends_on "gd"
-  depends_on "glib"
-  depends_on "gts"
-  depends_on "libpng"
-  depends_on "librsvg"
-  depends_on "libtool"
   depends_on macos: :tahoe
-  depends_on "pango"
-  depends_on "webp"
 
   uses_from_macos "flex" => :build
   uses_from_macos "python" => :build
   uses_from_macos "expat"
-
-  on_macos do
-    depends_on "fontconfig"
-    depends_on "freetype"
-    depends_on "gdk-pixbuf"
-    depends_on "gettext"
-    depends_on "harfbuzz"
-  end
 
   on_linux do
     depends_on "zlib-ng-compat"
@@ -63,20 +39,33 @@ class Graphviz < Formula
       --disable-swig
       --disable-tcl
       --with-quartz
+      --with-included-ltdl
       --without-gdk
       --without-gtk
       --without-poppler
       --without-qt
       --without-x
-      --with-freetype2
-      --with-gdk-pixbuf
-      --with-gts
+      --with-rsvg=no
+      --with-pangocairo=no
+      --with-freetype2=no
+      --with-gdk-pixbuf=no
+      --with-libgd=no
+      --with-gts=no
+      --with-webp=no
     ]
 
     system "./autogen.sh" if build.head?
     system "./configure", *args, *std_configure_args
     system "make"
     system "make", "install"
+  end
+
+  def caveats
+    <<~EOS
+      为免用户端源码编译 core 依赖，本瓶关闭了 cairo/pango/librsvg/gd/freetype/
+      webp/gts 等第三方插件，只依赖系统库；布局与 PDF/PNG/SVG 等格式由 Quartz 与
+      内置插件提供，行为与官方包一致，但动态插件的扩展能力减少。
+    EOS
   end
 
   test do

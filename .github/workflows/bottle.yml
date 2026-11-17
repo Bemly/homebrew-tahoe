@@ -126,13 +126,15 @@ jobs:
                   fi
                   ;;
                 *)
-                  if brew info --json=v2 "$dep" 2>/dev/null | grep -Eq '"(all|x86_64_tahoe|tahoe)"[[:space:]]*:'; then
+                  # brew info --json=v2 对未安装的 core 公式不返回 bottle 元数据；
+                  # 统一走 formulae.brew.sh（与 watcher 同源），只认 Intel Tahoe 瓶标签。
+                  if curl -fsSL --max-time 20 "https://formulae.brew.sh/api/formula/$dep.json" 2>/dev/null | grep -Eq '"(all|x86_64_tahoe|tahoe)"[[:space:]]*:'; then
                     continue
                   fi
                   echo "$f -> $dep" >> "$core_unbottled"
                   ;;
               esac
-            done < <(brew deps --full-name --include-build --union "bemly/tahoe/$f" 2>/dev/null | sort -u)
+            done < <(brew deps --full-name --union "bemly/tahoe/$f" 2>/dev/null | sort -u)
           done
           sort -u "$tap_missing" -o "$tap_missing"
           sort -u "$core_unbottled" -o "$core_unbottled"

@@ -146,7 +146,7 @@ end
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
 | `concurrency` + `timeout-minutes` | 防重复跑、防挂死 |
 | 批量制瓶只占一次 runner | `watch-updates.yml` 扫全部（唯一模式），只触发**一次** `bottle.yml`（逗号列表传参）；`bottle.yml` 在单个 `macos-26-intel` 任务里顺序出瓶，绝不逐个触发 |
-| 递归依赖门控 | `bottle.yml` 在 `brew readall` 后展开每批公式的完整依赖闭包：本仓依赖必须有瓶块（同批公式由拓扑排序在本轮出瓶，豁免）、core 依赖若无 `tahoe`/`x86_64_tahoe`/`all` 瓶则直接失败并列出名单；旧公式确需 compat 时手动勾 `allow_unbottled_core: true` 放行，见 8.1 / 11.59 |
+| 递归依赖门控 | `bottle.yml` 在 `brew readall` 后展开每批公式的**运行时**依赖闭包（build deps 只在 CI 现编、不影响用户端，故不检查）：本仓依赖必须有瓶块（同批公式由拓扑排序在本轮出瓶，豁免）、core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶则直接失败并列出名单；旧公式确需 compat 时手动勾 `allow_unbottled_core: true` 放行，见 8.1 / 11.59 |
 
 ### 5.1 批量模式的核心约束：一次 runner 出多个瓶
 
@@ -1898,10 +1898,16 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
 3. **规则已写进文档（§8.1 / README / README.zh）**：GHCR 瓶只含本体；需要依赖就把依赖
    一起放本仓出瓶，公式里写全名 `bemly/tahoe/<name>`，不要写裸名留 core。
 4. **门控已补递归检查**：`bottle.yml` 的「递归检查依赖瓶覆盖」步骤用
-   `brew deps --full-name --include-build --union` 展开每批公式依赖闭包；本仓依赖无瓶块
-   （且不在本批拓扑内）直接红，core 依赖查 `brew info --json=v2` 无 `tahoe`/`x86_64_tahoe`/`all`
-   瓶则列出并红掉。确需重建旧枢纽公式时，手动触发可勾 `allow_unbottled_core: true` 放行
-   （代价是重新引入用户端源码编译，违背本仓承诺，应尽快把依赖搬进本源）。
+   `brew deps --full-name --union` 展开每批公式的**运行时**依赖闭包（build deps 只在 CI
+   现编，不检查）；本仓依赖无瓶块（且不在本批拓扑内）直接红，core 依赖经
+   formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶则列出并红掉（`brew info
+   --json=v2` 对未安装的 core 公式不返回 bottle 元数据，不能用）。确需重建旧枢纽公式时，
+   手动触发可勾 `allow_unbottled_core: true` 放行（代价是重新引入用户端源码编译，
+   违背本仓承诺，应尽快把依赖搬进本源）。
+5. **graphviz 的解法**：不搬 57 个 core 依赖，而是把公式改成零运行时依赖——
+   关掉 cairo/pango/librsvg/gd/freetype/webp/gts 等第三方插件，改用
+   `--with-included-ltdl` + 系统 expat/zlib，Quartz 与内置插件仍提供 PDF/PNG/SVG。
+   本机 `--build-from-source` 1 分 41 秒装完、`dot -V`/`-Tpdf`/`-Tsvg`/`-Tpng` 全过。
 
 ## 12. 待办 / 后续演进
 

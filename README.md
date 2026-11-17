@@ -167,12 +167,15 @@ formula needs dependencies, those dependencies must be bottled in this tap too a
 referenced by full name (`bemly/tahoe/<name>`), never left to `homebrew/core`: core
 ships no Intel Tahoe bottles, so a bare dependency falls back to a local source build
 (this is why upgrading `graphviz` once triggered `libpng`/`librsvg`/`rust` builds).
-`bottle.yml` now recursively expands every formula's dependency closure before
-building: tap dependencies without a bottle (and not being built in the same run)
-fail the job, and core dependencies without a `tahoe`/`x86_64_tahoe`/`all` bottle
-are listed and fail too. For legacy hub dependencies you can explicitly check
-`allow_unbottled_core` when triggering the workflow, but that reintroduces local
-source compilation and should only be a temporary escape hatch.
+`bottle.yml` now recursively expands every formula's **runtime** dependency closure
+before building (build dependencies only compile on CI and don't affect users): tap
+dependencies without a bottle (and not being built in the same run) fail the job,
+and core dependencies without a `tahoe`/`x86_64_tahoe`/`all` bottle are listed and
+fail too. For legacy hub dependencies you can explicitly check `allow_unbottled_core`
+when triggering the workflow, but that reintroduces local source compilation and
+should only be a temporary escape hatch. `graphviz` avoids the problem by shipping
+a zero-runtime-dependency build (third-party renderer plugins disabled; Quartz and
+built-in plugins still provide PDF/PNG/SVG).
 
 | Scenario | Action |
 | --- | --- |

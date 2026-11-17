@@ -155,10 +155,12 @@ brew install bemly/tahoe/meson
 **GHCR 瓶只含公式本体，不含依赖。** 公式若需要依赖，依赖也必须一并放进本仓出瓶，
 并在公式里写全名 `bemly/tahoe/<name>`，不能留裸名由 `homebrew/core` 解析——core 在 Intel
 Tahoe 不出瓶，裸名依赖会回落到用户端源码编译（graphviz 16.1.1 升级曾因此触发
-`libpng`/`librsvg`/`rust` 一整串编译）。`bottle.yml` 现在会在开编前递归展开每批公式的
-依赖闭包：本仓依赖无瓶块（且不在本批拓扑内）直接红；core 依赖没有
+`libpng`/`librsvg`/`rust` 一整串编译）。`bottle.yml` 现在会在开编前递归展开每批公式的**运行时**依赖闭包（构建依赖只在 CI
+现编，不影响用户端）：本仓依赖无瓶块（且不在本批拓扑内）直接红；core 依赖没有
 `tahoe`/`x86_64_tahoe`/`all` 瓶的也会列出并红掉。旧枢纽依赖确需兼容时，可在手动触发时
-勾 `allow_unbottled_core` 放行，但这会重新引入本地源码编译，只是临时豁免。
+勾 `allow_unbottled_core` 放行，但这会重新引入本地源码编译，只是临时豁免。`graphviz` 已改为
+零运行时依赖构建（关闭第三方渲染插件，Quartz 与内置插件仍提供 PDF/PNG/SVG），
+不再拖那条 57 项的编译链。
 
 | 场景 | 处理 |
 | --- | --- |
