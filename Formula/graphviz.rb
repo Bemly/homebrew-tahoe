@@ -12,6 +12,11 @@ class Graphviz < Formula
     regex(/href=.*?graphviz[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "fcfa47f4c2e85b7acbcdce001747b80b9de8a0396b40ee860da88424a8339b75"
+  end
+
   head do
     url "https://gitlab.com/graphviz/graphviz.git", branch: "main"
 
