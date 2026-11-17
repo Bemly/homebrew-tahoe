@@ -1,6 +1,6 @@
 cask "mirage-wallpaper" do
-  version "1.1.5"
-  sha256 "2dd3e7ffa74644cbd73dcc032be4621db0fb8698873dd1c3ff7f5e10ddad409c"
+  version "1.1.6"
+  sha256 "b22b24c80fdbf61a01e1d9ecc2e41c1befb42200b702ca4687572a0d62795503"
 
   # 镜像到本仓 Release（tag mirage-wallpaper-<ver>，资产名沿用上游 basename）：
   # 本 tap 政策是所有 cask 都镜像最新版；上游资产名含构建号+短哈希
@@ -12,7 +12,7 @@ cask "mirage-wallpaper" do
   # 不耗 GitHub API 限额，iperf3 同例），有更新时下载、上传 Release、
   # 改写本文件（整条换 url，见 UpdaterCore 镜像流；写回后 tag 段会变字面，
   # 需手动改回 #{version} 插值再提交，否则新版 audit 不过）。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/mirage-wallpaper-#{version}/Mirage-523-c5fda60e16ba-macOS-x86_64.zip"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/mirage-wallpaper-1.1.6/Mirage-573-1ae3fa8bd081-macOS-x86_64.zip"
   name "Mirage"
   desc "Native live wallpaper engine, compatible with Wallpaper Engine"
   homepage "https://github.com/laobamac/MirageWallpaper"

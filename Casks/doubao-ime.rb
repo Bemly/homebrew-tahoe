@@ -1,12 +1,12 @@
 cask "doubao-ime" do
-  version "1.0.3"
-  sha256 "45c19afc498e3257c9828c4434181cb389b8df4510ea8c063ca02a4ab4a86e31"
+  version "1.1.1"
+  sha256 "c8c0b866bc350703410798706558bedc0a6a93855b64de4df34bf04fc55b9f31"
 
   # 镜像到本仓 Release（上游 CDN 链接带构建号、每次部署都变，直接引用不稳；
   # 由 watcher 检测新版本后下载并上传到此，URL 即指向 Release 资产）。
   # 外层安装器文件名含构建号（DoubaoImeInstaller_v90703_release.zip），每次部署都变——
   # 故不用 #{version} 插值，而由 watcher 在每次更新时整条改写。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/doubao-ime-1.0.3/DoubaoImeInstaller_v1000302_2_release.zip"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/doubao-ime-1.1.1/DoubaoImeInstaller_v1010103_release.zip"
   name "Doubao IME"
   desc "Doubao AI input method"
   homepage "https://shurufa.doubao.com/"
