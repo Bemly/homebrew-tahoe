@@ -6,16 +6,12 @@ class Libtatsu < Formula
   # 本机验证需先挪开 /usr/local/lib/libcurl.a——curl3 的静态库，无配套 .dylib，
   # -lcurl 被迫静态链接缺 ICU 符号，见 AGENTS.md 11.49）。
   # revision 行与 core 同步：上游发新版时若 core 掉 revision，此行手工删。
-  url "https://github.com/libimobiledevice/libtatsu/releases/download/1.0.5/libtatsu-1.0.5.tar.bz2"
-  sha256 "536fa228b14f156258e801a7f4d25a3a9dd91bb936bf6344e23171403c57e440"
+  url "https://github.com/libimobiledevice/libtatsu/releases/download/1.1.1/libtatsu-1.1.1.tar.bz2"
+  sha256 "18f471f131c1d55ccc02fa09565d870030c6ce92f737b89fe1b3849941ebb303"
   license "LGPL-2.1-or-later"
   revision 1
   head "https://github.com/libimobiledevice/libtatsu.git", branch: "master"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "e6ce99942d7b970e01f4f35268667dbd56b7f498e2041e3cfc050301639427d1"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on "autoconf" => :build

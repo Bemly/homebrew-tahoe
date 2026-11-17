@@ -1,17 +1,13 @@
 class NodeAT24 < Formula
   desc "JavaScript runtime, Node.js 24 LTS (Intel x86_64 for macOS Tahoe)"
   homepage "https://nodejs.org/"
-  url "https://nodejs.org/dist/v24.22.2/node-v24.22.2-darwin-x64.tar.gz"
+  url "https://nodejs.org/dist/v24.22.3/node-v24.22.3-darwin-x64.tar.gz"
   # brew 从 URL 尾部 darwin-x64.tar.gz 只能扫出 "64"，与真实版本不符，
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余）
-  version "24.22.2"
-  sha256 "d5e336d588c45be0c37dbd52cc29895593009ca4997a77a1fd02815131ed0e52"
+  version "24.22.3"
+  sha256 "977614af0504c81045e7fd85596dbca0e5f951b96681516dadafedcca8c447f7"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "e6815fc86c4f80fc05ece95b91f6e7b5c09e4a80cc4aa75efbc84d0f2781d96c"
-  end
 
 
 

@@ -2,14 +2,10 @@ class Fastfetch < Formula
   desc "Neofetch-like system info tool (Intel x86_64 for macOS Tahoe)"
   homepage "https://github.com/fastfetch-cli/fastfetch"
   # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余）
-  url "https://github.com/fastfetch-cli/fastfetch/releases/download/2.70.0/fastfetch-macos-universal.tar.gz"
-  sha256 "8e3e2f3583a5b43ea20c451edfe0dac7172835c5b7de97a96347168f31106558"
+  url "https://github.com/fastfetch-cli/fastfetch/releases/download/2.71.0/fastfetch-macos-universal.tar.gz"
+  sha256 "6e503980ac268b072259f00e5c439eb90a420535f3593704c096b5b3bea64199"
   license "MIT"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "766d5d5d13876a6f55485091872923ffe8200339ae56e1f801bb4aff27a7ceec"
-  end
 
   # 上游 2.70.0 起 macOS 只发布 universal 包（x86_64 + arm64 fat binary），
   # 安装前由 post_install 强制校验为 x86_64 原生，防止误装纯 arm64。

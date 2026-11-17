@@ -1,8 +1,8 @@
 class Graphviz < Formula
   desc "Graph visualization software from AT&T and Bell Labs"
   homepage "https://graphviz.org/"
-  url "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/16.1.0/graphviz-16.1.0.tar.xz"
-  sha256 "0f661718f3e5268dc3bad0fb53ab646605d26db70f4080799aff1dc2f61783c3"
+  url "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/16.1.1/graphviz-16.1.1.tar.xz"
+  sha256 "52e7fb9a57b52b5c67f41dba6504ba3231e118258779421cb8f4f99104de71f6"
   license "EPL-1.0"
   version_scheme 1
   compatibility_version 1
@@ -12,10 +12,6 @@ class Graphviz < Formula
     regex(/href=.*?graphviz[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "959ffb4313b307568eeb51e8a5ae299f0d04c82c75cd39ff11f453ef6c76206c"
-  end
 
 
   head do

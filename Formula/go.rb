@@ -7,15 +7,11 @@ class Go < Formula
   # 公式无 sudo 不可用；tar.gz 是 brew 原生路线（node 同例）。
   # brew 从 URL 尾部 darwin-amd64 只能扫出 "64"，与真实版本不符，
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余；node 同款坑，见 11.3）。
-  url "https://go.dev/dl/go1.27.3.darwin-amd64.tar.gz"
-  version "1.27.3"
-  sha256 "b6f8e931e4ab497fcde6da8ae4499a58f9d258e55c8a80824a516eae5950a750"
+  url "https://go.dev/dl/go1.27.4.darwin-amd64.tar.gz"
+  version "1.27.4"
+  sha256 "2b799377704ef12db39bd254995d5c348c9cc8d86562ca817724390e56c38f43"
   license "BSD-3-Clause"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "6fcded690b0a47a06e4c74eb5f519afc26c09a49b710bdfea64d89e1caff91a1"
-  end
 
 
 

@@ -6,19 +6,15 @@ class Cmake < Formula
   # 主 url 用 Kitware GitHub release：全段都是全版本号，无版本目录段——
   # cmake.org 的 /v4.4/ 目录段会让检查器的 url 解析先命中 "4.4"（brew 自身扫描不受
   # 影响，实测 stable 仍为 4.4.4，故不写 version 行，写了判冗余）。
-  url "https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-macos-universal.tar.gz"
-  mirror "https://cmake.org/files/v4.4/cmake-4.4.4-macos-universal.tar.gz"
-  mirror "http://cmake.org/files/v4.4/cmake-4.4.4-macos-universal.tar.gz"
+  url "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-macos-universal.tar.gz"
+  mirror "https://cmake.org/files/v4.5/cmake-4.5.0-macos-universal.tar.gz"
+  mirror "http://cmake.org/files/v4.5/cmake-4.5.0-macos-universal.tar.gz"
   # cmake 在 core curl 的递归依赖树里（nghttp3 等构建要它），audit 强制要求至少一条
   # 明文 http 镜像（core 的 cmake 用 fresh-center 同例）；cmake.org 的 http 会 301
   # 到 https，同文件，brew 跟随跳转，纯为过审。
-  sha256 "4b7b73704b1db9b374e5c9ab8e17ac6148b817b6396ee75cd94a852cbac9d305"
+  sha256 "a645d69fd21e521759cc0c64e7c60462d43faf0c7214ac05f75c80f7c5037dde"
   license "BSD-3-Clause"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "bc76671e8dd624f3485020886a6337fd889a9d53249377b49c452523290e93ca"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # 上游 universal 包内含 x86_64 切片，满足 Intel 要求。

@@ -4,16 +4,12 @@ class Libplist < Formula
   # 代编译模式（见 AGENTS.md 6 节 qemu 链规则）：上游只发源码，无 macOS 预编译，
   # CI 在 macos-26-intel 现编出瓶；生态扇入 10 但依赖方全是 idevice 系叶子，
   # 无枢纽依赖方，故自瓶（libtasn1/openssl@4 那种才留 core）。
-  url "https://github.com/libimobiledevice/libplist/releases/download/2.8.0/libplist-2.8.0.tar.bz2"
-  sha256 "b1f59f7634c58b2481325a23ff4e3bf51574a42d868cbe466d2b39b04550752a"
+  url "https://github.com/libimobiledevice/libplist/releases/download/2.8.1/libplist-2.8.1.tar.bz2"
+  sha256 "2a1792e5820e1657c173735fde75baeebd6dd967d2ac47be1e3891ddc64ebefa"
   license "LGPL-2.1-or-later"
   compatibility_version 2
   head "https://github.com/libimobiledevice/libplist.git", branch: "master"
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "7646298061a3183118bef898ff922a89e7f8ecca653f8227202e3cfab144c3e0"
-  end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on "autoconf" => :build
