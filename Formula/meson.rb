@@ -15,7 +15,8 @@ class Meson < Formula
   depends_on macos: :tahoe
 
   def install
-    system python3, "-m", "pip", "install", *std_pip_args(build_isolation: true), "."
+    python = formula_opt_bin("bemly/tahoe/python@3.15")/"python3.15"
+    system python, "-m", "pip", "install", *std_pip_args(build_isolation: true), "."
 
     bash_completion.install "data/shell-completions/bash/meson"
     zsh_completion.install "data/shell-completions/zsh/_meson"
@@ -24,7 +25,7 @@ class Meson < Formula
 
     # Make the bottles uniform. This also ensures meson checks `HOMEBREW_PREFIX`
     # for fulfilling dependencies rather than just `/usr/local`.
-    mesonbuild = prefix/Language::Python.site_packages(python3)/"mesonbuild"
+    mesonbuild = prefix/Language::Python.site_packages(python)/"mesonbuild"
     usr_local_files = %w[
       compilers/mixins/apple.py
       coredata.py
