@@ -27,10 +27,11 @@ struct KonsoleCheck {
             formulaPath: "Casks",
             isCask: true,
             customRelease: {
-                // 纯 Foundation 同步抓取（无 curl 重试；失败返回 nil 由核心 fail 明示）
+                // 走核心 curlText（30s 超时 + 2 次重试）：Foundation 的
+                // String(contentsOf:) 无超时，runner 上卡住会让整个 watcher 挂死。
                 func buildNumbers(_ arch: String) -> [Int] {
-                    guard let url = URL(string: "https://cdn.kde.org/ci-builds/utilities/konsole/master/macos-\(arch)/"),
-                          let html = try? String(contentsOf: url, encoding: .utf8) else { return [] }
+                    let (status, html) = curlText("https://cdn.kde.org/ci-builds/utilities/konsole/master/macos-\(arch)/")
+                    guard status == 0, !html.isEmpty else { return [] }
                     let pattern = "konsole-master-(\\d+)-macos-clang-\(arch)\\.dmg"
                     guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
                     let range = NSRange(html.startIndex..<html.endIndex, in: html)

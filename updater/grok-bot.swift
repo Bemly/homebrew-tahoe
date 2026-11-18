@@ -26,9 +26,10 @@ struct GrokBotCheck {
             formulaPath: "Casks",
             isCask: true,
             customRelease: {
-                // 纯 Foundation 同步抓取（无 curl 重试；失败返回 nil 由核心 fail 明示）
-                guard let url = URL(string: "https://cursor.com/cn/download/bot"),
-                      let html = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+                // 走核心 curlText（30s 超时 + 2 次重试）：Foundation 的
+                // String(contentsOf:) 无超时，runner 上卡住会让整个 watcher 挂死。
+                let (status, html) = curlText("https://cursor.com/cn/download/bot")
+                guard status == 0, !html.isEmpty else { return nil }
                 let pattern = "darwin-x64/([0-9]+\\.[0-9]+\\.[0-9]+)/Grok_Bot_"
                 guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
                 let range = NSRange(html.startIndex..<html.endIndex, in: html)

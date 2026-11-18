@@ -65,7 +65,9 @@ jobs:
             out="$(mktemp)"
             # UpdaterCore.swift 是共享核心（无入口），<name>.swift 是唯一 @main 入口
             swiftc -O -o "/tmp/check-$f" "updater/UpdaterCore.swift" "updater/$f.swift"
-            GITHUB_OUTPUT="$out" "/tmp/check-$f" || true
+            # 兜底超时：任何检查器（含上游页面抓取）卡死都不能挂住整个 watcher；
+            # 超时等同无 status，走下面的 failed 兜底分支还原文件并公示。
+            GITHUB_OUTPUT="$out" timeout 600 "/tmp/check-$f" || true
             status="$(grep '^status=' "$out" | cut -d= -f2 || true)"
             # —— 静默失败兜底：检查器没有回 status 行（自检 fail 直接 exit 1、
             # 编译后崩溃、GITHUB_OUTPUT 没写上），绝不能当"无需更新"吃掉——
