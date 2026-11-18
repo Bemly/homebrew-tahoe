@@ -11,6 +11,11 @@ class ForkMpdecimal < Formula
     regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "eb21df42dabf2f8241ab0c334d98f5d5ce7129e0d63076b4fc35766e3c4235fd"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

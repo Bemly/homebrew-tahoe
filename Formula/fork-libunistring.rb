@@ -8,6 +8,11 @@ class ForkLibunistring < Formula
   license any_of: ["GPL-2.0-or-later", "LGPL-3.0-or-later"]
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e5eb1377332fbc3d408f550183108967b1ff2ee98a3cf323db41dbdf081c8610"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

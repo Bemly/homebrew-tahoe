@@ -7,6 +7,11 @@ class ForkNettle < Formula
   license any_of: ["GPL-2.0-or-later", "LGPL-3.0-or-later"]
   compatibility_version 2
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "75f66b925c5accb0ade1a8134301b355f6031468985c6a9a4538c6a8e583fd1c"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

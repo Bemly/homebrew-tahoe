@@ -13,6 +13,11 @@ class ForkJsonC < Formula
     regex(/^json-c[._-](\d+(?:\.\d+)+)(?:[._-]\d{6,8})?$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "06c92338eecdf3bbb4e5ffaa96c6089ee8d260c1b77fa740481367db02d49b85"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "cmake" => :build

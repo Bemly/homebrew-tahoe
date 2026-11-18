@@ -15,6 +15,11 @@ class ForkBrotli < Formula
     regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "6f818c2f5a87005b6c4a3fa11a0867f6e3cdf2a775150d683f0a8aac532d13e9"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "cmake" => :build

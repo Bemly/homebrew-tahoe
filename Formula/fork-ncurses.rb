@@ -13,6 +13,11 @@ class ForkNcurses < Formula
     regex(/href=.*?ncurses[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "9ef724dfc3cac7a9b5944bdd339e09bc80b0c8574ee4d74415fcfd56a3cf7004"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

@@ -17,6 +17,11 @@ class ForkJpegTurbo < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "4c7456790ae069117d7fddd9db8c4bb8c805fb20c6483e9d1ddb0bb617fab288"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "cmake" => :build

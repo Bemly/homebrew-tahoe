@@ -11,6 +11,11 @@ class ForkLibusb < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "6b7f3c12234b49794c8075c10e3fa08688f046e796f3a5c67c733dd0677764d1"
+  end
+
   head do
     url "https://github.com/libusb/libusb.git", branch: "master"
 

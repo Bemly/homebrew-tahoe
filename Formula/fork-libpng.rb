@@ -11,6 +11,11 @@ class ForkLibpng < Formula
     regex(%r{url=.*?/libpng[._-]v?(\d+(?:\.\d+)+)\.t}i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "65aedad2041aebd5b711be3334cba9a9a5913ae284f5da47de09c39c3c606755"
+  end
+
   head do
     url "https://github.com/pnggroup/libpng.git", branch: "libpng16"
 

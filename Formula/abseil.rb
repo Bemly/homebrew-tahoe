@@ -1,5 +1,10 @@
 class Abseil < Formula
   depends_on arch: :x86_64
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "788243a32e65581b487b25416675886a29ddf01c3831e984aa43797e52d5f00e"
+  end
   depends_on macos: :tahoe
   desc "C++ Common Libraries"
   homepage "https://abseil.io"

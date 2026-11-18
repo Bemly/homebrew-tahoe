@@ -13,6 +13,11 @@ class ForkCAres < Formula
     regex(/href=.*?c-ares[._-](\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "8c28be1c31aaeff1c654d20c58a8d8b17c947b8b011ebdf125439ee9b004c193"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "cmake" => :build

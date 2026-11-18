@@ -15,6 +15,11 @@ class ForkLz4 < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "b779305359c32e70d7e9153d0440787445d6d20ecaf72ee3d409c29dd7e81615"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "cmake" => :build

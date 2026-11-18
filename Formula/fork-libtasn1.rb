@@ -7,6 +7,11 @@ class ForkLibtasn1 < Formula
   license "LGPL-2.1-or-later"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "17fe673a0c54ca7670336160a49906b414c1e42a7f53e00805d3aa03cf10ac93"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

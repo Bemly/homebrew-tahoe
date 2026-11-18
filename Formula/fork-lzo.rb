@@ -11,6 +11,11 @@ class ForkLzo < Formula
     regex(/href=.*?lzo[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "3142c2fccb9c327060a8db52f34c8d120623ff1ad60d09624930f521b6da5b94"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
