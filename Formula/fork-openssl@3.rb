@@ -13,7 +13,7 @@ class ForkOpensslAT3 < Formula
     regex(/href=.*?openssl[._-]v?(3\.5(?:\.\d+)+)\.t/i)
   end
 
-  keg_only :versioned_formula
+  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   deprecate! date: "2030-04-08", because: :unmaintained
 
