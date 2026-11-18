@@ -13,7 +13,7 @@ class Protobuf < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "c086773c632a13c9cec363273e91d0ef0d9fbbf731df620c4788f3de3e85adcd"
+    sha256 cellar: :any, tahoe: "2fbff63bcab13748ae9d3dd7914ff6c4b383da265a6be5fd0fc0afab5688330f"
   end
 
   depends_on "cmake" => :build

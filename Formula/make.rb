@@ -9,7 +9,7 @@ class Make < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "a6bb00e54259a13ad5e26ac96eb00a1bca8cc35a6813df783e83ff8ab2bc006a"
+    sha256 tahoe: "4439873b5cd83df287edfce177e34ceda31eb210b65e0270db2b5cee8178f492"
   end
 
   head do
