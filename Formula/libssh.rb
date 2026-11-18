@@ -1,10 +1,6 @@
 class Libssh < Formula
   depends_on arch: :x86_64
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "ab438b96d39a92978641ca2b4436f1662e585c56557bf6f9289d952e0e753bbf"
-  end
   depends_on macos: :tahoe
   desc "C library SSHv1/SSHv2 client and server protocols"
   homepage "https://www.libssh.org/"

@@ -13,10 +13,6 @@ class ForkGlib < Formula
     regex(/glib[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "0c682f6536d0ffb36b3227bc797592933e7d4780cf5852d3aaba9facd89fb8bf"
-  end
 
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
@@ -64,7 +60,7 @@ class ForkGlib < Formula
 
   resource "gobject-introspection" do
     url "https://download.gnome.org/sources/gobject-introspection/1.86/gobject-introspection-1.86.0.tar.xz"
-    sha256 "920d1a3fcedeadc32acff95c2e203b319039dd4b4a08dd1a2dfd283d19c0b9ae"
+    sha256 "93c941aa17d5eb1d53fe838365f29a8b4e539c222a256d974ec8f30fc413e396"
 
     livecheck do
       formula "gobject-introspection"

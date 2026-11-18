@@ -1,6 +1,6 @@
 cask "toshllm" do
-  version "0.87.34"
-  sha256 "c31752518b16501f3aeeafc237a10b6ebb2db5bc7984cbc4c50e406be0fd225c"
+  version "0.88.0"
+  sha256 "e4a58189e618dc765374088b123672e46cbf8e7f2a8d7906a078b4d134ef24bb"
 
   # 镜像到本仓 Release（tag toshllm-<ver>，资产名沿用上游 basename
   # ToshLLM-v<ver>.dmg）：本 tap 政策是所有 cask 都镜像最新版；
@@ -11,7 +11,7 @@ cask "toshllm" do
   # 注意：watcher 的镜像流会把 url 整条换成字面版本（无 #{...} 插值），
   # 而 audit 的 unversioned 检查要求 url 行必须含插值——写回后须手动改回
   # 上面的双插值形态再提交（mirage-wallpaper 同例，见 AGENTS 11.34）。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/toshllm-#{version}/ToshLLM-v#{version}.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/toshllm-0.88.0/ToshLLM-v0.88.0.dmg"
   name "ToshLLM"
   desc "Run local LLMs on Intel hardware with AMD GPU acceleration"
   homepage "https://github.com/engeldlgado/toshllm"

@@ -4,14 +4,10 @@ class LlvmMingw < Formula
   # 上游 mstorsjo/llvm-mingw 的 macOS universal 预编译（x86_64+arm64 双切片，Intel 走 x86_64 切片）。
   # 只收 Intel host 段：本机 Intel Tahoex64 原生运行，target 覆盖 x86_64/aarch64-windows（winX64/winA64）。
   # 日期版本号（20261020）无点分段，brew 可扫出故不写 version 行；UpdaterCore 靠日期回退解析（见头注）。
-  url "https://github.com/mstorsjo/llvm-mingw/releases/download/20261104/llvm-mingw-20261104-ucrt-macos-universal.tar.xz"
-  sha256 "66cbd5178c4a71b0d473e68ede172f8eb7d15d023e67f39201d0a69e21f6bf3c"
+  url "https://github.com/mstorsjo/llvm-mingw/releases/download/20261117/llvm-mingw-20261117-ucrt-macos-universal.tar.xz"
+  sha256 "98d340bbb8d46b09ad6886ffba88bd9d5415e131c316de48e6bd7647377446aa"
   license "Apache-2.0" => { with: "LLVM-exception" }
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "739cc97901f7e2defea642034c59f1745f4db337cd919798355f22b5ac45154d"
-  end
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
