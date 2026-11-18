@@ -74,7 +74,7 @@ class ForkGlib < Formula
   deny_network_access!
 
   def install
-    setuptools_site = Dir[Formula["python-setuptools"].opt_lib/"python3*/site-packages"].first
+    setuptools_site = Dir[formula_opt_lib("python-setuptools")/"python3*/site-packages"].first
     ENV.prepend_path "PYTHONPATH", setuptools_site if setuptools_site
     # Avoid the sandbox violation when an empty directory is created outside of the formula prefix.
     inreplace "gio/meson.build", "install_emptydir(glib_giomodulesdir)", ""
