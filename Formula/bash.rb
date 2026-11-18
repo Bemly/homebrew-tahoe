@@ -91,6 +91,11 @@ class Bash < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "5b120d260f3b982483eda6715c155a723dd9098b9ca4f327e053ae6cae1718d2"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-ncurses"
   depends_on "bemly/tahoe/fork-readline"

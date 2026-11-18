@@ -5,6 +5,11 @@ class Aria2 < Formula
   sha256 "60a420ad7085eb616cb6e2bdf0a7206d68ff3d37fb5a956dc44242eb2f79b66b"
   license "GPL-2.0-or-later"
   revision 3
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "522218dd8b171a92eaee011972a2e8100ffc86fc134cdae48009d2521e700acc"
+  end
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-c-ares"

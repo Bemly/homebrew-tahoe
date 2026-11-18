@@ -7,6 +7,11 @@ class Automake < Formula
   license "GPL-3.0-or-later"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "cae4f1caf3cf59d59f937e83072211aebe4c07cac6125a573e0fe9d9804c15d2"
+  end
+
   depends_on arch: :x86_64
   depends_on "autoconf"
   depends_on macos: :tahoe
