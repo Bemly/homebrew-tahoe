@@ -1,22 +1,22 @@
 class Snappy < Formula
-  depends_on arch: :x86_64
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "84fed176bba3874ee5adce3b1e18e6c427bcb63c86c1844ce4c6c9aa32585a20"
-  end
-  depends_on macos: :tahoe
   desc "Compression/decompression library aiming for high speed"
   homepage "https://google.github.io/snappy/"
   url "https://github.com/google/snappy/archive/refs/tags/1.3.1.tar.gz"
   sha256 "893f708a0bf4b5529d555ffcee390e940e932fcf90261f682604475a76cd0247"
   license "BSD-3-Clause"
   compatibility_version 1
+
   head "https://github.com/google/snappy.git", branch: "main"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "84fed176bba3874ee5adce3b1e18e6c427bcb63c86c1844ce4c6c9aa32585a20"
+  end
 
-  depends_on "cmake" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "cmake" => :build
+  depends_on arch: :x86_64
+  depends_on macos: :tahoe
 
   # Fix issue where `snappy` setting -fno-rtti causes build issues on `folly`
   # `folly` issue ref: https://github.com/facebook/folly/issues/1583

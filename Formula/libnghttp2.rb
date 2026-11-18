@@ -1,18 +1,9 @@
 class Libnghttp2 < Formula
-  depends_on arch: :x86_64
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "4eb398ffb6cc2d0a73308f05d7ec34d5cf3fb464ebc7237f132a0f6321efe0c8"
-  end
-  depends_on macos: :tahoe
   desc "HTTP/2 C Library"
   homepage "https://nghttp2.org/"
   url "https://github.com/nghttp2/nghttp2/releases/download/v1.71.0/nghttp2-1.71.0.tar.gz"
   mirror "http://fresh-center.net/linux/www/nghttp2-1.71.0.tar.gz"
   mirror "http://fresh-center.net/linux/www/legacy/nghttp2-1.71.0.tar.gz"
-  # this legacy mirror is for user to install from the source when https not working for them
-  # see discussions in here, https://github.com/Homebrew/homebrew-core/pull/133078#discussion_r1221941917
   sha256 "0cdd35ecec77919b4b7b245f87fe8d2216e3d62da854eb0838c594ff058042fc"
   license "MIT"
   compatibility_version 1
@@ -21,6 +12,10 @@ class Libnghttp2 < Formula
     formula "nghttp2"
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "4eb398ffb6cc2d0a73308f05d7ec34d5cf3fb464ebc7237f132a0f6321efe0c8"
+  end
 
   head do
     url "https://github.com/nghttp2/nghttp2.git", branch: "master"
@@ -31,6 +26,10 @@ class Libnghttp2 < Formula
   end
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on arch: :x86_64
+  depends_on macos: :tahoe
+  # this legacy mirror is for user to install from the source when https not working for them
+  # see discussions in here, https://github.com/Homebrew/homebrew-core/pull/133078#discussion_r1221941917
 
   # These used to live in `nghttp2`.
   link_overwrite "include/nghttp2"
