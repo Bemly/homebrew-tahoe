@@ -270,6 +270,17 @@ jobs:
             # 只有确定可被卸载、不会被生态其他包依赖的包才自己制瓶，
             # 生态枢纽包（openssl@3 / glib / gettext 等）一律走 core 不进本 tap。
             brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
+            # fork-* 依赖的 core 对应包是同名 keg 冲突源：runner 预装的 core 版
+            # （实测 openssl@3 3.6.3 占着 bin/openssl、bin/c_rehash）会让本 tap
+            # fork 包的 link 步骤失败。先记下它的链接，强卸后把残留链接清掉。
+            if [[ "$f" == fork-* ]]; then
+              core="${f#fork-}"
+              core_links="$(brew list "$core" 2>/dev/null | grep -E '^(bin|include)/' || true)"
+              brew uninstall --force --ignore-dependencies "$core" >/dev/null 2>&1 || true
+              for rel in $core_links; do
+                rm -f "${BREW_PREFIX}/${rel}" >/dev/null 2>&1 || true
+              done
+            fi
             # 构建工具走 PATH（llvm/z3，见 AGENTS.md 11.51）：公式里用 system "cmake"
             # 但刻意不声明 cmake 依赖——树里已有 python 拖入的裸 cmake，再挂全名会让
             # 同一 Cellar 名以两个 full_name 进锁数组，macOS flock 同进程双开自锁。
