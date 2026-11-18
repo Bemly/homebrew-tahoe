@@ -98,6 +98,7 @@ class Qemu < Formula
     # obtain sensible runtime errors. This will also be compatible with
     # Samba installations from external taps.
     args << "--smbd=#{HOMEBREW_PREFIX}/sbin/samba-dot-org-smbd"
+    args << "--python=#{formula_opt_bin("bemly/tahoe/fork-python@3.14")/"python3.14"}"
 
     # The arm64 HVF backend needs the macOS 15 SDK for its EL2 sysregs and vGIC
     args << "--disable-hvf" if OS.mac? && Hardware::CPU.arm? && MacOS.version <= :sonoma
