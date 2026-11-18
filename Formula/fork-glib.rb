@@ -76,6 +76,13 @@ class ForkGlib < Formula
   def install
     setuptools_site = Dir[formula_opt_lib("python-setuptools")/"python3*/site-packages"].first
     ENV.prepend_path "PYTHONPATH", setuptools_site if setuptools_site
+    shim = buildpath/"distutils-shim"
+    (shim/"distutils").mkpath
+    (shim/"distutils/__init__.py").write "from setuptools._distutils import *\n"
+    %w[ccompiler unixccompiler cygwinccompiler sysconfig].each do |m|
+      (shim/"distutils/#{m}.py").write "from setuptools._distutils.#{m} import *\n"
+    end
+    ENV.prepend_path "PYTHONPATH", shim
     # Avoid the sandbox violation when an empty directory is created outside of the formula prefix.
     inreplace "gio/meson.build", "install_emptydir(glib_giomodulesdir)", ""
 
