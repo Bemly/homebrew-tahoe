@@ -62,7 +62,7 @@ class Guile < Formula
     # Homebrew automatically removing Cellar paths from .pc files in favour
     # of opt_prefix usage everywhere.
     inreplace lib/"pkgconfig/guile-3.0.pc" do |s|
-      s.gsub! Formula["bdw-gc"].prefix.realpath, formula_opt_prefix("bemly/tahoe/fork-bdw-gc")
+      s.gsub! Formula["bemly/tahoe/fork-bdw-gc"].prefix.realpath, formula_opt_prefix("bemly/tahoe/fork-bdw-gc")
       s.gsub! Formula["libffi"].prefix.realpath, formula_opt_prefix("libffi") unless OS.mac?
     end
 
