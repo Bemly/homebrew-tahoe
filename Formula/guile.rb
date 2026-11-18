@@ -1,5 +1,10 @@
 class Guile < Formula
   depends_on arch: :x86_64
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "78fe73dd65594db9b901ebbd8e4a741791d311a012f608e4e7a4a89c5f0b1784"
+  end
   depends_on macos: :tahoe
   desc "GNU Ubiquitous Intelligent Language for Extensions"
   homepage "https://www.gnu.org/software/guile/"

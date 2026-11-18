@@ -1,5 +1,10 @@
 class Libev < Formula
   depends_on arch: :x86_64
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "1795d5fa5992739d8e76f9d279863c01285a586f8b35f6444ea7696ef5a2b0f2"
+  end
   depends_on macos: :tahoe
   desc "Asynchronous event library"
   homepage "https://software.schmorp.de/pkg/libev.html"

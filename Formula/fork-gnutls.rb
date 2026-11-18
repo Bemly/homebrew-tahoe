@@ -28,6 +28,11 @@ class ForkGnutls < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "1a79e0bbeaefe4f266a3204477fcece220d39b9594388a5172d0ac60e0f40e7a"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build

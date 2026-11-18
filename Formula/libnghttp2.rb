@@ -1,5 +1,10 @@
 class Libnghttp2 < Formula
   depends_on arch: :x86_64
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "4eb398ffb6cc2d0a73308f05d7ec34d5cf3fb464ebc7237f132a0f6321efe0c8"
+  end
   depends_on macos: :tahoe
   desc "HTTP/2 C Library"
   homepage "https://nghttp2.org/"

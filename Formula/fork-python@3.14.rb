@@ -11,6 +11,11 @@ class ForkPythonAT314 < Formula
     regex(%r{href=.*?/Python[._-]v?(3\.14(?:\.\d+)*)\.t}i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "4a7b6d0af21624f551719e472ee2b862e18f3ad79620167245889951921f3c66"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   deprecate! date: "2030-11-01", because: :deprecated_upstream

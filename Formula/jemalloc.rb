@@ -1,5 +1,10 @@
 class Jemalloc < Formula
   depends_on arch: :x86_64
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "dde18f1129d5fe27f36fdcb7e29e8d3aa7b8d952c4a41dc9f62dfc6cac21f25c"
+  end
   depends_on macos: :tahoe
   desc "Implementation of malloc emphasizing fragmentation avoidance"
   homepage "https://jemalloc.net/"

@@ -1,5 +1,10 @@
 class Libyaml < Formula
   depends_on arch: :x86_64
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "72c3b129545e93a1e6ddb7857ca14b9c490e266f63c4815aad4638a225e2d552"
+  end
   depends_on macos: :tahoe
   desc "YAML Parser"
   homepage "https://github.com/yaml/libyaml"

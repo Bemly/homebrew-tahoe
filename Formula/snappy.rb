@@ -1,5 +1,10 @@
 class Snappy < Formula
   depends_on arch: :x86_64
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "84fed176bba3874ee5adce3b1e18e6c427bcb63c86c1844ce4c6c9aa32585a20"
+  end
   depends_on macos: :tahoe
   desc "Compression/decompression library aiming for high speed"
   homepage "https://google.github.io/snappy/"
