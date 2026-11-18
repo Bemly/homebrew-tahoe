@@ -8,6 +8,11 @@ class Simdjson < Formula
 
   head "https://github.com/simdjson/simdjson.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "369c448fb3212f09a7788f0496d50a6268a584df7500ec78ba772dfd3d2be81a"
+  end
+
   depends_on "cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe

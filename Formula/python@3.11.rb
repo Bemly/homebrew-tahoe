@@ -11,6 +11,11 @@ class PythonAT311 < Formula
     regex(%r{href=.*?/Python[._-]v?(3\.11(?:\.\d+)*)\.t}i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "496e9b28d2e8df4a96d9b88e60435ce5c5c2b5a90887031165df135278d02af5"
+  end
+
   deprecate! date: "2027-11-01", because: :deprecated_upstream
 
   disable! date: "2028-11-01", because: :deprecated_upstream
