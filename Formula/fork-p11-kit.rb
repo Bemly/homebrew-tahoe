@@ -8,6 +8,11 @@ class ForkP11Kit < Formula
 
   head "https://github.com/p11-glue/p11-kit.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "e1eb188b9f2819b620137e5c16ac6b89014024beb130052051cecf92f5e8fdd3"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build

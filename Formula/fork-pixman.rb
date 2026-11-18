@@ -11,6 +11,11 @@ class ForkPixman < Formula
     regex(/href=.*?pixman[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e6a1a4db5a31b537d83072a87e919974327789c7771ad99580340bdf51f43269"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "meson" => :build
