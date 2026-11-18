@@ -138,7 +138,7 @@ class ForkLibssh2 < Formula
 
   deny_network_access!
 
-  def openssl = deps.map(&:name).find { |d| d.match?(/^openssl(@\d+(\.\d+)*)?$/) }
+  def openssl = deps.map(&:name).find { |d| d.match?(%r{openssl(@\d+(\.\d+)*)?$}) }
 
   def install
     args = %W[
