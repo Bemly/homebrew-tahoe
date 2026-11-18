@@ -249,6 +249,14 @@ jobs:
             done
             rm -f "${BREW_PREFIX}/share/man/man1/node.1"
 
+            # macOS 自带/官网 Python 3.11 在 /usr/local/bin 留下的链接会阻塞
+            # 本 tap python@3.11 的 link 步骤（同 node 家族，runner 一次性环境）。
+            if [[ "$f" == "python@3.11" ]]; then
+              for b in 2to3-3.11 idle3.11 pydoc3.11 python3.11 python3.11-config; do
+                rm -f "${BREW_PREFIX}/bin/${b}"
+              done
+            fi
+
             # 全名依赖的同名 keg 冲突（2026-10-20 wabt 首例，node@24 预装同型，
             # 见 AGENTS.md 11.10）：macos-26-intel 镜像预装了 core 的 cmake 同名
             # keg，而 wabt 声明 depends_on "bemly/tahoe/cmake" => :build ——
