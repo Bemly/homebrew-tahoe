@@ -19,6 +19,11 @@ class ForkLibidn2 < Formula
     regex(/href=.*?libidn2[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "49703590dcc38be30ce56b17bde3f9908fc877bcd2f0ac4dd33bef32ffb54f89"
+  end
+
   head do
     url "https://gitlab.com/libidn/libidn2.git", branch: "master"
 

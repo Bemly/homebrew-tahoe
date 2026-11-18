@@ -13,6 +13,11 @@ class ForkGlib < Formula
     regex(/glib[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "0c682f6536d0ffb36b3227bc797592933e7d4780cf5852d3aaba9facd89fb8bf"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/fork-gettext" => :build

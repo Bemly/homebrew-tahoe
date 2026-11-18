@@ -8,6 +8,11 @@ class ForkLibpsl < Formula
   license "MIT"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "26db18b495e45d54bad90f86ad6ebdab768c09a069412e59606e69b15d879d4e"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
