@@ -24,27 +24,27 @@ class Qemu < Formula
   depends_on "libtool" => :build
   depends_on "meson" => :build
   depends_on "ninja" => :build
-  depends_on "pkgconf" => :build
+  depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on "python-setuptools" => :build
-  depends_on "python@3.14" => :build # keep aligned with meson
+  depends_on "bemly/tahoe/fork-python@3.14" => :build # keep aligned with meson
   depends_on "spice-protocol" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/capstone"
   depends_on "bemly/tahoe/dtc"
   depends_on "bemly/tahoe/libslirp"
   depends_on "bemly/tahoe/vde"
-  depends_on "glib"
-  depends_on "gnutls"
-  depends_on "jpeg-turbo"
-  depends_on "libpng"
-  depends_on "libssh"
-  depends_on "libusb"
-  depends_on "lzo"
+  depends_on "bemly/tahoe/fork-glib"
+  depends_on "bemly/tahoe/fork-gnutls"
+  depends_on "bemly/tahoe/fork-jpeg-turbo"
+  depends_on "bemly/tahoe/fork-libpng"
+  depends_on "bemly/tahoe/libssh"
+  depends_on "bemly/tahoe/fork-libusb"
+  depends_on "bemly/tahoe/fork-lzo"
   depends_on macos: :tahoe
-  depends_on "ncurses"
-  depends_on "pixman"
-  depends_on "snappy"
-  depends_on "zstd"
+  depends_on "bemly/tahoe/fork-ncurses"
+  depends_on "bemly/tahoe/fork-pixman"
+  depends_on "bemly/tahoe/snappy"
+  depends_on "bemly/tahoe/fork-zstd"
 
   uses_from_macos "flex" => :build
   uses_from_macos "bzip2"

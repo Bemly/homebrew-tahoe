@@ -17,7 +17,7 @@ class Protobuf < Formula
   end
 
   depends_on "cmake" => :build
-  depends_on "abseil"
+  depends_on "bemly/tahoe/abseil"
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

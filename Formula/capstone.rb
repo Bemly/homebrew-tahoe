@@ -22,7 +22,7 @@ class Capstone < Formula
   depends_on macos: :tahoe
 
   on_macos do
-    depends_on "gettext"
+    depends_on "bemly/tahoe/fork-gettext"
   end
 
   def install

@@ -14,10 +14,10 @@ class Libngtcp2 < Formula
   end
 
 
-  depends_on "pkgconf" => :build
+  depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-  depends_on "openssl@3"
+  depends_on "bemly/tahoe/fork-openssl@3"
 
   def install
     system "./configure", "--disable-silent-rules", *std_configure_args

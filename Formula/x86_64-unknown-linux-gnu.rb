@@ -17,11 +17,11 @@ class X8664UnknownLinuxGnu < Formula
   # bdw-gc/guile/python@3.14 在 core 无 x86_64_tahoe 瓶，首次安装由 core 源码构建；
   # zstd 有 tahoe 瓶秒装。gdb 另链 xz（经 python 传递，无需显式声明）。
   depends_on arch: :x86_64
-  depends_on "bdw-gc"
-  depends_on "guile"
+  depends_on "bemly/tahoe/fork-bdw-gc"
+  depends_on "bemly/tahoe/fork-python@3.14"
+  depends_on "bemly/tahoe/fork-zstd"
+  depends_on "bemly/tahoe/guile"
   depends_on macos: :tahoe
-  depends_on "python@3.14"
-  depends_on "zstd"
 
   def pre_install
     # 磁盘空间检查：压缩包 203MB，展开后约 1GB，留足余量

@@ -29,7 +29,6 @@ class Curl3 < Formula
     sha256 cellar: :any, tahoe: "be0c59b58624aa422e2c132d5272d52f68fb4f60fad9a447adf9b80b35858148"
   end
 
-
   head do
     url "https://github.com/curl/curl.git", branch: "master"
 
@@ -42,23 +41,23 @@ class Curl3 < Formula
   # 不会遮蔽系统 /usr/bin/curl；开发件已裁掉（见类注释），link 出来的全是
   # curl3 专属文件，无 shadowing。
 
-  depends_on "pkgconf" => :build
+  depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
+  depends_on "bemly/tahoe/fork-brotli"
+  depends_on "bemly/tahoe/fork-libpsl"
+  depends_on "bemly/tahoe/fork-libssh2"
+  depends_on "bemly/tahoe/fork-openssl@3"
+  depends_on "bemly/tahoe/fork-zstd"
+  depends_on "bemly/tahoe/libnghttp2"
   depends_on "bemly/tahoe/libnghttp3"
   depends_on "bemly/tahoe/libngtcp2"
-  depends_on "brotli"
-  depends_on "libnghttp2"
-  depends_on "libpsl"
-  depends_on "libssh2"
   depends_on macos: :tahoe
-  depends_on "openssl@3"
-  depends_on "zstd"
 
   uses_from_macos "krb5"
   uses_from_macos "openldap"
 
   on_system :linux, macos: :monterey_or_older do
-    depends_on "libidn2"
+    depends_on "bemly/tahoe/fork-libidn2"
   end
 
   on_linux do

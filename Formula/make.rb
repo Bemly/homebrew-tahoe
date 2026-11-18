@@ -17,7 +17,7 @@ class Make < Formula
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
-    depends_on "gettext" => :build # for autopoint
+    depends_on "bemly/tahoe/fork-gettext" => :build # for autopoint
     depends_on "libtool" => :build
     depends_on "texinfo" => :build
     depends_on "wget" => :build # used by autopull

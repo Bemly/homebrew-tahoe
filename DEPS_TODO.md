@@ -40,6 +40,9 @@
 - 可同名：8 个（`abseil`, `guile`, `jemalloc`, `libev`, `libnghttp2`, `libssh`, `libyaml`, `snappy`）
 - 需加后缀：31 个
 
+实施时另外发现：core `zstd` 自身有 Intel 瓶，但它裸依赖 `lz4`/`xz`，会把这两个依赖
+重新带回用户端源码编译，所以额外增加了 `fork-zstd`（共 40 个新公式）。
+
 ### `abseil` — 可同名
 
 - 直系 1 个：本 tap 1 个（`bemly/tahoe/protobuf`），core 0 个

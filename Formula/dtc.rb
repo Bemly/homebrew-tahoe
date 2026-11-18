@@ -20,9 +20,9 @@ class Dtc < Formula
   end
   depends_on "meson" => :build
   depends_on "ninja" => :build
-  depends_on "pkgconf" => :build
+  depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "libyaml"
+  depends_on "bemly/tahoe/libyaml"
   depends_on macos: :tahoe
 
   uses_from_macos "bison" => :build

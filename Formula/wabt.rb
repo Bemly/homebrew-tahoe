@@ -33,7 +33,7 @@ class Wabt < Formula
   depends_on arch: :x86_64
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-  depends_on "openssl@4"
+  depends_on "bemly/tahoe/fork-openssl@4"
 
   uses_from_macos "python" => :build
 

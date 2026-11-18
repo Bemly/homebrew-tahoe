@@ -21,9 +21,9 @@ class Libslirp < Formula
 
   depends_on "meson" => :build
   depends_on "ninja" => :build
-  depends_on "pkgconf" => :build
+  depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "glib"
+  depends_on "bemly/tahoe/fork-glib"
   depends_on macos: :tahoe
 
   def install
