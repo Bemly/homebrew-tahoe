@@ -86,7 +86,7 @@ class Git < Formula
     ENV["PERL_PATH"] = which("perl")
     ENV["USE_LIBPCRE2"] = "1"
     ENV["INSTALL_SYMLINKS"] = "1"
-    ENV["LIBPCREDIR"] = formula_opt_prefix("pcre2")
+    ENV["LIBPCREDIR"] = formula_opt_prefix("bemly/tahoe/fork-pcre2")
     ENV["V"] = "1" # build verbosely
 
     perl_version = Utils.safe_popen_read("perl", "--version")[/v(\d+\.\d+)(?:\.\d+)?/, 1]
@@ -118,7 +118,7 @@ class Git < Formula
     args += if OS.mac?
       %w[NO_OPENSSL=1 APPLE_COMMON_CRYPTO=1]
     else
-      openssl_prefix = formula_opt_prefix("openssl@4")
+      openssl_prefix = formula_opt_prefix("bemly/tahoe/fork-openssl@4")
 
       %W[NO_APPLE_COMMON_CRYPTO=1 OPENSSLDIR=#{openssl_prefix}]
     end

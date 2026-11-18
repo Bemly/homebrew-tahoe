@@ -678,8 +678,8 @@ class Swift < Formula
         end
         args << "--extra-llvm-cmake-options=#{extra_llvm_cmake_options.join(" ")}"
 
-        ENV.remove "HOMEBREW_LIBRARY_PATHS", formula_opt_lib("sqlite")
-        ENV.remove "PKG_CONFIG_PATH", formula_opt_lib("sqlite")/"pkgconfig"
+        ENV.remove "HOMEBREW_LIBRARY_PATHS", formula_opt_lib("bemly/tahoe/fork-sqlite")
+        ENV.remove "PKG_CONFIG_PATH", formula_opt_lib("bemly/tahoe/fork-sqlite")/"pkgconfig"
       end
       if OS.linux?
         # List of valid values in class StdlibDeploymentTarget in
