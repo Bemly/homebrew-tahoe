@@ -28,7 +28,8 @@ class Mercurial < Formula
   allow_network_access! :build
 
   def install
-    system python3, "-m", "pip", "install", *std_pip_args(build_isolation: true), "."
+    system formula_opt_bin("bemly/tahoe/python@3.15")/"python3.15", "-m", "pip", "install",
+*std_pip_args(build_isolation: true), "."
 
     # Install chg (see https://www.mercurial-scm.org/wiki/CHg)
     system "make", "-C", "contrib/chg", "install", "PREFIX=#{prefix}", "HGPATH=#{bin}/hg", "HG=#{bin}/hg"
