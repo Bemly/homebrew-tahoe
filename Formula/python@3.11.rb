@@ -105,7 +105,7 @@ class PythonAT311 < Formula
 
   def python3 = bin/"python#{version.major_minor}"
 
-  def openssl = deps.map(&:name).find { |d| d.match?(/^openssl(@\d+(\.\d+)*)?$/) }
+  def openssl = deps.map(&:name).find { |d| d.match?(/openssl@\d/) }
 
   def install
     # Unset these so that installing pip and setuptools puts them where we want
