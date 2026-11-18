@@ -99,7 +99,7 @@ class PythonAT315 < Formula
   deny_network_access!
 
   def install
-    openssl = deps.find { |dep| dep.name.start_with?("openssl@") }.name
+    openssl = deps.find { |dep| dep.name.match?(/openssl@\d/) }.name
     # Unset these so that installing pip and setuptools puts them where we want
     # and not into some other Python the user has installed.
     ENV["PYTHONHOME"] = nil
