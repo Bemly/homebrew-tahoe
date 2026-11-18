@@ -105,7 +105,7 @@ class ForkGlib < Formula
     ENV.append_path "PATH", staging_dir/"bin"
 
     resource("gobject-introspection").stage do
-      shim = Pathname("distutils-shim")
+      shim = Pathname.pwd/"distutils-shim"
       (shim/"distutils").mkpath
       (shim/"distutils/__init__.py").write "from setuptools._distutils import *\n"
       %w[ccompiler unixccompiler cygwinccompiler sysconfig].each do |m|
