@@ -19,6 +19,11 @@ class Git < Formula
     regex(/href=.*?git[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "61c5d9a9672e22c89ac9320b4c928deb341a0d32828cebb6d754015e703e3586"
+  end
+
   depends_on "bemly/tahoe/fork-gettext" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
