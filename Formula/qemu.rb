@@ -16,7 +16,7 @@ class Qemu < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "047bd1eec09559f949430bc779e701d0727396540bff01a319307d028e9d9657"
+    sha256 tahoe: "3e0ed997e69ab19c745706ee676e2b93bb4d685295e5164274ab34150473dd25"
   end
 
 
