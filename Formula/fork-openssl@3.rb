@@ -13,6 +13,11 @@ class ForkOpensslAT3 < Formula
     regex(/href=.*?openssl[._-]v?(3\.5(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "5cc0286f0842c729a81e097b73c050ec7806d5d576f56f9f09129ba22f5fde5d"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   deprecate! date: "2030-04-08", because: :unmaintained

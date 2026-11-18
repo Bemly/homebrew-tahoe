@@ -12,6 +12,11 @@ class ForkOpensslAT4 < Formula
     regex(/href=.*?openssl[._-]v?(4(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "148a0210baed20d5a8b3a161e5ce29eb6f3ecfbd6d87da705fd384f4ea02495f"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

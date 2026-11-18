@@ -15,6 +15,11 @@ class ForkSqlite < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "1edcefc4fcb7990dce429d23c9348821698eb5edd4b8aa972a95db280c4644d3"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

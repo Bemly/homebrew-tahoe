@@ -13,6 +13,11 @@ class ForkPkgconf < Formula
     regex(/href=.*?pkgconf[._-]v?(\d+\.\d+(?:\.[1-8]?\d(?:\.\d+)*)?)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "64bc404def052824ce9e284a528d2442feb87019fcb8bc9a90aaaf40885e38f4"
+  end
+
   head do
     url "https://github.com/pkgconf/pkgconf.git", branch: "main"
 

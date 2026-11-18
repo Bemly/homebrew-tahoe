@@ -44,6 +44,11 @@ class ForkReadline < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "02850ef25456231e9fba152708a6613f211c5788c67e148ca36509e3bf5b035b"
+  end
+
   keg_only :shadowed_by_macos, "macOS provides BSD libedit"
 
   depends_on arch: :x86_64

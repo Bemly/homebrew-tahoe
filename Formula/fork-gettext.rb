@@ -10,6 +10,11 @@ class ForkGettext < Formula
   ]
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "f94e1b875991c4268ec2d3bf95bc9b321c12cff4e537c9e2f9b376732efaf767"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64

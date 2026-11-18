@@ -11,6 +11,11 @@ class ForkPcre2 < Formula
     regex(/^pcre2[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "a8a43fcd6829276041a6eef2523758b4390dcc8af698317c75abadb1ba6b0f9f"
+  end
+
   head do
     url "https://github.com/PCRE2Project/pcre2.git", branch: "main"
 

@@ -13,6 +13,11 @@ class ForkXz < Formula
 
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "114189334977701fb44f2648f822979d4dbc27f27ef8fb228f09a02e021fd0f3"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
