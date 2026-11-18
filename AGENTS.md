@@ -217,7 +217,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `afm` | 2026.09.15 | cask——AFM拼音输入法，**arm64-only（本 tap 首个破例，见 §1）**；zip 单顶层 `AFM拼音.app`（ditto 打包，unzip 解包保留 NFC 字节，见 11.40），用户级 `~/Library/Input Methods` 安装 + postflight_steps 自动启用输入源；镜像到本仓 Release（`afm-<ver>`）；**不检查更新**（无 updater/afm.swift） | 已收录 |
 | `amd` | 2026.09.18 | cask——自有软件 AMD-Pastis-Bartender（歌词汉化下载器）；上游只有源码 tag、无 release 资产，本地 xcodebuild 出 universal 包后镜像到本仓 Release（`amd-<ver>`，zip 含 `.app` + `obcli` 双顶层）；`app` + `binary` 双产物，ad-hoc 签名；frida 静态链接、装机零依赖（见 11.41）；**不检查更新**（无 updater/amd.swift） | 已收录 |
 | `blender-5x` | 5.2.2 | cask——jaguarus83 的 Blender 5.x Intel 构建（`Blender-<ver>-macOS-x86_64-AMD.dmg`，thin x86_64，未签名），**Intel-only（本 tap 首个 `arch: :x86_64` 门槛 cask）**；镜像到本仓 Release（`blender-5x-<ver>`）；检查器 github 流（tag `v` 前缀，资产名不稳定、改名即 upstream-missing，见 11.42） | 已收录 |
-| `dsh-gui` | 2026.10.09（镜像日期） | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；`dsh-latest-macos-x64.dmg` 浮动直链，thin x86_64，公证签名零拦截）；版本即镜像日（UTC，浮动上游无版本信号，见 11.43）；镜像到本仓 Release（`dsh-gui-<ver>`）；检查器 customRelease + `alwaysUpdate` 必触发（每次检查必走完全链路） | 已收录 |
+| `dsh-gui` | 0.2.1-rc.4 | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；thin x86_64，公证签名零拦截）；版本来自上游 nightly feed（`dsh-desk/feeds/mac-x64/nightly-mac.yml`），dmg 按同版本模板 `dsh-desk/bin/mac-x64/deepseek-harness-<ver>-mac-x64.dmg`；按版本判新（不再 alwaysUpdate），镜像到本仓 Release（`dsh-gui-<ver>`） | 已收录 |
 | `cmake` | 4.4.4 | 官方 `cmake-<ver>-macos-universal.tar.gz`（universal 双切片；core 无 Intel 瓶，Tier 3 只能源码编，见 11.44）；主 url 用 Kitware GitHub（避版本目录段坑），cmake.org 作 http(s) 双镜像；`install` 尾部做 file 架构 + `--version` 自检（`post_install` 已废弃）；检查器 brew 流模板式（sha 走官方 `SHA-256.txt` 精确匹配） | 已收录 |
 | `grok-bot` | 0.68.1 | cask——Cursor Grok Bot 桌面 agent（`Grok_Bot_<ver>_x64.dmg`，thin x86_64，公证签名零拦截）；**Intel-only**；镜像到本仓 Release（`grok-bot-<ver>`）；检查器 customRelease 抓 cursor 下载页的 Intel 行判新（页内另有无关版本，必须锚定，见 11.45） | 已收录 |
 | `scrcpy` | 5.0.1 | 官方 `scrcpy-macos-x86_64-v<ver>.tar.gz`（thin x86_64，SDL/ffmpeg 静态链入，零 brew 依赖；附 universal adb + 设备端 scrcpy-server；见 11.47）；整包进 libexec（扁平布局不可拆，server 按执行文件定位）+ `bin` wrapper；core 在 Intel 无瓶且依赖树（openssl@4/python@3.15/ffmpeg…）全源码编；检查器 brew 模板流（sha 走官方 `SHA2-256SUMS`） | 已收录 |
@@ -1493,17 +1493,18 @@ update --init`（`Vendor/mac-dual-pipe` 空克隆无内容）；`tools/build_dua
    与 core `blender` 同名同 ID（`org.blenderfoundation.blender`），caveats 写明
    先卸旧版（11.20 同例）。
 
-### 11.43 必触发更新 + 浮动直链的日期版本 + audit 再收紧（2026-10-06 实测，dsh-gui/konsole）
+### 11.43 必触发更新 + 浮动上游的日期版本 + audit 再收紧（2026-10-06 实测；dsh-gui 于 2026-11-18 改 feed）
 
 1. **`UpdaterCore` 新增 `alwaysUpdate` 开关**（默认 false，其他 40+ 包行为逐字节
    不变，48 个检查器全编译回归通过）：`current == stable` 也跳过 up-to-date、
    照走 HEAD→sha→镜像→改写全链路；`newer-than` 守卫保留。给"内容会变但版本号
    不变"的上游准备：dsh-gui 的浮动直链、konsole 的只留最新快照。
-2. **dsh-gui 版本即镜像日（UTC `yyyy.MM.dd`）**：浮动直链无版本信号，日期是唯一
-   如实版本（konsole 用构建号是同类思路）；首版镜像内实为上游 0.2.0-rc.2。
-   `customRelease` 只返回日期+浮动直链（sha 由核心下载实算；必触发下每次检查
-   都下 386MB——watcher 手动触发，代价可控）。实测同版本跑出
-   `status=updated` 全链路（下载→实算→clobber 重传→改写 no-op），机制成立。
+2. **dsh-gui 已改为 nightly feed 版本（2026-11-18）**：浮动直链
+   `dsh-latest-macos-x64.dmg` 的 last-modified 停在 10-17，实为 rc.1，而 feed
+   `dsh-desk/feeds/mac-x64/nightly-mac.yml` 已是 0.2.1-rc.4。现在 `customRelease`
+   抓 feed 的 `version:`，拼版本化 dmg 直链，按版本判新、去掉 `alwaysUpdate`；
+   镜像到 Release `dsh-gui-<ver>`。历史的"日期版本+必触发"方案只留给 konsole
+   这类真正只留最新快照、无版本信号的上游。
 3. **konsole 顺手真升了一次**：跑必触发验证时正撞上游 5277→5348，双包下载实算、
    上传 `konsole-5348`、旧 `konsole-5277` 自动清理、改写 version+双 sha——
    §6 版本行同步 5348。注意 konsole 的 url 仍是 `#{version}` 插值（双分支不动 url 行）。

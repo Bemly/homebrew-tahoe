@@ -106,7 +106,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `afm` | AFM pinyin input method, Apple Silicon only (first exception to the Intel-only rule); user-level install into `~/Library/Input Methods` with automatic input-source enablement; pinned, no update checks |
 | `amd` | AMD lyrics downloader (universal Intel + Apple Silicon, built locally and mirrored); ships the app plus the `obcli` command; pinned, no update checks |
 | `blender-5x` | Blender 5.x Intel-optimized community build (x86_64 only); mirrored to this repo's releases, version tracked from upstream releases |
-| `dsh-gui` | DeepSeek Harness desktop app (Intel only, floating upstream link mirrored by date); refreshed on every check, version is the mirror date |
+| `dsh-gui` | DeepSeek Harness desktop app (Intel only); version/sha come from upstream nightly feed, versioned dmg mirrored to this repo's releases; checked like other packages |
 | `cmake` | Cross-platform build tool, upstream universal macOS package (Intel slice); core has no Intel bottle, installs in seconds instead of compiling |
 | `grok-bot` | Cursor Grok Bot desktop agent (Intel only); mirrored to this repo's releases, version tracked from Cursor's download page |
 | `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero dependencies); core has no Intel bottle and its dependency tree builds from source |

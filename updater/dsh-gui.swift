@@ -1,39 +1,44 @@
 // updater/dsh-gui.swift —— 与 Casks/dsh-gui.rb 一一同名的检查器入口
 //
-// DeepSeek Harness 桌面端（与本 tap 的 deepseek-harness 公式/npm CLI 版同源不同物），
-// 上游只有浮动直链（dsh-latest-macos-x64.dmg，无版本信号、无 checksums 文件），
-// 走 customRelease + uploadRelease + alwaysUpdate：
-//   - 版本取检查日（UTC）：浮动内容配如实日期版本，单调递增；
-//   - alwaysUpdate：每次检查必走完全链路（下载 386MB 实算 sha → 上传本仓 Release →
-//     改写 cask），内容变化不体现在版本号上也能刷进镜像（Watcher 手动触发，代价可控）；
-//   - 镜像到本仓 Release（tag dsh-gui-<ver>，资产名沿用上游），cask url 指 Release。
-// cask 无 bottle 机制，watcher 更新 cask 后不触发 bottle.yml。
+// DeepSeek Harness 桌面端（与本 tap 的 deepseek-harness 公式/npm CLI 版同源不同物）。
+// 版本信号来自上游 nightly feed：
+//   https://download.deepseek.com/dsh-desk/feeds/mac-x64/nightly-mac.yml
+// 里面有 version 与 sha512（zip 的），Intel dmg 的同版本直链按固定模板拼：
+//   .../dsh-desk/bin/mac-x64/deepseek-harness-<ver>-mac-x64.dmg
+// 不再用浮动直链（dsh-latest-*.dmg）+ 镜像日期 + alwaysUpdate；现在与其他包一样
+// 按版本判新，只有 feed 版本更新时才下载实算 sha、镜像到本仓 Release 并改写 cask。
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/dsh-gui.swift -o /tmp/check-dsh-gui && /tmp/check-dsh-gui
 // （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
-// 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致
-//（customRelease < uploadRelease < ... < alwaysUpdate，末位追加）。
 
 import Foundation
 
 @main
 struct DshGuiCheck {
     static func main() {
-        let formatter = DateFormatter()
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        formatter.dateFormat = "yyyy.MM.dd"
-        let today = formatter.string(from: Date())
         runCheck(CheckConfig(
             formula: "dsh-gui",
             formulaPath: "Casks",
             isCask: true,
             customRelease: {
-                UpstreamRelease(version: today,
-                    downloadURL: "https://download.deepseek.com/desktop/dsh-latest-macos-x64.dmg",
+                let feed = "https://download.deepseek.com/dsh-desk/feeds/mac-x64/nightly-mac.yml"
+                let (status, body) = curlText(feed)
+                guard status == 0, !body.isEmpty else { return nil }
+                var version: String?
+                for raw in body.components(separatedBy: CharacterSet.newlines) {
+                    let line = raw.trimmingCharacters(in: .whitespaces)
+                    guard line.hasPrefix("version:") else { continue }
+                    let v = line.dropFirst("version:".count)
+                        .trimmingCharacters(in: .whitespaces)
+                    if !v.isEmpty { version = v; break }
+                }
+                guard let v = version else { return nil }
+                return UpstreamRelease(
+                    version: v,
+                    downloadURL: "https://download.deepseek.com/dsh-desk/bin/mac-x64/deepseek-harness-\(v)-mac-x64.dmg",
                     sha256: nil)
             },
-            uploadRelease: true,
-            alwaysUpdate: true
+            uploadRelease: true
         ))
     }
 }
