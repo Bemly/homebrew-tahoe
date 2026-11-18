@@ -134,7 +134,9 @@ jobs:
                   echo "$f -> $dep" >> "$core_unbottled"
                   ;;
               esac
-            done < <(brew deps --full-name --union "bemly/tahoe/$f" 2>/dev/null | sort -u)
+            done < <(brew deps --tree --full-name --union "bemly/tahoe/$f" 2>/dev/null \
+              | sed -E 's/^[^A-Za-z0-9]*//; s/ .*$//' \
+              | grep -v -F "bemly/tahoe/$f" | sort -u)
           done
           sort -u "$tap_missing" -o "$tap_missing"
           sort -u "$core_unbottled" -o "$core_unbottled"
