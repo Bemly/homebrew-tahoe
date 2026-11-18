@@ -41,7 +41,7 @@ class ForkGettext < Formula
     ENV["am_cv_func_iconv_works"] = "yes" if OS.mac? && MacOS.version >= :sequoia
 
     args = [
-      "--with-libunistring-prefix=#{formula_opt_prefix("libunistring")}",
+      "--with-libunistring-prefix=#{formula_opt_prefix("bemly/tahoe/fork-libunistring")}",
       "--disable-silent-rules",
       "--with-included-glib",
       "--with-included-libcroco",

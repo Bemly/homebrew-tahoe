@@ -79,7 +79,7 @@ class Curl3 < Formula
       --disable-shared
       --disable-silent-rules
       --enable-proxy-http3
-      --with-ssl=#{formula_opt_prefix("openssl@3")}
+      --with-ssl=#{formula_opt_prefix("bemly/tahoe/fork-openssl@3")}
       --without-ca-bundle
       --without-ca-path
       --with-ca-fallback

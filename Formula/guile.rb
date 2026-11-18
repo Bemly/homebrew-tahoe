@@ -42,13 +42,13 @@ class Guile < Formula
     ENV.append "LDFLAGS", "-Wl,-rpath,#{HOMEBREW_PREFIX}/lib"
 
     # Avoid superenv shim
-    inreplace "meta/guile-config.in", "@PKG_CONFIG@", formula_opt_bin("pkgconf")/"pkg-config"
+    inreplace "meta/guile-config.in", "@PKG_CONFIG@", formula_opt_bin("bemly/tahoe/fork-pkgconf")/"pkg-config"
 
     system "./autogen.sh" unless build.stable?
 
     system "./configure", "--disable-nls",
-                          "--with-libreadline-prefix=#{formula_opt_prefix("readline")}",
-                          "--with-libgmp-prefix=#{formula_opt_prefix("gmp")}",
+                          "--with-libreadline-prefix=#{formula_opt_prefix("bemly/tahoe/fork-readline")}",
+                          "--with-libgmp-prefix=#{formula_opt_prefix("bemly/tahoe/fork-gmp")}",
                           *std_configure_args
     system "make", "install"
 
@@ -62,7 +62,7 @@ class Guile < Formula
     # Homebrew automatically removing Cellar paths from .pc files in favour
     # of opt_prefix usage everywhere.
     inreplace lib/"pkgconfig/guile-3.0.pc" do |s|
-      s.gsub! Formula["bdw-gc"].prefix.realpath, formula_opt_prefix("bdw-gc")
+      s.gsub! Formula["bdw-gc"].prefix.realpath, formula_opt_prefix("bemly/tahoe/fork-bdw-gc")
       s.gsub! Formula["libffi"].prefix.realpath, formula_opt_prefix("libffi") unless OS.mac?
     end
 

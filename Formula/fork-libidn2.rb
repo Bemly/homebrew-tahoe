@@ -55,7 +55,7 @@ class ForkLibidn2 < Formula
 
   def install
     args = ["--disable-silent-rules", "--with-packager=Homebrew"]
-    args << "--with-libintl-prefix=#{formula_opt_prefix("gettext")}" if OS.mac?
+    args << "--with-libintl-prefix=#{formula_opt_prefix("bemly/tahoe/fork-gettext")}" if OS.mac?
 
     if build.head?
       ENV.prepend_path "PATH", formula_opt_libexec("coreutils")/"gnubin" if OS.mac?

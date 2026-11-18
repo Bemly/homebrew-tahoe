@@ -56,8 +56,8 @@ class ForkSqlite < Formula
       "--enable-readline",
       "--disable-editline",
       "--enable-session",
-      "--with-readline-cflags=-I#{formula_opt_include("readline")}",
-      "--with-readline-ldflags=-L#{formula_opt_lib("readline")} -lreadline",
+      "--with-readline-cflags=-I#{formula_opt_include("bemly/tahoe/fork-readline")}",
+      "--with-readline-ldflags=-L#{formula_opt_lib("bemly/tahoe/fork-readline")} -lreadline",
     ]
     args << "--soname=legacy" if OS.linux?
 
