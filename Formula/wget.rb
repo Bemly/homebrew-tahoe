@@ -18,6 +18,11 @@ class Wget < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "fa39e69662a04bdbf27c0b66765fd5c829961c68a537be84aeeb16ccf35093f1"
+  end
+
   head do
     url "https://git.savannah.gnu.org/git/wget.git", branch: "master"
 

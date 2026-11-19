@@ -10,6 +10,11 @@ class Wimlib < Formula
     regex(/href=.*?wimlib[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "5bc2c22d0b1779acf73471b6577720a5b38c3334ca4ea1421a3b73ebca4816bf"
+  end
+
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
