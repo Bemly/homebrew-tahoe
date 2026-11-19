@@ -7,6 +7,11 @@ class OpenjdkAT17 < Formula
   license "GPL-2.0-only" => { with: "Classpath-exception-2.0" }
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "2534a071b8f4805e30d34ef368059f4e83605dfd3c7859a983456dfe4d7ee00d"
+  end
+
   keg_only "bottled by bemly/tahoe; avoid auto-link conflicts with core"
 
   depends_on arch: :x86_64
