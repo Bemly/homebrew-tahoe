@@ -4,6 +4,8 @@
 
 # AI 助手会话 / 计划产物
 .zcode/
+.workbuddy/
+.commandcode/
 
 # 环境变量与密钥
 .env

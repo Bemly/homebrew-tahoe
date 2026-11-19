@@ -39,9 +39,10 @@ Homebrew 官方已不再为 macOS 26 构建 x86_64 的 bottle。
 
 **例外——代编译模式（2026-09-03 起，qemu 为首例）**：上游**不提供** macOS 预编译
 （只发源码），但软件有价值、值得收录时，可改由 **CI 在 macos-26-intel 上一次性代编译成瓶**，
-用户仍走瓶安装。这类软件往往**带整棵依赖树**——**绝不能把依赖也照搬进本 tap**（同名公式
-跨 tap 是 Homebrew 硬限制，对依赖同样生效），枢纽依赖留给 core、只有"卸载得掉"的叶子才自瓶。
-完整规则见 6 节「qemu 代编译模式」。
+用户仍走瓶安装。这类软件往往**带整棵依赖树**——**不能把 core 的依赖同名照搬进本 tap**
+（同名公式跨 tap 是 Homebrew 硬限制，对依赖同样生效）：枢纽依赖留给 core；core 无 Intel
+瓶的依赖按 6.3 分流——能同名的直接接管，有 core 依赖方的改名 `fork-*` 自瓶。
+完整规则见 6 节「qemu 代编译模式」与 6.3。
 
 **例外——arm64-only（2026-10-05 起，`afm` 为首例）**：AFM拼音输入法两个二进制皆
 thin arm64，Intel 机跑不起来，但值得收录。经用户拍板作为首个破例收进本 tap：
@@ -55,7 +56,8 @@ cask 写 `depends_on arch: :arm64`（Intel 安装直接拒绝，见 11.40），m
 | tap 名 | `bemly/tahoe` | 用户使用时的名字，**不得改写** |
 | 仓库名 | `bemly/homebrew-tahoe` | GitHub 仓库名必须带 `homebrew-` 前缀，`brew tap bemly/tahoe` 才能简写解析 |
 | 公式目录 | `Formula/` | 标准 Homebrew 布局 |
-| 公式全名 | `bemly/tahoe/<name>` | 安装时必须写全名 |
+| 公式全名 | `bemly/tahoe/<name>` | 安装时必须写全名；依赖引用同样写全名 |
+| 依赖改名 | `fork-<core>` | core 有依赖方、不能同名接管时用；能同名的沿用 core 名（见 6.3） |
 
 > 仓库名里的 `homebrew-` 是 Homebrew 的强制前缀，不是给 `tahoe` 加料。
 > tap 名保持 `bemly/tahoe` 原样。
@@ -65,18 +67,19 @@ cask 写 `depends_on arch: :arm64`（Intel 安装直接拒绝，见 11.40），m
 ```
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：约定 + 计划
-├── README.md                          # 面向用户的使用说明
-├── Formula/
-│   └── gh.rb                          # 公式，一个软件一个文件
-├── Patches/
-│   └── python/3.13-sysconfig.diff      # 公式引用的本地补丁（core 公式的 patch 需随 tap 入库）
+├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
+├── Formula/                           # 121 个公式，一个软件一个文件（含 37 个 fork-*）
+├── Casks/                             # 24 个 cask（桌面 app / 输入法）
+├── Patches/                           # glib / libssh2 / libtool / python / swift 补丁
+├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
-│   ├── UpdaterCore.swift              # 检查器共享核心（版本比对 / 公式改写 / 输出协议）
-│   └── gh.swift                       # 每包一个检查器入口，与 Formula/*.rb 一一同名
+│   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
+│   └── <name>.swift                   # 134 个检查器入口，与 Formula|cask 一一同名
 └── .github/
     └── workflows/
         ├── watch-updates.yml          # 手动触发的批量版本 watcher（ubuntu + Swift）
-        └── bottle.yml                 # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
+        ├── bottle.yml                 # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
+        └── sysroots.yml               # 手动触发的交叉编译 sysroot 构建（发 Release）
 ```
 
 ## 4. 公式编写规范
@@ -142,7 +145,7 @@ end
 | 检查器用 Swift（`updater/`） | ubuntu 镜像自带 Swift 工具链；每包一个 `<name>.swift` 与 `Formula/*.rb` 一一同名，共享逻辑在 `UpdaterCore.swift`；用 `swiftc` 编译后运行（解释器模式会静默跳过顶层代码，不能用，见 UpdaterCore 头注） |
 | 制瓶任务用 `macos-26-intel` | 瓶标签由**构建机**的架构+系统决定，必须 Intel + macOS 26 才是 `x86_64_tahoe`；该 job 只在手动制瓶时跑 |
 | `fetch-depth: 1` | 只拉最新提交，不全量 clone |
-| 版本查询走 formulae.brew.sh | Homebrew 官方站点，**不消耗 GitHub API 限额** |
+| 版本来源按流分流 | brew 公式 / cask API、GitHub `releases/latest`、源 tap raw、上游自有接口；只有 brew 流走 formulae.brew.sh（**不消耗 GitHub API 限额**），见第 7 节 |
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
 | `concurrency` + `timeout-minutes` | 防重复跑、防挂死 |
 | 批量制瓶只占一次 runner | `watch-updates.yml` 扫全部（唯一模式），只触发**一次** `bottle.yml`（逗号列表传参）；`bottle.yml` 在单个 `macos-26-intel` 任务里顺序出瓶，绝不逐个触发 |
@@ -158,89 +161,188 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 
 ## 6. 当前收录
 
-| 软件 | 版本 | 来源 | 状态 |
+> 2026-11-20 核对：**121 个公式 + 24 个 cask**，`updater/` 134 个检查器（另有 `UpdaterCore.swift`）。
+> 供给方式四类：**预编译直引**（上游 macOS Intel 包）、**源码 / 代编译**（core 拷入或上游源码，CI 现编）、
+> **`fork-*` 依赖层**（core 依赖改名 + `keg_only` 自瓶）、**cask**（桌面 app / 输入法，镜像到本仓 Release）。
+> 所有公式都带 `depends_on arch: :x86_64` + `depends_on macos: :tahoe`；cask 按架构门槛。
+
+### 6.1 预编译直引（上游 macOS Intel 包）
+
+| 软件 | 版本 | 来源 | 备注 |
 | --- | --- | --- | --- |
-| `gh` | 2.102.0 | GitHub 官方发布包 `gh_<ver>_macOS_amd64.zip`（外部链接） | 已收录 |
-| `fastfetch` | 2.69.0 | GitHub 官方发布包 `fastfetch-macos-amd64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
-| `neofetch` | 7.1.0 | GitHub 归档发布包 `neofetch-7.1.0.tar.gz`（外部链接，纯 bash 脚本、已归档为最后一版）；**不走 updater 检查器**（无更新），`install` 用 `make install PREFIX`，`post_install` 不做 x86_64 文件校验 | 已收录 |
-| `workbuddy` | 5.7.6.40409493 | cask——WorkBuddy 官方 zip（Electron 自动更新接口 `/v2/update` 动态获取），镜像到本仓 GitHub Release | 已收录 |
-| `doubao-ime` | 1.0.1 | cask——豆包输入法安装器（官方下载接口 `/api/v1/app/download_url?platform=macos` 动态获取，去 V 取版本），镜像到本仓 GitHub Release；preflight 从安装器解出真身 app，装进用户级 `~/Library/Input Methods`（免 sudo，官方 install.sh 硬编码 /Library 且嵌套 sudo 故弃用），postflight 自动写入系统输入源启用（免手动添加，见 11.17） | 已收录 |
-| `node` | 26.11.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接，release tag 无 `v` 前缀） | 已收录 |
-| `node@24` | 24.21.0 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
-| `node@22` | 22.23.3 | Node.js 官方 `node-v<ver>-darwin-x64.tar.gz`（外部链接） | 已收录 |
-| `qemu` | 11.1.2 | **代编译模式**：上游源码 `qemu-<ver>.tar.xz` 为原料，CI 在 macos-26-intel 编译全量 68 个目标出瓶；core 无任何 Intel 瓶（模式规则见下） | 已收录 |
-| `capstone` | 5.0.9 | 代编译模式：qemu 专属依赖（生态扇入 8），同批代编译 | 已收录 |
-| `dtc` | 1.8.1 | 代编译模式：qemu 专属依赖（扇入 1） | 已收录 |
-| `libslirp` | 4.9.5 | 代编译模式：qemu 专属依赖（扇入 4） | 已收录 |
-| `vde` | 2.3.3 | 代编译模式：qemu 专属依赖（扇入 2）；2016 年旧代码需 `-std=gnu17` 编译开关（见 11.13） | 已收录 |
-| `opencode` | 1.18.35 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，取 mac 双架构段（`opencode-darwin-x64/arm64.zip`，主段放顶层、ARM 段在 `on_macos` 内覆盖；Intel 走 GHCR 瓶、ARM 走直链，见 11.27）；与 core 的 npm 版同名，`depends_on "bemly/tahoe/ripgrep"` 走自家源 | 已收录 |
-| `sst` | 4.17.2 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`sst-mac-x86_64.tar.gz`）；`sst version` 子命令取版本（不支持 `--version`） | 已收录 |
-| `torpedo` | 0.0.13 | `anomalyco/homebrew-tap` 的 GoReleaser 公式，只留 Intel mac 段（`torpedo-mac-x86_64.tar.gz`，上游 `sst/torpedo`）；无任何版本命令，不做版本自检 | 已收录 |
-| `ripgrep` | 15.2.0 | core 拷入 + 双门槛（代编译模式，随 qemu 链）；opencode 的依赖，先于 opencode 制瓶 | 已收录 |
-| `mufetch` | 0.1.1 | GitHub release 的 `mufetch_darwin_x86_64.tar.gz`（外部直链，tar 无顶层目录，文件直接在 CWD）；brew 流模板式检查器，sha 取自 release 的 `checksums.txt`（约 2KB） | 已收录 |
-| `cmd` | 1.45.0 | npm 包 `command-code` 的 tarball 直引（`npm install` 到 libexec，四入口只暴露 `cmd`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；**不检查更新**（无 updater/cmd.swift，同 neofetch） | 已收录 |
-| `zcode` | 3.14.5 | cask——上游 CDN 按架构分包，镜像到本仓 Release（`zcode-<ver>` 双资产；`arch` 双插值，`sha256 arm:/intel:` 直给）；检查器走 `brewCask` 版本 + 双架构镜像分支（见 11.26/11.34） | 已收录 |
-| `deepseek-harness` | 0.2.0-rc.2 | npm 包 `@deepseek-ai/dsh` 的 tarball 直引（`npm install` 到 libexec，只暴露 `dsh`，`dsh web` 起 Web UI，默认 `http://127.0.0.1:3080`）；依赖本 tap 的 node 瓶（core 的 node 在 Intel Tahoe 无瓶）；检查器跟 npm `latest` 标签（`updater/deepseek-harness.swift` 取 latest 文档的 version + tarball，alpha 不追；预发布版本号形态见 11.38）；与 core 的 `dsh`（Dancer's shell）无关但共享 `bin/dsh` 链接，同时安装时以后 link 的为准 | 已收录 |
-| `ffmpeg` | 9.0.2 | evermeet 静态发行版 `ffmpeg-<ver>.zip`（单 x86_64 二进制；不用 getrelease 的 7z——brew 解 7z 需 p7zip，core 无 Intel Tahoe 瓶，见 11.18）；检查器 brew 流模板式（`brewName: ffmpeg`，`checksumsURL: nil` 回退下载实算） | 已收录 |
-| `ffprobe` | 9.0.2 | 同上（`ffprobe-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffprobe 公式）；core 无同名公式 | 已收录 |
-| `ffplay` | 9.0.2 | 同上（`ffplay-<ver>.zip`，与本 tap ffmpeg 同版本配套）；版本判据走 brew 流的 ffmpeg stable（core 无 ffplay 公式）；core 无同名公式 | 已收录 |
-| `ffserver` | 3.4.2 | 同上（`ffserver-<ver>.zip`，上游 4.0 已移除的最后构建，2018 年二进制仍可在 Tahoe x86_64 原生运行）；**不检查更新**（无 updater/ffserver.swift） | 已收录 |
-| `fish` | 4.9.3 | 官方 `fish-<ver>.app.zip` 内的 unix 树（`base/` 即 install.sh 落盘内容，只装 base/ 不装 .app 本体；universal 含 x86_64 切片，doubao-ime 同例）；检查器 brew 流模板式（`checksumsURL: nil`，上游无 SHA256SUMS，实测 404） | 已收录 |
-| `docker-buildx` | 0.38.0 | 官方裸二进制 `buildx-v<ver>.darwin-amd64`（改名装进 bin；实测 darwin-amd64 尾缀不影响版本扫描，无需 version 行，见 11.19）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 无 darwin 条目） | 已收录 |
-| `checkra1n` | 0.12.4 | cask——镜像到本仓 Release（`checkra1n-<ver>`；资产名空格换点，见 11.34；core 同名 cask 因过不了 Gatekeeper 已被 disable，本 tap 提供可用安装路径）；附 `binary` 垫片出 `checkra1n` 命令；**不检查更新**（无 updater/checkra1n.swift） | 已收录 |
-| `palera1n` | 3.0.0-beta.2 | cask——上游 universal dmg（x86_64+arm64 双切片，单包覆盖双架构，无需 arch 分包），镜像到本仓 Release（`palera1n-<ver>`）；**不检查更新**（无 updater/palera1n.swift） | 已收录 |
-| `macos-tskmgr` | 1.1.1 | cask——上游按架构分包，镜像到本仓 Release（`macos-tskmgr-<ver>` 双资产；`arch` 插值各取各的，`sha256 arm:/intel:` 直给）；**不检查更新**（无 updater/macos-tskmgr.swift） | 已收录 |
-| `brewui` | 0.5.0 | cask——上游 GitHub release 的 universal zip（单包双架构），镜像到本仓 Release（`brewui-<ver>`）；检查器走 UpdaterCore 新增的 `github` 流（releases/latest 跳转判新，不耗 API 限额，见 11.21） | 已收录 |
-| `winstart` | 0.13.6 | cask——本地包一次性镜像到本仓 Release（`winstart-<ver>` tag，上游无公开链接，人工 `gh release create` 发版）；universal 双切片；**不检查更新**（无 updater/winstart.swift）；cask homepage 必填，取开发者 B 站主页 | 已收录 |
-| `docker-compose` | 5.6.0 | 官方裸二进制 `docker-compose-darwin-x86_64`（文件名无版本、路径段可扫，无需 version 行，见 11.21）；检查器 brew 流模板式（`checksumsURL: nil`，checksums.txt 文件名带 `*` 前缀、核心精确匹配对不上） | 已收录 |
-| `go` | 1.27.2 | Go 官方 `go<ver>.darwin-amd64.tar.gz`（完整工具链，只链系统库，零依赖；不用同版本 `.pkg`——要 root 写 /usr/local；`go1.27.2.darwin-amd64` 会扫成 `"64"`，需显式 version 行，见下） | 已收录 |
-| `heliport` | 2.0.0-alpha | cask——上游 dmg（包内 x86_64 thin），镜像到本仓 Release（`heliport-<ver>`）；**不检查更新**（无 updater/heliport.swift） | 已收录 |
-| `konsole` | 5348 | cask——KDE CI 每日构建的双架构包，镜像到本仓 Release（`konsole-<构建号>`；直链只留最新一天，必须镜像）；版本即构建号，检查器走 customRelease（双 listing 交集）+ 双架构镜像分支 + `alwaysUpdate` 必触发（见 11.43），每月手动跑一次（不设 cron，见 11.26） | 已收录 |
-| `curl3` | 8.22.0 | **改名代编译**：与 core curl 同源 + 独家 `--enable-proxy-http3`（MASQUE/CONNECT-UDP 实验开关，core 没开）；改名避与 core curl 同 Cellar 冲突；主二进制同步改名 `curl3` 正常 link（系统 curl 不动）；`--disable-shared` 纯客户端形态，开发件全裁（避 SDK 头 shadowing，见 11.33）；`libnghttp3/libngtcp2` 走本 tap 全名叶子依赖，`libnghttp2` 等枢纽留 core 裸名（扇入 19，见 11.31） | 已收录 |
-| `libnghttp3` | 1.18.0 | 代编译叶子：curl3 专属 H3 依赖（扇入 5），core 拷入 | 已收录 |
-| `libngtcp2` | 1.25.0 | 代编译叶子：curl3 专属 QUIC 依赖（扇入 4），core 拷入 | 已收录 |
-| `nghttp2` | 1.70.0 | 代编译：`--enable-app`（H2 的 nghttp/h2load/nghttpx），H3 开关 Phase 4 再补；依赖全是枢纽（c-ares/jemalloc/libev/openssl@3），裸名留 core | 已收录 |
-| `socat` | 1.8.1.3 | 代编译：core 拷入；test 改回环（公网用例沙箱必挂，见 11.30） | 已收录 |
-| `make` | 4.4.1 | 代编译：core 拷入（core 虽有 tahoe 瓶仍镜像，gmake 形态不变） | 已收录 |
-| `graphviz` | 16.1.0 | 代编译：core 拷入（依赖全枢纽，裸名留 core） | 已收录 |
-| `protobuf` | 36.2 | 代编译完整版：core 拷入（lib + protoc + ctest 全跑，abseil 留 core） | 已收录 |
-| `caddy` | 2.11.7 | 官方 `caddy_<ver>_mac_amd64.tar.gz`（扁平包；H2/H3 基线服务）；检查器 brew 模板流，`checksumsURL: nil`（上游 checksums 文件已换 SHA-512，见 11.46） | 已收录 |
-| `h2spec` | 2.6.0 | 官方 `h2spec_darwin_amd64.tar.gz`（单二进制；Phase 2 一致性测试）；检查器 `checksumsURL: nil` | 已收录 |
-| `hyperfine` | 2.0.0 | 官方 `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz`（单顶层目录，带 man/补全；Phase 4 基准）；test 不锁 "Mean" 字样（1.20 改版，见 11.30） | 已收录 |
-| `iperf3` | 3.22 | userdocs 静态构建 `iperf3-amd64-osx-15`（openssl 静态链接，零依赖，绕开 openssl@4 树）；资产名后缀随 runner 世代变化，检查器 customRelease 抓 expanded_assets 取最大世代（见 11.31） | 已收录 |
-| `ninja` | 1.13.2 | 官方 `ninja-mac.zip`（universal 双切片；core 虽有 tahoe 瓶仍镜像） | 已收录 |
-| `rustup` | 1.29.1 | 公式：static.rust-lang.org 版本化归档的裸二进制（自包含，零依赖），装成 `rustup` + 照抄 core 的 cargo/rustc 代理垫片；与 core 同名，本机卸 core `rust`/`rustup` 后完整接管，工具链走 `rustup toolchain install stable`（见 11.32）；版本走 release-stable.toml（releases/latest 跳列表页无 tag，见 11.29） | 已收录 |
-| `wireshark` | 4.4.19 | cask——上游 Intel 构建停在 4.4 系（4.6+ 无 Intel dmg），版本/sha 走官方 Sparkle appcast 的 Intel 项（sha 官方直给，免 66MB 实算，见 11.31），镜像到本仓 Release（`wireshark-<ver>`，资产名空格换点，见 11.34）；`tshark`/`editcap` binary 垫片；同 dmg 的 `Install ChmodBPF.pkg` 必装（否则无 BPF 权限抓不了包；装完即生效无需重登，见 11.35） | 已收录 |
-| `git-lfs` | 3.8.0 | 官方 `git-lfs-darwin-amd64-v<ver>.zip`（单顶层目录，带全套 man 页；自带 install.sh 写 /usr/local 不用，直接拆文件）；检查器 brew 模板流（`checksumsURL: nil`，sha256sums.asc 文件名带 `*` 前缀对不上，见 11.21） | 已收录 |
-| `github-copilot-app` | 1.1.27 | cask——GitHub Copilot 桌面 app（github/app 按架构分包，取 `GitHub-Copilot-darwin-x64.dmg`，短链 `gh.io/copilot-app-mac-intel` 是 floating 链接 HEAD 探测不可用）；镜像到本仓 Release（`github-copilot-app-<ver>`）；版本走 core cask API（core 的 url/sha 是 arm64 的不能用，Intel sha 下载实算），检查器 brewCask 流 + 镜像分支 | 已收录 |
-| `frida-server` | 17.23.1 | GitHub frida/frida 官方 `frida-server-<ver>-macos-x86_64.xz`（裸二进制仅 Intel；上游无 checksums 清单，sha 检查器下载实算）；公式加 `depends_on "xz" => :build`（brew 解 xz 硬依赖 xz 公式，瓶用户零感知，见 11.37）；检查器 github 流（tag 无 v 前缀，`githubTagPrefix: ""`） | 已收录 |
-| `afm` | 2026.09.15 | cask——AFM拼音输入法，**arm64-only（本 tap 首个破例，见 §1）**；zip 单顶层 `AFM拼音.app`（ditto 打包，unzip 解包保留 NFC 字节，见 11.40），用户级 `~/Library/Input Methods` 安装 + postflight_steps 自动启用输入源；镜像到本仓 Release（`afm-<ver>`）；**不检查更新**（无 updater/afm.swift） | 已收录 |
-| `amd` | 2026.09.18 | cask——自有软件 AMD-Pastis-Bartender（歌词汉化下载器）；上游只有源码 tag、无 release 资产，本地 xcodebuild 出 universal 包后镜像到本仓 Release（`amd-<ver>`，zip 含 `.app` + `obcli` 双顶层）；`app` + `binary` 双产物，ad-hoc 签名；frida 静态链接、装机零依赖（见 11.41）；**不检查更新**（无 updater/amd.swift） | 已收录 |
-| `blender-5x` | 5.2.2 | cask——jaguarus83 的 Blender 5.x Intel 构建（`Blender-<ver>-macOS-x86_64-AMD.dmg`，thin x86_64，未签名），**Intel-only（本 tap 首个 `arch: :x86_64` 门槛 cask）**；镜像到本仓 Release（`blender-5x-<ver>`）；检查器 github 流（tag `v` 前缀，资产名不稳定、改名即 upstream-missing，见 11.42） | 已收录 |
-| `dsh-gui` | 0.2.1-rc.4 | cask——DeepSeek Harness 桌面端（与 `deepseek-harness` 公式/npm CLI 版同源不同物；thin x86_64，公证签名零拦截）；版本来自上游 nightly feed（`dsh-desk/feeds/mac-x64/nightly-mac.yml`），dmg 按同版本模板 `dsh-desk/bin/mac-x64/deepseek-harness-<ver>-mac-x64.dmg`；按版本判新（不再 alwaysUpdate），镜像到本仓 Release（`dsh-gui-<ver>`） | 已收录 |
-| `cmake` | 4.4.4 | 官方 `cmake-<ver>-macos-universal.tar.gz`（universal 双切片；core 无 Intel 瓶，Tier 3 只能源码编，见 11.44）；主 url 用 Kitware GitHub（避版本目录段坑），cmake.org 作 http(s) 双镜像；`install` 尾部做 file 架构 + `--version` 自检（`post_install` 已废弃）；检查器 brew 流模板式（sha 走官方 `SHA-256.txt` 精确匹配） | 已收录 |
-| `grok-bot` | 0.68.1 | cask——Cursor Grok Bot 桌面 agent（`Grok_Bot_<ver>_x64.dmg`，thin x86_64，公证签名零拦截）；**Intel-only**；镜像到本仓 Release（`grok-bot-<ver>`）；检查器 customRelease 抓 cursor 下载页的 Intel 行判新（页内另有无关版本，必须锚定，见 11.45） | 已收录 |
-| `scrcpy` | 5.0.1 | 官方 `scrcpy-macos-x86_64-v<ver>.tar.gz`（thin x86_64，SDL/ffmpeg 静态链入，零 brew 依赖；附 universal adb + 设备端 scrcpy-server；见 11.47）；整包进 libexec（扁平布局不可拆，server 按执行文件定位）+ `bin` wrapper；core 在 Intel 无瓶且依赖树（openssl@4/python@3.15/ffmpeg…）全源码编；检查器 brew 模板流（sha 走官方 `SHA2-256SUMS`） | 已收录 |
-| `yt-dlp` | 2026.08.19 | 官方 `yt-dlp_macos` 单二进制（universal 双切片，纯系统库，零依赖；此构建无补全参数不硬凑；见 11.48）；文件名无版本但路径段可扫，不写 version 行；core 在 Intel 无瓶且拖 python 栈（certifi/cffi/deno/python@3.15）；检查器 brew 模板流（sha 走官方 `SHA2-256SUMS`，模板内月日补零，版本按数值判等） | 已收录 |
-| `libplist` | 2.8.0 | 代编译叶子：idevice 栈 plist 库（生态扇入 10，但依赖方全是 idevice 系叶子，无枢纽，故自瓶；见 11.49） | 已收录 |
-| `libimobiledevice-glue` | 1.3.3 | 代编译叶子：idevice 公共系统 API 库（扇入 3，全 idevice 系）；依赖本 tap 全名叶子 | 已收录 |
-| `libtatsu` | 1.0.5 | 代编译叶子：苹果 TSS 签名库（扇入 1，仅本体依赖）；`revision 1` 与 core 同步（掉 revision 手工删，见 11.49）；curl 走 `uses_from_macos` | 已收录 |
-| `libusbmuxd` | 2.1.1 | 代编译叶子：iOS USB 复用库（扇入 2，全 idevice 系）；`revision 1` 与 core 同步；test 走本机回环（公网用例沙箱必挂，见 11.30） | 已收录 |
-| `libimobiledevice` | 1.4.0 | 代编译主软件：iOS 设备通信库（`idevicedate` 等 30+ 工具）；`revision 2` 与 core 同步；依赖按 hub/叶子分流（glue/plist/tatsu/usbmuxd 全名，libtasn1/openssl@4 裸名留 core，见 11.49） | 已收录 |
-| `wabt` | 1.0.42 | 代编译模式：core 拷入（上游 GitHub Releases 的 macOS 资产仅 macos-arm64——1.0.38 的 macos-14 包也是纯 arm64，file 实测；core 无 Intel Tahoe 瓶）；CMake 全量构建（`BUILD_TESTS=OFF`），`cmake` 构建依赖走本 tap 全名、`openssl@4` 枢纽留 core；`wat2wasm`/`wasm2wat` 等全套工具 | 已收录 |
-| `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译直引，只留 Intel host 段（`x86_64-unknown-linux-gnu-x86_64-darwin.tar.gz` 203MB，thin x86_64；gcc/g++ 纯系统库，gdb 链 `python@3.14`/xz）；依赖裸名留 core（`bdw-gc`/`guile`/`python@3.14` 无 Tahoe 瓶首次源码编，`zstd` 有瓶）；检查器 github 流 + `.sha256` sidecar（免 203MB 实算，见下） | 已收录 |
-| `mirage-wallpaper` | 1.1.5 | cask——Mirage 原生动态壁纸管理器（Wallpaper Engine 兼容运行时）；上游按架构分包，取 Intel 段（`Mirage-<build>-<hash>-macOS-x86_64.zip`，文件名无版本、版本只在 tag）；thin x86_64 + 公证签名（`spctl accepted`，零拦截）；**Intel-only**；镜像到本仓 Release（`mirage-wallpaper-<ver>`）；检查器 customRelease（/latest 定 tag + expanded_assets 抓 Intel 资产名，不耗 API 限额，iperf3 同例）+ uploadRelease，sha 取上游 `.sha256` sidecar；tag 段 `#{version}` 插值过审（字面 tag 新 audit 不认，写回字面后须手动改回插值） | 已收录 |
-| `llvm` | 23.1.4 | 代编译模式：core 拷入（上游 23.x 起砍掉 Intel mac 预编译——19.1.7 是最后一个 macOS-X64 包，20+ 仅 macOS-ARM64，core 无 Intel Tahoe 瓶）；**pinned 预编译**：23.x 走源码代编译 PGO 三阶段 6 小时起步即超时，故锁死 19.1.7（最后一个 Intel mac 包），不跟检查器（无 updater/llvm.swift，ffserver 同例）；本仓要的是 bindgen 0.73 运行时的 libclang 9+（thin x86_64，`dlopen` 实测过，全后端含 AArch64/X86），19 够用；只链系统库零依赖；文件名尾 `X64` 致盲版本扫描（扫成 `"64"`，node 同款）故显式 `version` 行；包 1.6GB/解包 8.3GB，门槛 18GB；`keg-only`（系统 clang 不动），`LIBCLANG_PATH` 指 `opt_lib` 即用 | 已收录 |
-| `z3` | 5.3.1 | 代编译叶子：llvm 的求解器依赖（扇入 11：alive2/civl/cryptol/dafny/esbmc/klee/lldb/llvm/openshell/solidity/wuppiefuzz，全小众验证工具，无枢纽，libplist 同例见 11.49）；自瓶的第二理由是裸名会让 llvm 递归依赖同时含本 tap 与 core 的 cmake（后者经 z3 构建依赖进来），`uniq!` 按 full_name 去重留俩，同进程 flock 双开自锁（见 11.51）；`cmake` 走本 tap 全名、`python` 退 3.14 | 已收录 |
-| `toshllm` | 0.87.34 | cask——ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速）；上游 `ToshLLM-v<ver>.dmg`（标准 AVX2 构建，thin x86_64，公证签名，零 arm64 切片），镜像到本仓 Release（`toshllm-<ver>`）；**Intel-only**；app 自带更新器（`auto_updates true`）；检查器 github 流（tag `v` 前缀，sha 取上游 `checksums.txt`） | 已收录 |
-| `lceda-pro` | 4.1.100 | cask——嘉立创EDA专业版，取官网下载页 mac Intel(x64) 行的 `lceda-pro-mac-x64-<ver>.zip`（zip 内套 dmg，cask `container nested:` 解包；thin x86_64，公证签名），镜像到本仓 Release（`lceda-pro-<ver>`）；**Intel-only**；检查器 customRelease 抓下载页并按产品前缀锚定（见 11.53） | 已收录 |
-| `lceda` | 6.5.61 | cask——嘉立创EDA标准版，取官网下载页 mac Intel(x64) 行的 `lceda-mac-x64-<ver>.zip`（单顶层目录，app 路径带目录名；thin x86_64，公证签名），镜像到本仓 Release（`lceda-<ver>`）；**Intel-only**；检查器 customRelease 同页锚定（见 11.53） | 已收录 |
-| `chisel` | 1.12.0 | 官方 `chisel_<ver>_darwin_amd64.gz`（gzip 单文件裸二进制，gunzip 还原为 `chisel`，零依赖；gz 解出无执行位需 install 里 chmod，见 11.54）；检查器 github 流（tag `v` 前缀，sha 取同 release 的 `chisel_<ver>_checksums.txt`）；与 core 同名异物（core 版是 Facebook 的 LLDB 命令集），先卸 core 版才能装 | 已收录 |
-| `exiftool` | 13.55 | 上游官方纯 Perl tar.gz 直装（core 拷入精简版：不跑 `Makefile.PL`、不编译，省去 brotli/xz + CPAN XS 资源树，那些在 Intel Tahoe 无瓶，见 11.55）；`url` 与 core 同（SourceForge）+ CPAN 镜像（同 tarball 同 sha，SourceForge dl 跳转偶发不可达）；检查器 brew 全量流（`urls.stable.url`/`.checksum`，免下载实算）；与 core 同名同物，先卸 core 版才能装 | 已收录 |
-| `lody` | 0.112.0 | cask——Lody（coding agent 会话跨桌面/移动端同步）；core cask 按架构分包，本 tap 取 Intel `Lody-<ver>-x64.dmg`（thin x86_64，公证签名），镜像到本仓 Release（`lody-<ver>`）；版本跟 core cask（brewCask 流 + uploadRelease，见 11.56） | 已收录 |
-| `qoder` | 0.5.13 | cask——Qoder CN（qoder.cn 国内版，区别于 core 的国际版 `qoder`）；官网下载页给浮动 installer，真身另取版本化 `Qoder-CN-mac-x64.dmg`（thin x86_64，公证签名），镜像到本仓 Release（`qoder-<ver>`）；版本跟 qoder.cn 更新日志（customRelease 抓最新锚点，见 11.56）；与 core 的 `qoder` 同名，先卸一方再装 | 已收录 |
-| `python@3.15` | 3.15.2 | 代编译模式：core 拷入 + 双门槛；core 在 Intel Tahoe 无瓶，meson 等更新时 Python 会源码编译；`pkgconf` 构建依赖、`ca-certificates`/`mpdecimal`/`openssl@4`/`sqlite`/`xz`/`zstd` 枢纽依赖裸名留 core；`pypi_packages` 装 pip/flit-core；补丁 `Patches/python/3.13-sysconfig.diff` 随公式入库；与 core 同名同物，先卸 core 版（见 11.58） | 已收录 |
-| `meson` | 1.12.1_1 | core 拷入 + 双门槛；本体是 `all` 瓶，但依赖 core 的 `python@3.15` 会源码编，故随本 tap 出 tahoe 瓶；依赖改全名 `bemly/tahoe/ninja` + `bemly/tahoe/python@3.15`；`revision 1` 与 core 同步（掉 revision 手工删，见 11.49）；与 core 同名同物，先卸 core 版（见 11.58） | 已收录 |
+| `aarch64-unknown-linux-gnu` | 15.2.0 | messense 交叉工具链 GitHub Releases | 只收 Intel host 段；交叉到 aarch64 Linux；github 流 + `.sha256` sidecar |
+| `caddy` | 2.11.9 | 官方 `caddy_<ver>_mac_amd64.tar.gz` | 扁平包；H2/H3 基线；brew 模板流 |
+| `chisel` | 1.12.0 | GitHub `chisel_<ver>_darwin_amd64.gz` | gzip 裸二进制；github 流；与 core 同名异物 |
+| `cmake` | 4.5.0 | Kitware GitHub `cmake-<ver>-macos-universal.tar.gz` | universal；core 无 Intel 瓶；brew 模板流 |
+| `cmd` | 1.45.0 | npm `command-code` tarball | 纯 JS 装进 libexec；依赖本 tap node；不检查更新 |
+| `deepseek-harness` | 0.2.2-rc.1 | npm `@deepseek-ai/dsh` tarball | 纯 JS；`dsh web`；依赖本 tap node；跟 npm latest |
+| `docker-buildx` | 0.39.0 | GitHub 裸二进制 `buildx-v<ver>.darwin-amd64` | brew 模板流 |
+| `docker-compose` | 5.8.0 | GitHub 裸二进制 `docker-compose-darwin-x86_64` | 文件名无版本；brew 模板流 |
+| `exiftool` | 13.55 | SourceForge `Image-ExifTool-<ver>.tar.gz` | 纯 Perl 直装；与 core 同名同物 |
+| `fastfetch` | 2.71.0 | GitHub `fastfetch-macos-amd64.tar.gz` | release tag 无 `v`；brew 模板流 |
+| `ffmpeg` | 9.0.2 | evermeet 静态 `ffmpeg-<ver>.zip` | 单二进制；版本跟 core ffmpeg |
+| `ffplay` | 9.0.2 | evermeet 静态 `ffplay-<ver>.zip` | 同上；core 无同名公式 |
+| `ffprobe` | 9.0.2 | evermeet 静态 `ffprobe-<ver>.zip` | 同上；core 无同名公式 |
+| `ffserver` | 3.4.2 | evermeet 静态 `ffserver-3.4.2.zip` | 上游 4.0 已移除；不检查更新 |
+| `fish` | 4.9.3 | 官方 `fish-<ver>.app.zip` 内 unix 树 | universal Intel 切片；只装 `base/` |
+| `frida-server` | 17.27.0 | GitHub `frida-server-<ver>-macos-x86_64.xz` | 裸二进制；github 流；需 sudo |
+| `fzf` | 0.75.0 | GitHub `fzf-<ver>-darwin_amd64.tar.gz` | 单二进制；github 流 |
+| `gh` | 2.105.0 | GitHub `gh_<ver>_macOS_amd64.zip` | brew 模板流；sha 走 checksums.txt |
+| `git-lfs` | 3.8.1 | GitHub `git-lfs-darwin-amd64-v<ver>.zip` | 全套 man；brew 模板流 |
+| `go` | 1.27.4 | 官方 `go<ver>.darwin-amd64.tar.gz` | 完整工具链；零依赖；显式 version 行 |
+| `h2spec` | 2.6.0 | GitHub `h2spec_darwin_amd64.tar.gz` | 单二进制；brew 模板流 |
+| `hyperfine` | 2.0.0 | GitHub `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz` | 带 man/补全；brew 模板流 |
+| `iperf3` | 3.22 | userdocs `iperf3-amd64-osx-15` | 静态零依赖；customRelease 取最大世代 |
+| `llvm` | 19.1.7 | GitHub `LLVM-19.1.7-macOS-X64.tar.xz` | pinned（20+ 仅 ARM64）；keg-only；`LIBCLANG_PATH` |
+| `llvm-mingw` | 20261117 | mstorsjo/llvm-mingw 预编译 | Intel host 交叉到 Windows；github 流 |
+| `mufetch` | 0.1.1 | GitHub `mufetch_darwin_x86_64.tar.gz` | tar 无顶层目录；sha 走 checksums.txt |
+| `ninja` | 1.13.2 | GitHub `ninja-mac.zip` | universal；core 有瓶仍镜像 |
+| `node` | 26.13.1 | 官方 `node-v<ver>-darwin-x64.tar.gz` | 显式 version 行；brew 模板流 |
+| `node@22` | 22.23.5 | 官方 `node-v22.x-darwin-x64.tar.gz` | 显式 version 行 |
+| `node@24` | 24.22.3 | 官方 `node-v24.x-darwin-x64.tar.gz` | 显式 version 行 |
+| `opencode` | 1.19.6 | anomalyco raw 公式（双架构） | Intel 走瓶、ARM 直链；依赖 `ripgrep` |
+| `openjdk` | 26.0.2.1_macos | jdk.java.net GA `macos-x64_bin.tar.gz` | keg-only；customRelease；与 core 同名 |
+| `openjdk@17` | 17.0.21 | Adoptium Temurin x64 tar.gz | customRelease API；keg-only |
+| `openjdk@21` | 21.0.13 | Adoptium Temurin x64 tar.gz | customRelease API；keg-only |
+| `openjdk@26` | 26.0.2.1_macos | jdk.java.net GA（锁 26 线） | 与 `openjdk` 同源同物 |
+| `protobuf` | 36.2 | 官方 `protoc-<ver>-osx-x86_64.zip` | 预编译；与 core 同名 |
+| `rustup` | 1.29.3 | static.rust-lang.org 裸二进制 | cargo/rustc 垫片；跟 release-stable.toml |
+| `scrcpy` | 5.0.1 | GitHub `scrcpy-macos-x86_64-v<ver>.tar.gz` | 静态；整包进 libexec |
+| `sst` | 4.17.2 | anomalyco raw（Intel 段） | `sst version` 取版本 |
+| `swift` | 6.4.2 | swift.org 官方 `swift-<ver>-RELEASE-osx.pkg` | 重打包只暴露 `swift`/`swiftc`；customRelease |
+| `torpedo` | 0.0.13 | anomalyco raw（Intel 段） | 无版本命令，不做版本自检 |
+| `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译（Intel host） | 203MB；`.sha256` sidecar；依赖留 core/fork |
+| `yt-dlp` | 2026.10.26 | GitHub `yt-dlp_macos` 单二进制 | universal；零依赖；brew 模板流 |
+| `z3` | 5.3.3 | 官方 `z3-<ver>-x64-osx-13.3.zip` | 预编译；显式 version（URL 会扫成 13.3） |
+| `zig` | 0.17.1 | 官方 `zig-x86_64-macos-<ver>.tar.xz` | 预编译；与 core 同名 |
+
+### 6.2 源码 / 代编译（core 拷入或上游源码）
+
+| 软件 | 版本 | 来源 | 备注 |
+| --- | --- | --- | --- |
+| `abseil` | 20260817.0 | core 拷入（源码） | cmake；protobuf 依赖；与 core 同名 |
+| `aria2` | 1.37.0 | core 拷入（源码） | autotools；fork-c-ares/libssh2/openssl@4/sqlite |
+| `automake` | 1.20 | core 拷入（源码） | 纯 autotools；无运行时依赖 |
+| `bash` | 5.3.20 | core 拷入（源码） | fork-ncurses/readline/gettext；与 core 同名 |
+| `capstone` | 5.0.9 | core 拷入（源码） | cmake；fork-gettext；qemu 依赖 |
+| `curl3` | 8.23.0 | core 拷入（源码） | 改名 + `--enable-proxy-http3`；纯客户端；fork-* 依赖 |
+| `dtc` | 1.8.1 | core 拷入（源码） | 依赖 `libyaml`；qemu 依赖 |
+| `git` | 2.56.1 | core 拷入（源码） | make；fork-pcre2/gettext/openssl@4；与 core 同名 |
+| `graphviz` | 16.1.1 | core 拷入（源码） | 零第三方渲染插件；autotools |
+| `guile` | 3.0.11 | core 同名接管（源码） | fork-bdw-gc/gmp/libunistring…；交叉工具链依赖 |
+| `jemalloc` | 5.4.0 | core 同名接管（源码） | autotools；nghttp2 依赖 |
+| `libev` | 4.33 | core 同名接管（源码） | autotools；nghttp2 依赖 |
+| `libimobiledevice` | 1.4.0 | core 拷入（源码） | idevice 栈主包；30+ 工具 |
+| `libimobiledevice-glue` | 1.3.3 | core 拷入（源码） | 依赖 `libplist` |
+| `libnghttp2` | 1.71.0 | core 同名接管（源码） | lib-only；curl3/nghttp2 依赖（扇入 19） |
+| `libnghttp3` | 1.19.0 | core 拷入（源码） | cmake；curl3 依赖 |
+| `libngtcp2` | 1.26.0 | core 拷入（源码） | cmake；fork-openssl@3 |
+| `libplist` | 2.8.1 | core 拷入（源码） | idevice 栈叶子 |
+| `libslirp` | 4.9.7 | core 拷入（源码） | meson；fork-glib；qemu 依赖 |
+| `libssh` | 0.12.2 | core 同名接管（源码） | cmake；fork-openssl@4 |
+| `libtatsu` | 1.1.1 | core 拷入（源码） | TSS 库；revision 与 core 同步 |
+| `libusbmuxd` | 2.1.1 | core 拷入（源码） | idevice USB 复用；revision 同步 |
+| `libyaml` | 0.2.5 | core 同名接管（源码） | autotools；dtc 依赖 |
+| `make` | 4.4.1 | core 拷入（源码） | 装成 `gmake`；与 core 同名 |
+| `meson` | 1.12.1 | core 拷入（pip 安装） | 依赖本 tap `ninja` + `python@3.15`；与 core 同名 |
+| `neofetch` | 7.1.0 | GitHub archive tag（纯脚本） | 已归档最后一版；不检查更新 |
+| `nghttp2` | 1.71.0 | core 拷入（源码） | `--enable-app`；fork-c-ares/jemalloc/libev/libnghttp2 |
+| `python@3.11` | 3.11.18 | core 拷入（源码） | fork-* 依赖；与 core 同名 |
+| `python@3.15` | 3.15.2 | core 拷入（源码） | fork-*；meson 依赖；与 core 同名 |
+| `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；fork-* + capstone/dtc/libslirp/vde（模式见下） |
+| `ripgrep` | 15.2.0 | core 拷入（源码） | fork-pcre2；opencode 依赖 |
+| `simdjson` | 5.2.0 | core 同名接管（源码） | cmake |
+| `snappy` | 1.3.1 | core 同名接管（源码） | cmake；fork-pkgconf 构建 |
+| `socat` | 1.8.1.3 | core 拷入（源码） | fork-openssl@3；test 走回环 |
+| `svt-av1` | 4.3.0 | core 拷入（源码） | cmake |
+| `vde` | 2.3.3 | core 拷入（源码） | 2016 旧代码需 `-std=gnu17` |
+| `wabt` | 1.0.42 | core 拷入（源码） | cmake；上游 macOS 资产仅 arm64 |
+| `wget` | 1.25.0 | core 拷入（源码） | fork-libidn2/libpsl/openssl@4/gettext |
+| `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
+
+### 6.3 `fork-*` 依赖层（37 个）
+
+core 里仍有 39 个运行时依赖在 Intel Tahoe 没有瓶（`glib`/`openssl@4`/`gnutls`/`python@3.14`…）。
+同名跨 tap 是 Homebrew 硬限制：**有 core 依赖方的包不能同名搬进来**（卸 core 版会带崩它的
+core 依赖方），所以统一改名 `fork-<core>` + `keg_only`，本仓公式按全名
+`bemly/tahoe/fork-<core>` 引用；**能同名的 8 个直接接管**（`abseil`/`guile`/`jemalloc`/
+`libev`/`libnghttp2`/`libssh`/`libyaml`/`snappy`，见 6.2）。
+
+- 全部走 **brew JSON 全量流**（`CheckConfig(formula: "fork-x", brewName: "x")`），url/sha 跟随 core；
+- 源码现编，`keg_only` 保证不污染 core 的链接；补丁随 `Patches/` 入库；
+- 依赖方（qemu/curl3/python@3.15/wget/git/bash…）写全名，不再回落到 core 源码编。
+
+| fork 公式 | 对应 core | 版本 | 说明 |
+| --- | --- | --- | --- |
+| `fork-bdw-gc` | `bdw-gc` | 8.2.12 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-brotli` | `brotli` | 1.2.1 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-c-ares` | `c-ares` | 1.34.9 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-freetype` | `freetype` | 2.15.0 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-gettext` | `gettext` | 1.0 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-giflib` | `giflib` | 6.1.3 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-glib` | `glib` | 2.90.1 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-gmp` | `gmp` | 6.3.0 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-gnutls` | `gnutls` | 3.8.13 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-jpeg-turbo` | `jpeg-turbo` | 3.2.1 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-json-c` | `json-c` | 0.19 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libidn2` | `libidn2` | 2.3.8 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libpng` | `libpng` | 1.6.59 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libpsl` | `libpsl` | 0.23.3 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libssh2` | `libssh2` | 1.11.1 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libtasn1` | `libtasn1` | 4.21.0 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libtiff` | `libtiff` | 4.7.2 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libunistring` | `libunistring` | 1.5 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-libusb` | `libusb` | 1.0.30 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-little-cms2` | `little-cms2` | 2.20 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-lz4` | `lz4` | 1.11.1 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-lzo` | `lzo` | 2.10 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-mpdecimal` | `mpdecimal` | 4.0.1 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-ncurses` | `ncurses` | 6.6 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-nettle` | `nettle` | 4.0 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-openssl@3` | `openssl@3` | 3.5.9 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-openssl@4` | `openssl@4` | 4.1.0 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-p11-kit` | `p11-kit` | 0.26.6 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-pcre2` | `pcre2` | 10.49 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-pixman` | `pixman` | 0.46.4 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-pkgconf` | `pkgconf` | 3.0.11 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-python@3.14` | `python@3.14` | 3.14.10 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-readline` | `readline` | 8.3.6 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-sqlite` | `sqlite` | 3.54.1 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-webp` | `webp` | 1.6.0 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-xz` | `xz` | 5.8.4 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-zstd` | `zstd` | 1.5.7 | 源码现编；`keg_only`；依赖方写全名 |
+
+### 6.4 cask（24 个，桌面 app / 输入法）
+
+cask 无 bottle 机制：watcher 检测到新版本后下载发布包、上传本仓 GitHub Release、
+改写 `Casks/<name>.rb`，**不触发 `bottle.yml`**。所有 cask 一律镜像最新版（见 11.34）。
+
+| 软件 | 版本 | 架构 | 说明 |
+| --- | --- | --- | --- |
+| `afm` | 2026.09.15 | arm64 | 输入法；用户级 `~/Library/Input Methods`；arm64 破例；不检查更新 |
+| `amd` | 2026.09.18 | universal | 自有软件；app + `obcli`；本地构建镜像；不检查更新 |
+| `blender-5x` | 5.2.2 | Intel | Intel 社区构建；github 流；镜像 |
+| `brewui` | 0.6.0 | universal | universal；github 流；镜像 |
+| `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
+| `doubao-ime` | 1.1.1 | Intel | 输入法；custom API；镜像 |
+| `dsh-gui` | 0.2.1-rc.4 | Intel | nightly feed 判新；镜像 |
+| `github-copilot-app` | 1.4.2 | Intel | brewCask 判新；Intel dmg 实算；镜像 |
+| `grok-bot` | 1.2.3 | Intel | Cursor 下载页锚定；镜像 |
+| `heliport` | 2.0.0-alpha | universal | universal；不检查更新 |
+| `konsole` | 5485 | dual | KDE CI 构建号；双架构；`alwaysUpdate`；每月手动跑 |
+| `lceda-pro` | 4.1.105 | Intel | 官网下载页 Intel 行；zip 套 dmg；镜像 |
+| `lceda` | 6.5.61 | Intel | 官网下载页 Intel 行；镜像 |
+| `lody` | 0.113.1 | Intel | brewCask 判新；镜像 |
+| `macos-tskmgr` | 1.1.1 | dual | 双架构；不检查更新 |
+| `mirage-wallpaper` | 1.1.6 | Intel | customRelease + `.sha256`；镜像 |
+| `palera1n` | 3.0.0-beta.2 | universal | universal dmg；不检查更新 |
+| `qoder` | 0.5.14 | Intel | qoder.cn 更新日志；镜像；与 core 同名 |
+| `qwen-ime` | 1.2.60.60 | Intel | 上游下载 API；镜像 |
+| `toshllm` | 0.88.0 | Intel | github 流；app 自带更新器 |
+| `winstart` | 0.13.6 | universal | 本地包人工发版；不检查更新 |
+| `wireshark` | 4.4.19 | Intel | Sparkle appcast Intel 项；镜像；ChmodBPF |
+| `workbuddy` | 5.11.3.43806934 | Intel | Electron 更新接口；镜像 |
+| `zcode` | 3.18.2 | dual | brewCask + 双架构；镜像 |
 
 ### gh 发布包结构（已实测）
 
@@ -380,40 +482,70 @@ Homebrew 维护的校验和，上游换镜像自动跟随）。模板式（downl
 
 ## 7. Watcher 工作原理
 
-`watch-updates.yml`（**只有批量模式**，没有单软件模式）→ `updater/`（Swift 检查器）：
+`watch-updates.yml`（**只有批量模式**，没有单软件模式）是唯一的版本入口，跑在 `ubuntu-latest`：
 
-1. workflow 遍历 `Formula/*.rb`，对每个公式查找**同名**的 `updater/<name>.swift`
-   （`fastfetch.rb` ↔ `fastfetch.swift` 一一对应；找不到同名 swift 则告警跳过）；
-2. `swiftc` 把 `updater/UpdaterCore.swift`（共享核心）+ 该包 swift 编译成可执行文件再运行
-   （解释器模式 `swift Core.swift <name>.swift` 会静默跳过顶层代码，不能用）；
-3. 检查器从 `Formula/<name>.rb` 读出本地版本号（优先 `version` 行，没有则从 `url` 行解析）；
-4. `GET https://formulae.brew.sh/api/formula/<name>.json` 取 `.versions.stable`
-   —— **这是 brew 上的版本号，不是上游 GitHub 的最新版**，正是需要的判据；
-   brew 上没有该软件（404）→ `status=brew-missing`，本轮跳过
-   （版本来源需单独适配，见第 12 节待办与 UpdaterCore 内 TODO）；
-5. 数字分段比较（等价 `sort -V`）：本地 == brew → 结束；本地 > brew → 结束；brew 更新 → 继续；
-6. **HEAD 探测新版本资源是否可下载**；不可下载则发 `status=upstream-missing`
-   并开 issue 告警，不再往下走；
-7. 取新版本的 sha256：优先 `GET gh_<ver>_checksums.txt`（2KB），失败才回退下载 15MB zip；
-8. 用 Swift 正则改写 `Formula/<name>.rb` 的 `url` / `sha256`（版本替换限定 url 行 +
-   边界防误伤：`(?<![0-9.])旧版本(?![0-9.])`），并做改后自检；
-9. **摘除失效的 `bottle do` 块**（其 sha256 属于旧版本），并发 `bottle_stale=true`；
-10. workflow 对更新过的公式跑 `ruby -c` 语法自检，然后**一次性提交到 `main`**（不开 PR）；
-11. 用**一次** `gh workflow run "Build bottle and publish to GHCR" -f formula="a,b,c"`
-    触发 `bottle.yml`，由它在单个 `macos-26-intel` 任务里顺序为这批软件出瓶（见 9.8）。
+1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，对每个文件查找**同名** `updater/<name>.swift`
+   （`fastfetch.rb` ↔ `fastfetch.swift` 一一对应；找不到就 warning 跳过——`cmd`/`ffserver`/
+   `llvm`/`neofetch`/`afm`/`amd`/`checkra1n`/`heliport`/`macos-tskmgr`/`palera1n`/
+   `winstart` 这 11 个「不检查更新」的包故意没有检查器）；
+2. `swiftc -O updater/UpdaterCore.swift updater/<name>.swift` 编译后运行；每包
+   `timeout 600`（解释器模式会静默跳过顶层代码，不能用）；
+3. 检查器从公式 / cask 文件读**本地版本**：优先顶层 `version` 行（跳过 `fails_with`
+   块里的编译器版本），没有则从 `url` 行解析点分段版本（含 `-rc.1` 预发布后缀、8 位日期版）；
+4. 取**上游版本**（五种来源，优先级 `customRelease` > `raw` > `github` > `brew`）：
 
-即 N 个软件更新 = **1 次 watcher（ubuntu）+ 1 次 bottle（macos）**，共 2 次 workflow 运行，
-与更新数量无关。
+| 流 | 版本判据 | url / sha 来源 | 典型 |
+| --- | --- | --- | --- |
+| `customRelease` | 检查器闭包调上游接口 / 页面 | 闭包返回 `UpstreamRelease`（sha 可空 → 核心下载实算） | workbuddy、dsh-gui、qwen-ime、openjdk、swift |
+| `raw` | 源 tap 公式 raw 文本里的 `version` | GoReleaser 结构取 Intel 段（`rawDualArch` 则双段） | opencode、sst、torpedo |
+| `github` | `releases/latest` 跳转的 `Location` tag（HEAD，不耗 API 限额） | 剥 `githubTagPrefix`（默认 `v`）后套 `downloadURL` 模板 | fzf、chisel、brewui、frida-server、交叉工具链 |
+| `brew` 公式-模板式 | `api/formula/<brewName>.json` 的 `versions.stable` | 自己拼 `asset` / `downloadURL` / `checksumsURL` | gh、node 家族、fastfetch |
+| `brew` 公式-全量式 | 同上 | JSON 的 `urls.stable.url` / `.checksum`（随 core 换镜像） | `fork-*`、qemu 链、ripgrep |
+| `brew` cask | `api/cask/<brewName>.json` 的 `.version` | 必须自己给 x64 `downloadURL`（core 那份是 arm64），sha 实算 | zcode、lody、github-copilot-app |
 
-三道保护（批量直接进 `main`，靠它们兜底）：
+5. 版本比较（等价 `sort -V`）：数字段按数值（`2026.8.19` == `2026.08.19`）、预发布 < 正式版；
+   本地更新 → `newer-than-brew` 保持不动；`alwaysUpdate` 的包（konsole）版本相同也继续；
+6. **HEAD 探测**目标 URL（双架构逐个）；不可下载 → `status=upstream-missing`，开
+   `automated-alert` issue，不进更新清单；
+7. 取 sha256：上游接口直接给 → `checksums.txt` 按 asset 精确匹配（~2KB）→ 下载整包实算；
+   双架构产物没有清单，始终下载实算；
+8. 改写（**内存里先自检，通过才落盘**）：
+   - `url` 行：整条替换（镜像流 / 全量式 / 双架构 raw）或只替换版本子串（模板式，保留
+     `#{version}`/`#{arch}` 插值）；`mirror` 行永远做版本子串 + `vX.Y/` 目录段同步；
+   - 顶层 `version` 行（如有）同步；第一条 `sha256` 行替换；双架构按 key 改 `arm:`/`intel:`；
+   - **摘除失效 `bottle do` 块**并发 `bottle_stale=true`（公式才需要，cask 无瓶）；
+9. cask 走镜像（`uploadRelease: true`）：下载发布包 → 校验 sha → `gh release create
+   <name>-<ver>`（资产名沿用上游 basename，空格 / 括号换点）→ url 改成本仓 Release →
+   删除该 cask 的旧 Release（只认「前缀 + 数字开头」，避免 `lceda-` 误删 `lceda-pro-`）。
 
-- `dry_run=true`：公式就地改写但不提交、不触发制瓶，先看结果再决定；
-- 提交前对每个更新过的公式跑 `ruby -c` 语法自检；
-- 上游资源不可下载（`upstream-missing`）的软件不进更新清单，逐个开告警 issue。
+**为什么以 brew 为判据**（而不是上游最新 tag）：brew 收录了才说明有稳定的上游来源与
+版本号语义；上游抢跑不会造成空转制瓶。GitHub / custom / raw 流是 brew 未收录、或需要
+跟随特有发布节奏时的补充。
 
-支持输入参数：
+### 7.1 workflow 侧复核与提交
 
-- `dry_run`：`true` 时只检查不提交（就地改写公式，但不 commit、不触发制瓶）。
+- 对更新过的文件跑 `ruby -c` 语法自检；
+- 公式再过一遍 `brew fetch --force bemly/tahoe/<name>`（linuxbrew 先接 PATH，再
+  `brew tap` + `brew trust`）——**url 与 sha 必须真能下载且一致**；失败者还原并剔除，
+  不阻断其它包；
+- `dry_run=true`：就地改写但不提交、不触发制瓶；
+- 否则一次性 commit 到 `main`；
+- 用**一次** `gh workflow run "Build bottle and publish to GHCR" -f formula="a,b,c"` 出瓶，
+  **只传公式**（cask 混进 `brew install --build-bottle` 会直接红掉整个 job）。
+
+即 N 个更新 = **1 次 watcher（ubuntu）+ 1 次 bottle（macOS）**，与更新数量无关。
+
+### 7.2 状态契约
+
+| status | 含义 | workflow 处理 |
+| --- | --- | --- |
+| `updated` | 已改写 | 语法 / fetch 复核后提交 |
+| `up-to-date` | 本地 == 上游（或数值相等、字面不同） | 跳过 |
+| `newer-than-brew` | 本地 > 上游 | 跳过（防回退） |
+| `brew-missing` | brew 没有该包且未接其它流 | 跳过（需适配版本来源） |
+| `upstream-missing` | 新版本资源 HEAD 不可达 | 还原 + 开 issue |
+| `check-failed` | 接口 / 网络故障 | 还原 + 公示，下次自动恢复 |
+| （无 status） | 崩溃 / 自检 fail | 还原 + 公示，**绝不当成无需更新** |
 
 ## 8. GHCR 瓶策略
 
@@ -523,22 +655,27 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
 
 ### 9.3 登记到 watcher（updater/）
 
-5. 新建 `updater/<name>.swift`（与 `Formula/<name>.rb` 同名，一一对应），四种写法：
-   - **brew 流**（软件在 homebrew/core）：照抄 `gh.swift` 的 `@main` 结构，改 4 处配置——
-     `formula` / `brewName`、`asset`、`downloadURL`、`checksumsURL`
+5. 新建 `updater/<name>.swift`（与 `Formula/<name>.rb` / `Casks/<name>.rb` 同名，一一对应），
+   按版本来源选模板（每种都有现成例子，直接照抄改配置）：
+   - **brew 流-模板式**（软件在 homebrew/core，且能自己拼产物地址）：照抄 `gh.swift`，
+     改 `formula` / `brewName` / `asset` / `downloadURL` / `checksumsURL`
      （上游无 checksums 文件则置 `nil`，核心自动回退下载计算）；
-   - **brew 流-全量式**（qemu 链 / ripgrep 这类从 core 拷入、url 模板不好推的公式）：
+   - **brew 流-全量式**（qemu 链 / `fork-*` / ripgrep 这类从 core 拷入、url 模板不好推）：
      只需 `CheckConfig(formula: "<name>", brewName: "<name>")`，url 与 sha256 由核心直取
-     JSON 的 `urls.stable.url` / `.checksum`，上游换镜像自动跟随（见 6 节「qemu 代编译
-     模式」；模板式仍优先）；
+     JSON 的 `urls.stable.url` / `.checksum`，上游换镜像自动跟随（见 6.2 / 6.3；模板式仍优先）；
+   - **brew cask 流**（软件在 core 里是 cask，如 zcode / lody / github-copilot-app）：
+     `formulaPath: "Casks"` + `isCask: true` + `brewName: ...` + `brewCask: true`；
+     **必须自己给 x64 `downloadURL` 模板**（core 的 url 是 arm64 的），sha 由核心实算；
    - **raw 流**（软件来自其他 tap 仓库，如 `anomalyco/homebrew-tap` 的三包）：
      照抄 `opencode.swift`，只配 `formula` + `rawFormulaURL`（源公式 raw 地址），
      核心按 GoReleaser 结构解析 version + Intel mac 的 url/sha256；
-     要双架构（opencode 取 mac 双段）再加 `rawDualArch: true`，核心解析双块、
-     改写公式内双 `if Hardware::CPU` 块（见 11.27）；
-   - **自定义流**（brew 未收录）：照抄 `workbuddy.swift`，实现 `customRelease` 闭包调
-     上游自有更新接口，返回 `UpstreamRelease(version:downloadURL:sha256:)`
-     （sha 仅在实测确认归属时才给，否则置 nil 由核心下载实算）。
+     要双架构再加 `rawDualArch: true`，核心解析双块、改写双 `if Hardware::CPU` 块（见 11.27）；
+   - **github 流**（brew 未收录、又无自有接口，如 fzf / chisel / brewui / 交叉工具链）：
+     配 `githubRepo`（`Owner/Repo`）+ `downloadURL` 模板，可选 `githubTagPrefix`
+     （默认 `v`，无前缀设 `""`）；版本取 `releases/latest` 跳转 tag，不耗 API 限额；
+   - **自定义流**（上游自有更新接口）：照抄 `workbuddy.swift`，实现 `customRelease` 闭包，
+     返回 `UpstreamRelease(version:downloadURL:sha256:)`（sha 仅在实测确认归属时才给，
+     否则置 nil 由核心下载实算）；
    - **双架构产物**（上游按架构分包的 cask，如 zcode / konsole）：在版本来源
      （brewCask / customRelease 任选其一）之外再配 `archArtifacts: [token]` +
      `downloadURLForArch: (version, arch) -> url`，核心走双分支（逐个探测下载、
@@ -547,6 +684,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
      见 11.34）：tag `<name>-<ver>`、资产名沿用上游 basename（空格换点，
      见 11.34）、旧快照自动清理。
      token→key 由核心 `caskArchKey` 显式映射，未知 token 直接 fail。
+   - **浮动直链 / 版本号不变的上游**：加 `alwaysUpdate: true`（konsole 是例子）。
    ⚠️ **公式与 swift 文件没有 push 进远端之前，CI checkout 拿不到它们**（见 11.7）。
 
 ### 9.4 本地验证
@@ -1955,5 +2093,8 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
       公式 + 代编译/直引流程逐个制瓶（Log 见 `bottle: 更新 GHCR 瓶块（opencode,sst,torpedo）`、
       `（ripgrep）`），workbuddy/doubao-ime cask 也已落地；15 个公式现均带 `bottle do` 块。
       合并时的 worktree 注意事项已失效（分支已合回 main，软链指向 main 即可）。
-- [ ] watcher 目前只比对 `versions.stable`；如某软件需要跟踪 `versions.head` 再扩展。
+- [x] **watcher 已覆盖全部版本来源**：brew 公式（模板 / 全量）、brew cask、raw（单 / 双架构）、
+      github release tag、上游自有接口，以及双架构产物、`alwaysUpdate`。`versions.head`
+      仍不跟踪（本 tap 不装 HEAD 版），需要时再扩展。
 - [ ] 接入 `brew livecheck` 作为可选的辅助检查手段。
+- [ ] 新增 `fork-*` / 同名接管包时，同步更新 6.2 / 6.3 两张表（清单即依赖闭包的事实来源）。

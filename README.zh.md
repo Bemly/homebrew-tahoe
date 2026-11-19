@@ -119,6 +119,20 @@ brew install --cask bemly/tahoe/doubao-ime
 | `meson` | 快速构建系统，与 core 同名同物，先卸 core 版；依赖本 tap 的 `ninja` + `python@3.15`，出 Intel Tahoe 瓶，不再拖 core 的源码 Python |
 | `lody` | Lody 桌面 app（跨桌面/移动端同步 coding agent 会话）；cask 镜像官方 Intel dmg（`Lody-<ver>-x64.dmg`），版本跟随 core cask |
 | `qoder` | 阿里巴巴 Qoder CN（国内版）AI 编程平台；cask 镜像官网 Intel dmg（`Qoder-CN-mac-x64.dmg`），版本跟随 qoder.cn 更新日志；与 core 的国际版 `qoder` 同名，二者先卸一方再装 |
+| `fork-*`（37 个） | 依赖层：core 里没有 Intel Tahoe 瓶的运行时依赖，按「能同名就同名接管、有 core 依赖方就改名 fork」处理。`fork-glib`/`fork-gnutls`/`fork-openssl@3`/`fork-openssl@4`/`fork-python@3.14`/`fork-xz`/`fork-zstd` 等 37 个，全部 `keg_only`、源码现编，依赖方按全名 `bemly/tahoe/fork-*` 引用（清单见 AGENTS.md 6.3） |
+| `openjdk` / `openjdk@26` | OpenJDK 26 GA 官方 macOS x64 预编译包（`keg_only`）；与 core 同名，先卸 core 版 |
+| `openjdk@17` / `openjdk@21` | Eclipse Temurin x64 JDK（Adoptium API 判新，`keg_only`）；与 core 同名 |
+| `git` | Git 本体，core 拷入源码现编（依赖 fork-pcre2/gettext/openssl@4）；与 core 同名 |
+| `bash` | GNU Bash 5.3，core 拷入源码现编（fork-ncurses/readline）；与 core 同名 |
+| `wget` / `aria2` | 下载工具，core 拷入源码现编（fork-libidn2/libpsl/openssl@4 等）；与 core 同名 |
+| `automake` / `abseil` / `svt-av1` / `python@3.11` | core 拷入源码现编的构建/运行依赖（automake、abseil、SVT-AV1、Python 3.11）；与 core 同名 |
+| `guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` | 可同名接管的依赖层（直接沿用 core 名字，先卸 core 版），源码现编出瓶；`libnghttp2` 同时是 curl3/nghttp2 的依赖 |
+| `fzf` | 命令行模糊查找，上游 `fzf-<ver>-darwin_amd64.tar.gz` 单二进制；版本跟 GitHub release |
+| `zig` | Zig 工具链，官方 `zig-x86_64-macos-<ver>.tar.xz`（Intel host）；与 core 同名 |
+| `swift` | 官方 Swift 6.4.2 macOS pkg 重打包，只暴露 `swift`/`swiftc`（不污染其它工具链）；版本跟 swift.org |
+| `llvm-mingw` | LLVM/Clang 的 mingw-w64 交叉工具链（Intel host → Windows），版本跟 GitHub release |
+| `aarch64-unknown-linux-gnu` | 面向 aarch64 Linux 的 GCC 交叉工具链（Intel host 预编译），与 `x86_64-unknown-linux-gnu` 配套 |
+| `qwen-ime` | 千问输入法，cask 取上游下载 API 的 Mac dmg，镜像到本仓 Release |
 
 ## 注意事项（同名冲突）
 
@@ -142,6 +156,12 @@ brew uninstall meson
 brew uninstall --ignore-dependencies python@3.15
 brew install bemly/tahoe/meson
 ```
+
+其余同名包（`git` / `bash` / `wget` / `aria2` / `automake` / `abseil` / `svt-av1` /
+`python@3.11` / `openjdk` / `openjdk@17` / `openjdk@21` / `openjdk@26` / `guile` /
+`jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` / `zig`）
+都与 core 同名同物，装本 tap 版前先 `brew uninstall <name>`（反之亦然）。
+`fork-*` 是改名包，与 core 不冲突，不需要卸载。
 
 ## GHCR 瓶
 
