@@ -12,14 +12,9 @@ class Openjdk < Formula
   depends_on macos: :tahoe
 
   def install
-    jdk = Dir["*.jdk"].fetch(0)
-    prefix.install jdk
-    home = prefix/jdk/"Contents/Home"
-    (prefix/"bin").mkpath
-    Dir[home/"bin/*"].each { |f| bin.write_exec_script f }
-    (prefix/"include").install_symlink home/"include"
-    (prefix/"lib").install_symlink home/"lib"
-    (prefix/"man").install_symlink home/"man"
+    # brew 会自动下降进唯一的 .jdk 顶层目录，故两种 CWD 都要兼容
+    home = Dir["**/Contents/Home"].fetch(0)
+    prefix.install Dir[File.join(home, "*")]
   end
 
   test do
