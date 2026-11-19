@@ -1910,6 +1910,33 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    `--with-included-ltdl` + 系统 expat/zlib，Quartz 与内置插件仍提供 PDF/PNG/SVG。
    本机 `--build-from-source` 1 分 41 秒装完、`dot -V`/`-Tpdf`/`-Tsvg`/`-Tpng` 全过。
 
+### 11.60 doubao-ime 迁移声明式 steps + 命令式 block 加载即告警（2026-11-20 实测）
+
+11.40.1 的「存量 doubao-ime.rb 本轮未改」已过时：用户运行时撞
+`Calling 'postflight' is deprecated!` 告警（brew 7 后期版本加载 cask 即打警告，
+**不只是 lint 腐化，运行时也刷**），本轮完成迁移（afm 为模板）：
+
+1. `preflight do` → `preflight_steps do`：解包安装器内层 `DoubaoIme.zip` 的
+   Ruby 通配逻辑包进 `run "/bin/sh", args: ["-c", ...]`。steps 是序列化后带
+   context 执行的（`install_steps.rb` 实读），**块内拿不到 `staged_path` 方法**，
+   要用模板 token `{{staged_path}}`（CONTENT_PATH_TOKENS 之一，runner 展开）；
+   取「第一个匹配」用 `set -- <glob>; "$1"` 模拟旧 `.fetch(0)`。解包目标在
+   caskroom 内，sandbox 默认放行，无需 `writable_paths`。
+2. `postflight do` → `postflight_steps do`：`set_permissions … base: :home`
+   （原 chmod u+w）、`run` 包 sh -c 的 defaults 判重写（同 afm，配
+   `writable_paths` + `must_succeed: false`）、三条 `terminate_process`。
+   原 `ohai` 横幅无对应 DSL，删（不影响功能）。
+3. **顺手治愈 audit 存量红**：url 文件名段无版本被判 unversioned（audit 收紧
+   漂化，11.43.4 同型）——tag 段改 `doubao-ime-#{version}` 插值过审
+   （mirage/lceda 同法）。镜像流下次更新仍会整条写回字面 url，**届时需手动
+   改回插值**（11.26/11.53.6 的既有流程，watcher 不管这个）。
+4. 验证链（本机未安装该 cask，全静态 + 摆拍）：style 绿；audit --strict 绿；
+   `brew ruby` 的 `artifacts_list` 序列化出完整 steps JSON（DSL 合法硬证）；
+   preflight 的 sh 通配在 /tmp 摆拍双安装器目录实测取对 zip 解出 app；
+   `brew fetch --cask` ✔︎（插值 url 端到端）；`CaskLoader.load` 零告警
+   （用户症状消失的直接证据）。真实 `install --cask` 未跑——会往用户系统
+   装输入法并改输入源偏好，需要时用户自行安装即全链路验证。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
