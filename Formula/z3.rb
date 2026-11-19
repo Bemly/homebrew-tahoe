@@ -10,7 +10,7 @@ class Z3 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "cd985ef0656eefb991391d50ccb4eabe339d953f5a0a6af233d3456aee2a50f6"
+    sha256 cellar: :any, tahoe: "34499396d5612f0465a8e2e55ae2efe8cd3849e42cc2c4b276b5da7a50517c21"
   end
 
   depends_on arch: :x86_64
