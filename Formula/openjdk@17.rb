@@ -11,6 +11,11 @@ class OpenjdkAT17 < Formula
     regex(/^jdk[._-]v?(17(?:\.\d+)*)-ga$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "338eaae9f8e50c5cfdd59af1d73fa3cfe575c68f757217cb5b1bd05b4f903319"
+  end
+
   keg_only "bottled by bemly/tahoe; avoid auto-link conflicts with core"
 
   deprecate! date: "2027-09-30", because: :unmaintained

@@ -13,6 +13,11 @@ class ForkWebp < Formula
     regex(/libwebp[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e0d73e0f382c4452fb60ec14e7e6834798dcef3baf915bc9360bfb792ffde141"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "cmake" => :build

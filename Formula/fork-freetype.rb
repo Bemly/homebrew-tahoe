@@ -12,6 +12,11 @@ class ForkFreetype < Formula
     regex(/url=.*?freetype[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "f1e43d843f9a4fcb5777bcce0b9fd3dd6f7230b8ddfa7665767ac3a492b89b0c"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build

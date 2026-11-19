@@ -13,6 +13,11 @@ class ForkLittleCms2 < Formula
     regex(/Little\s*CMS\s+v?(\d+(?:\.\d+)+)\s+released/im)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "8c5ef135aeb11c24c91c74cbcb89d4111f14e5681d39e804c0d857a96bc1e4dc"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
