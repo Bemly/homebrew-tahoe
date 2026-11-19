@@ -2,8 +2,8 @@ class Z3 < Formula
   desc "High-performance theorem prover"
   homepage "https://github.com/Z3Prover/z3"
   # 文件名里的 osx-13.3 会让 brew 扫成 "13.3"，必须显式声明真实版本
-  version "5.3.3"
   url "https://github.com/Z3Prover/z3/releases/download/z3-5.3.3/z3-5.3.3-x64-osx-13.3.zip"
+  version "5.3.3"
   sha256 "ace69787d5a21762154b103abe68178188f38e02362fb0f82d346621af90f8e7"
   license "MIT"
   compatibility_version 5
