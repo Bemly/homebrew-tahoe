@@ -1,5 +1,5 @@
 // updater/openjdk@26.swift —— 与 Formula/openjdk@26.rb 一一同名的检查器入口
-// 版本锁在 OpenJDK 26 维护线（jdk26u 仓库的 GA tag），不会跟 core 的 arm64-only openjdk 27。
+// 版本锁在 OpenJDK 26 GA 线：从 jdk.java.net/archive 抓 Mac/x64 预编译包与官方 sha256。
 
 import Foundation
 
@@ -9,18 +9,26 @@ struct OpenjdkAT26Check {
         runCheck(CheckConfig(
             formula: "openjdk@26",
             customRelease: {
-                let api = "https://api.github.com/repos/openjdk/jdk26u/tags?per_page=100"
-                let (status, body) = curlText(api)
-                guard status == 0,
-                      let json = (try? JSONSerialization.jsonObject(with: Data(body.utf8))) as? [[String: Any]],
-                      let tag = json.compactMap({ $0["name"] as? String })
-                        .first(where: { $0.hasPrefix("jdk-26") && $0.hasSuffix("-ga") }) else { return nil }
-                let v = tag.replacingOccurrences(of: "jdk-", with: "")
-                           .replacingOccurrences(of: "-ga", with: "")
-                guard !v.isEmpty else { return nil }
-                return UpstreamRelease(version: v,
-                    downloadURL: "https://github.com/openjdk/jdk26u/archive/refs/tags/\(tag).tar.gz",
-                    sha256: nil)
+                let (status, body) = curlText("https://jdk.java.net/archive/")
+                guard status == 0, !body.isEmpty else { return nil }
+                let verRe = try! NSRegularExpression(pattern: #"26\.0\.[0-9.]+"#)
+                let range = NSRange(body.startIndex..<body.endIndex, in: body)
+                guard let vm = verRe.firstMatch(in: body, range: range),
+                      let vr = Range(vm.range, in: body) else { return nil }
+                let v = String(body[vr])
+                let chunk = String(body[vr.lowerBound...].prefix(8000))
+                let urlRe = try! NSRegularExpression(pattern: #"href=\"(https://download\.java\.net/java/GA/[^\"]*macos-x64_bin\.tar\.gz)\""#)
+                let shaRe = try! NSRegularExpression(pattern: #"href=\"(https://download\.java\.net/java/GA/[^\"]*macos-x64_bin\.tar\.gz\.sha256)\""#)
+                let cr = NSRange(chunk.startIndex..<chunk.endIndex, in: chunk)
+                guard let um = urlRe.firstMatch(in: chunk, range: cr),
+                      let ur = Range(um.range(at: 1), in: chunk),
+                      let sm = shaRe.firstMatch(in: chunk, range: cr),
+                      let sr = Range(sm.range(at: 1), in: chunk) else { return nil }
+                let downloadURL = String(chunk[ur])
+                let (shaStatus, shaBody) = curlText(String(chunk[sr]))
+                guard shaStatus == 0 else { return nil }
+                let hash = shaBody.trimmingCharacters(in: .whitespacesAndNewlines)
+                return UpstreamRelease(version: v, downloadURL: downloadURL, sha256: hash)
             }
         ))
     }
