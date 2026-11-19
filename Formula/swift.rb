@@ -5,6 +5,11 @@ class Swift < Formula
   sha256 "0a7d8489900d21dbf5f0187cb570e646a4c0226d0ddef2cbde8c7f54dfe79736"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "c80cc3b3006eeba238e7a22fd8530e2b4910633fe92423be78f9560d7bfbac25"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
