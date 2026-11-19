@@ -689,6 +689,8 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
             let rawName = URL(fileURLWithPath: d.url).lastPathComponent
             let assetName = (rawName.removingPercentEncoding ?? rawName)
                 .replacingOccurrences(of: " ", with: ".")
+                .replacingOccurrences(of: "(", with: ".")
+                .replacingOccurrences(of: ")", with: ".")
             let namedPath = FileManager.default.temporaryDirectory
                 .appendingPathComponent("updater-\(UUID().uuidString)")
                 .appendingPathComponent(assetName).path
@@ -1148,6 +1150,8 @@ func runCheck(_ config: CheckConfig) {
         let assetName = (URL(fileURLWithPath: downloadURL).lastPathComponent
             .removingPercentEncoding ?? URL(fileURLWithPath: downloadURL).lastPathComponent)
             .replacingOccurrences(of: " ", with: ".")
+            .replacingOccurrences(of: "(", with: ".")
+            .replacingOccurrences(of: ")", with: ".")
         let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe"
         guard let zipPath = curlDownload(downloadURL) else {
             fail("下载 \(config.formula) 发布包失败，无法上传 Release")
