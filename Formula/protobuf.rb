@@ -6,6 +6,11 @@ class Protobuf < Formula
   license "BSD-3-Clause"
   compatibility_version 5
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "f95c424a5982b689f79445292cbb8bb7d01ae8bed6aa15769415ccb69cbf7290"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

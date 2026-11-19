@@ -6,6 +6,11 @@ class Z3 < Formula
   license "MIT"
   compatibility_version 5
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "cd985ef0656eefb991391d50ccb4eabe339d953f5a0a6af233d3456aee2a50f6"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
