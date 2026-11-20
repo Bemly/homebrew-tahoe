@@ -18,6 +18,11 @@ class BoostAT185 < Formula
     root = File.directory?("include") ? "." : Dir["*/include"].map { |p| File.dirname(p) }.first
     include.install Dir[File.join(root, "include", "*")]
     lib.install Dir[File.join(root, "lib", "*")]
+    # 第三方预编译 dylib 用 @rpath 但没有 LC_RPATH，补上并 ad-hoc 重签
+    Dir[lib/"*.dylib"].each do |f|
+      system "install_name_tool", "-add_rpath", "@loader_path", f
+      system "codesign", "--force", "--sign", "-", f
+    end
   end
 
   test do
