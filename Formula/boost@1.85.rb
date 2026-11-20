@@ -14,9 +14,10 @@ class BoostAT185 < Formula
   depends_on macos: :tahoe
 
   def install
-    # brew 会自动下降进唯一顶层 boost 目录，兼容两种 CWD
-    root = Dir["**/boost"].first || "."
-    prefix.install Dir[File.join(root, "*")]
+    # brew 会自动下降进唯一顶层 boost 目录；以 include/ 存在与否判定 CWD
+    root = File.directory?("include") ? "." : Dir["*/include"].map { |p| File.dirname(p) }.first
+    include.install Dir[File.join(root, "include", "*")]
+    lib.install Dir[File.join(root, "lib", "*")]
   end
 
   test do
