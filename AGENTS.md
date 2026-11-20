@@ -2382,9 +2382,15 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    （只拦「词典几乎为空」的真故障）。质量门宁可宽到只拦真故障，也不要拿臆测的规模当门。
 
 7. **宠物是纯 DOM，没有 Electron 那套 IPC/fs**：WKWebView 里拿不到 `ipcRenderer`，
-   所以 13 个内置角色（base64 data URL，约 3.2MB 原图）+ 45 条语录在**构建期**打进
-   `gy/pet.js`（`pet-template.js` 的 `__PAYLOAD__` 占位由 node 替换，替换后 grep 不到占位才算过）；
-   导入自己的图片走隐藏 `<input type=file>` + FileReader + **localStorage**（有配额上限，
+   所以 13 个内置角色（base64 data URL，约 3.2MB 原图 → 填充后 4.47MB）+ 45 条语录在
+   **构建期**打进 `gy/pet.js`（`pet-template.js` 的占位符由 node 替换）。
+   **两个实测坑**：① `String.replace` 只换**第一处**——模板头部注释里写了占位符字面量，
+   于是注释被换、真正的 `const PAYLOAD = …` 那行留着没换，CI 被 grep 门拦下
+   （门是对的， bug 是真的）；改用 `replaceAll` + 注释里不许出现占位符字面量，
+   并在填充后再 `node --check` 一次语法。② 导入失败提示**不要用 `alert()`**：
+   WKWebView 的 alert 要宿主实现 UIDelegate，Tauri 未必接，弹不出来等于静默失败；
+   改为写进挂件自己的气泡 DOM。
+   导入自己的图片走隐藏 `<input type=file>` + FileReader + **localStorage**（约 5MB 配额，
    超了要提示而不是静默失败），设置也存 localStorage。素材与 antigravity 页内挂件同源
    （`Widgets/antigravity-niang/characters` + `assets/quotes.json`），实现各写一份。
 
@@ -2394,6 +2400,15 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    「一旦自更新，补丁被官方包覆盖、界面回英文 → `brew reinstall --cask`」。
    连带：`auto_updates true` 会让 `brew upgrade` **跳过**这个 cask，补丁更新就永远送不到，
    所以必须去掉（本包更新权归 brew）。
+   **自更新真的会跑，本机有实证**：Caskroom 登记还是 1.1.34，`/Applications` 里的 app
+   已经自己升到 1.4.3，且 `codesign --verify --deep` 报
+   `code object is not signed at all`（subcomponent `Frameworks/libfoundry_local.dylib`）
+   ——Tauri updater 换包后连嵌套签名都不补。所以「补丁会被覆盖」不是假想风险。
+   另：官方包的 entitlements 里有 `keychain-access-groups` / `application-identifier`
+   这类**受限 entitlement**（绑 team + provisionprofile），ad-hoc 重签必须丢掉它们
+   （否则 AMFI 校验 profile 与 team 不符直接杀进程），上游 sign.sh 同样只留那 4 条。
+   官方包还有一个上游没签的嵌套 dylib `Resources/oneauth-runtime/libOneAuthInterop.dylib`，
+   保留原签名即可（library validation 已关，加载不受影响），不要顺手 `--deep` 灌 entitlements。
 
 9. **版本 / 检查器 / CI 顺序**：版本 `<宿主版本>-cn<N>`（宿主版本取 core cask API 的
    `.version`，无构建号段）；tag `github-copilot-app-<版本>`、资产

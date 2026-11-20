@@ -1,7 +1,9 @@
 // Gemini 娘挂件 · WKWebView 页内版（GitHub Copilot 桌面版 / Tauri）。
-// 由 build.sh 把 __PAYLOAD__ 替换成 {characters:[{id,name,dataUrl}], quotes:[…]} 后
-// 经 GyWidgetCN.dylib 以 WKUserScript 注入。无 Electron IPC：设置与导入图存
+// 由 build.sh 把下面的 PAYLOAD 占位符替换成 {characters:[{id,name,dataUrl}], quotes:[…]}
+// 后经 GyWidgetCN.dylib 以 WKUserScript 注入。无 Electron IPC：设置与导入图存
 // localStorage，导入走 <input type=file> + FileReader（WKWebView 原生文件面板）。
+// 注意：本文件里**不要**再出现占位符的字面量（注释里也不行）——build.sh 用
+// replaceAll 替换，注释里出现一次就会把 4MB 的 JSON 灌进注释里。
 'use strict';
 (() => {
   const g = globalThis;

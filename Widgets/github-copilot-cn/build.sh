@@ -159,11 +159,16 @@ const characters = cat.characters.map((c) => {
 });
 const quotes = JSON.parse(fs.readFileSync(path.join(widgetDir, '..', 'antigravity-niang', 'assets', 'quotes.json'), 'utf8')).quotes || [];
 const tpl = fs.readFileSync(path.join(widgetDir, 'pet-template.js'), 'utf8');
-if (!tpl.includes('__PAYLOAD__')) throw new Error('pet-template.js 缺 __PAYLOAD__ 占位');
-fs.writeFileSync(out, tpl.replace('__PAYLOAD__', JSON.stringify({ characters, quotes })));
+if (!tpl.includes('__PAYLOAD__')) throw new Error('pet-template.js 缺 PAYLOAD 占位');
+// replaceAll 而非 replace：replace 只换第一处，模板注释里若出现占位符字面量，
+// 真正赋值那行就留着没换（CI 实测被下面的 grep 门拦下）。
+const filled = tpl.replaceAll('__PAYLOAD__', JSON.stringify({ characters, quotes }));
+if (filled.includes('__PAYLOAD__')) throw new Error('PAYLOAD 占位未被完全替换');
+fs.writeFileSync(out, filled);
 console.log('  角色 ' + characters.length + ' 个 / 语录 ' + quotes.length + ' 条 → gy/pet.js');
 JS
-grep -q __PAYLOAD__ "$RES/gy/pet.js" && die "payload 占位未被替换"
+if grep -q '__PAYLOAD__' "$RES/gy/pet.js"; then die "payload 占位未被替换"; fi
+node --check "$RES/gy/pet.js" || die "gy/pet.js 语法自检未通过"
 
 say "启动器：官方主二进制改名 github-real，github 位置换成注入启动器"
 # 不用 Info.plist LSEnvironment：@executable_path 形态的 DYLD_INSERT_LIBRARIES 会被
