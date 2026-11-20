@@ -92,6 +92,7 @@ homebrew-tahoe/
     └── workflows/
         ├── watch-updates.yml          # 手动触发的批量版本 watcher（ubuntu + Swift）
         ├── bottle.yml                 # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
+        ├── patched.yml                # 手动触发的补丁成品构建 + cask lint（macos-26-intel）
         └── sysroots.yml               # 手动触发的交叉编译 sysroot 构建（发 Release）
 ```
 
@@ -161,6 +162,7 @@ end
 | 版本来源按流分流 | brew 公式 / cask API、GitHub `releases/latest`、源 tap raw、上游自有接口；只有 brew 流走 formulae.brew.sh（**不消耗 GitHub API 限额**），见第 7 节 |
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
 | `concurrency` + `timeout-minutes` | 防重复跑、防挂死 |
+| 补丁成品构建与 cask lint 走 CI | `patched.yml`（macos-26-intel，手动）：先 `brew style`/`audit --strict` 再 `build.sh --upload`；**开发机只跑轻量取证**（语法/样本串/日志/fetch）。2026-11-21 用户纠正：本地跑 brew lint 与构建把 Intel 开发机卡死 |
 | 批量制瓶只占一次 runner | `watch-updates.yml` 扫全部（唯一模式），只触发**一次** `bottle.yml`（逗号列表传参）；`bottle.yml` 在单个 `macos-26-intel` 任务里顺序出瓶，绝不逐个触发 |
 | 递归依赖门控 | `bottle.yml` 在 `brew readall` 后展开每批公式的**运行时**依赖闭包（build deps 只在 CI 现编、不影响用户端，故不检查）：本仓依赖必须有瓶块（同批公式由拓扑排序在本轮出瓶，豁免）、core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶则直接失败并列出名单；旧公式确需 compat 时手动勾 `allow_unbottled_core: true` 放行，见 8.1 / 11.59 |
 

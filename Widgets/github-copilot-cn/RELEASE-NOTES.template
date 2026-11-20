@@ -1,0 +1,26 @@
+GitHub Copilot 桌面版 中文补丁 + Gemini 娘挂件（bemly/tahoe 构建）
+
+本产物是在 GitHub 官方 macOS **darwin-x64** 发布包基础上、按可复现脚本重打的处理包：
+
+1. 官方 dmg（Intel 直链，sha256 下载实算；homebrew/core 的 sha 属于 arm64 包，不可用）；
+2. 中文界面：shuhuNB515/githubcopilot-desktop-zh-mac（MIT）的运行时注入方案，
+   本仓把其 inject.m 编译为 **x86_64** dylib（上游只发 arm64 思路/产物）；
+3. Gemini 娘挂件：本仓自有的第二个 dylib（GyWidgetCN），同手法 hook WKWebView
+   注入页内 DOM 宠物（角色图可右键导入自己的图片，存 localStorage）；
+4. 加载方式：Info.plist `LSEnvironment` 设 `DYLD_INSERT_LIBRARIES`，LaunchServices
+   启动即注入，**无需启动器、不改 Mach-O**；运行时文件落
+   ~/Library/Application Support/CopilotCN（往签名 bundle 里写会破坏封印）；
+5. ad-hoc 重签 + `disable-library-validation` / `allow-dyld-environment-variables`
+   entitlements（注入第三方 dylib 必需），hardened runtime 丢弃；原公证随之失效。
+
+来源与许可（重要）
+- 中文插件为 MIT（licenses/ZH-MIT.txt）；挂件代码 MIT，衍生自 GPT-Niang / dsh-whale-widget
+  （见 Widgets/antigravity-niang/licenses/）；内置角色图许可见同目录 ASSETS.md；
+- GitHub Copilot 本体为 GitHub 专有软件。**本 Release 分发的是修改后的专有包**，
+  是 bemly/tahoe 已记录的显式破例（AGENTS.md 1 节），仅用于 Intel Mac 的 macOS 26；
+- 应用内自动更新**未禁用**（Tauri updater 嵌在二进制/前端里，静态禁用代价过高）：
+  一旦应用自更新，补丁会被官方包覆盖、界面回到英文。版本更新一律走本 tap：
+  `brew upgrade --cask bemly/tahoe/github-copilot-app`；发现变回英文就
+  `brew reinstall --cask bemly/tahoe/github-copilot-app`。
+
+构建脚本：仓库内 `Widgets/github-copilot-cn/build.sh`（可复现，产物不落 git）。
