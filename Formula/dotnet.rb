@@ -8,7 +8,7 @@ class Dotnet < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "92e3d3ade9d4a47e7637c5e623b6be0ebc8613cacd36f0f827a7694a98d2d54d"
+    sha256 cellar: :any, tahoe: "06d04c870425953633f38d90dacc8ebe69aec0158411a8c2a53ba7da03f9f06d"
   end
 
   depends_on arch: :x86_64
