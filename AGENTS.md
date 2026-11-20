@@ -366,7 +366,7 @@ cask 无 bottle 机制：watcher 检测到新版本后下载发布包、上传�
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
 | `doubao-ime` | 1.1.1 | Intel | 输入法；custom API；镜像 |
 | `dsh-gui` | 0.2.1-rc.4 | Intel | nightly feed 判新；镜像 |
-| `github-copilot-app` | 1.4.2-cn1 | Intel | 官方 darwin-x64 dmg + 运行时注入补丁（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`；官方主二进制改名 `github-real`，`github` 位置换成设绝对路径 `DYLD_INSERT_LIBRARIES` 的启动器），带 disable-library-validation entitlements ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-cn<补丁序号>`；**第二个修改版专有二进制破例**（见 11.62）；customRelease 读 core cask API + sidecar，产物由 `Widgets/github-copilot-cn/build.sh` 在 **CI（patched.yml）** 构建；**自更新未禁用**（Tauri updater 在二进制里），caveats 写明变回英文就 reinstall |
+| `github-copilot-app` | 1.4.3-cn1 | Intel | 官方 darwin-x64 dmg + 运行时注入补丁（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`；官方主二进制改名 `github-real`，`github` 位置换成设绝对路径 `DYLD_INSERT_LIBRARIES` 的启动器），带 disable-library-validation entitlements ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-cn<补丁序号>`；**第二个修改版专有二进制破例**（见 11.62）；customRelease 读 core cask API + sidecar，产物由 `Widgets/github-copilot-cn/build.sh` 在 **CI（patched.yml）** 构建；**自更新未禁用**（Tauri updater 在二进制里），caveats 写明变回英文就 reinstall |
 | `grok-bot` | 1.2.3 | Intel | Cursor 下载页锚定；镜像 |
 | `heliport` | 2.0.0-alpha | universal | universal；不检查更新 |
 | `konsole` | 5485 | dual | KDE CI 构建号；双架构；`alwaysUpdate`；每月手动跑 |
@@ -2419,6 +2419,10 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    lint 在前、审到 main 上那份**资产名无版本的字面 url** 而红（`Use sha256 :no_check
    when URL is unversioned`，11.43/11.53 的存量漂化）。新收录时 cask 的 sha 可先写
    `PENDING_CI_SIDECAR`，由 workflow 填实——**占位只在 main 上短暂存在，CI 自愈**。
+   **cask 文本修正后不要重跑构建**：hdiutil 不逐字节可复现，重跑会换 sha、让刚填的 cask 失效；
+   用 `skip_build=true` 只跑 lint + 提交。本轮 lint 唯一的 offense 又是
+   `Cask/ArrayAlphabetization`（zap 里 `CopilotCN` 排在 `com.github.githubapp` 前——
+   cop 按 `strip.downcase` 排，`com…` < `cop…`，11.61 第 13 条的坑原样复发）。
 
 10. **裸 `clang` 在开发机找不到 SDK 头**（`stdio.h file not found`）：一律 `xcrun clang`
     （CI 上裸 clang 可能可用，但别赌）。`xcrun swiftc` 同理（11.61 同轮踩过）。
