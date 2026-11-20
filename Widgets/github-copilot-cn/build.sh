@@ -134,7 +134,9 @@ done
 python3 - "$RES/runtime/dict.json" <<'PY' || die "词典自检未通过"
 import json, sys
 d = json.load(open(sys.argv[1], encoding="utf-8"))
-if not isinstance(d, dict) or len(d) < 1000:
+# 上游 v1.0.1 实测 504 条 / 39KB（DUP 行是上游自带的重复键，正常）。
+# 下限取 300：只拦「词典几乎为空」的真故障，不拿猜测的条目数当门。
+if not isinstance(d, dict) or len(d) < 300:
     raise SystemExit(f"词典条目异常：{len(d) if isinstance(d, dict) else type(d)}")
 print(f"  词典自检通过：{len(d)} 条")
 PY

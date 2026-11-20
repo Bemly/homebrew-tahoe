@@ -2375,8 +2375,11 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    装载顺序 GyWidgetCN 在前（它负责铺目录与设 env），上游库随后读同一目录。
 
 6. **词典重建**：上游 `tools/build_dict.py` 自己 `chdir` 到仓库根（读 `src/dict-*.tsv`
-   写 `runtime/dict.json`），从任意 CWD 跑都安全；但它对 BAD/DUP 行**只打印不失败**，
-   所以本仓加了「条目数下限 + JSON 可解析」自检，并把它的输出打进构建日志。
+   写 `runtime/dict.json`），从任意 CWD 跑都安全；但它对 BAD/DUP 行**只打印不失败**
+   （`DUP: Show the GitHub Copilot icon in the / menu bar` 是上游自带的重复键，正常），
+   所以本仓加了「JSON 可解析 + 条目数下限」自检。**下限要按实测定，别猜**：
+   初版写 `>1000` 把 CI 拦红了——上游 v1.0.1 实际只有 **504 条 / 39KB**，现取 300
+   （只拦「词典几乎为空」的真故障）。质量门宁可宽到只拦真故障，也不要拿臆测的规模当门。
 
 7. **宠物是纯 DOM，没有 Electron 那套 IPC/fs**：WKWebView 里拿不到 `ipcRenderer`，
    所以 13 个内置角色（base64 data URL，约 3.2MB 原图）+ 45 条语录在**构建期**打进
