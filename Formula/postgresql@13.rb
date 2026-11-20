@@ -5,6 +5,11 @@ class PostgresqlAT13 < Formula
   sha256 "622604b1bb62f74ef5e7fca733d741f3fdd2db73ac4c2b51b43e154d5c651679"
   license "PostgreSQL"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "7d3095b0d3ec57883507a7fc941cc1696953fa08af6fba919792ce113726d72a"
+  end
+
   keg_only "bundled openssl/icu libraries conflict with core formula"
 
   depends_on arch: :x86_64
