@@ -95,7 +95,7 @@ jobs:
             local sidecar base ver sha
             sidecar="$(ls .build/"$dir"/*.dmg.sha256 2>/dev/null | head -1)"
             if [[ -z "$sidecar" ]]; then
-              echo "== $cask：无 sidecar（未构建或构建失败），cask 不动"
+              echo "== ${cask}：无 sidecar（未构建或构建失败），cask 不动"
               return 0
             fi
             sha="$(awk '{print $1}' "$sidecar")"

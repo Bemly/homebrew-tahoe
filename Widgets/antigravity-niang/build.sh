@@ -98,7 +98,7 @@ fi
 ACTUAL_SHA="$(shasum -a 256 "$WORK/official.dmg" | awk '{print $1}')"
 if [[ "$ACTUAL_SHA" != "$OFFICIAL_SHA" ]]; then
   rm -f "$WORK/official.dmg"
-  die "下载校验失败：实算 $ACTUAL_SHA ≠ core $OFFICIAL_SHA（上游可能重切了同版本包，按 AGENTS 11.24 三方核对后再构建）"
+  die "下载校验失败：实算 $ACTUAL_SHA ≠ core ${OFFICIAL_SHA}（上游可能重切了同版本包，按 AGENTS 11.24 三方核对后再构建）"
 fi
 echo "  sha256 一致 $ACTUAL_SHA"
 if [[ ! -f "$CACHE" ]]; then
@@ -159,7 +159,7 @@ say "质量门：引擎自带巡检（字典/注入沙箱/asar 锚点）"
 node "$CN/scripts/ag_audit.js" check --asar "$RES/app.asar" >/tmp/ag_audit.log 2>&1 || {
   tail -30 /tmp/ag_audit.log; die "ag_audit check 未通过"; }
 ANCHOR_FAILS="$(grep -c '\[FAIL\]\|未命中\|失配' /tmp/ag_audit.log || true)"
-echo "  巡检输出锚点异常行：$ANCHOR_FAILS（字典与注入细节见 /tmp/ag_audit.log）"
+echo "  巡检输出锚点异常行：${ANCHOR_FAILS}（字典与注入细节见 /tmp/ag_audit.log）"
 
 say "注入挂件 + 禁用自更新"
 node "$WIDGET_DIR/tools/inject-widget.mjs" --asar "$RES/app.asar" --root "$WIDGET_DIR" | tail -12
@@ -211,7 +211,7 @@ if [[ "$UPLOAD" == true ]]; then
   # 本仓 cask 政策：每个 cask 的 Release 只留最新一个（11.34.3）。本包的产物由
   # 脚本构建、不走 updater 的 deleteOldCaskReleases，所以这里自己清同前缀旧 tag。
   # 只认「antigravity- 后接数字」，避免误删别的前缀同名 release。
-  say "清理旧 release（只保留 $TAG）"
+  say "清理旧 release（只保留 ${TAG}）"
   gh release list --repo bemly/homebrew-tahoe --json tagName --jq '.[].tagName' \
     --limit 200 2>/dev/null | while read -r old; do
       if [[ "$old" == antigravity-* && "$old" != "$TAG" && "${old#antigravity-}" =~ ^[0-9] ]]; then
@@ -228,8 +228,8 @@ fi
 
 say "构建完成"
 cat <<EOF
-版本   $PATCHED_VERSION（宿主 $APP_VERSION build $APP_BUILD）
-引擎   $CN_REF（$CN_REPO）
+版本   ${PATCHED_VERSION}（宿主 $APP_VERSION build ${APP_BUILD}）
+引擎   ${CN_REF}（${CN_REPO}）
 产物   $OUT_DMG
 sha256 $PATCHED_SHA
 sidecar $OUT_DMG.sha256

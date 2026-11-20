@@ -64,7 +64,7 @@ WORK="${REPO_DIR}/.build/github-copilot-cn/${PATCHED_VERSION}"
 DMG_NAME="GitHub-Copilot-${PATCHED_VERSION}.dmg"
 OUT_DMG="${REPO_DIR}/.build/github-copilot-cn/${DMG_NAME}"
 
-say "官方包：$APP_VERSION（Intel 直链，sha 下载实算——core 那份是 arm64 的）"
+say "官方包：${APP_VERSION}（Intel 直链，sha 下载实算——core 那份是 arm64 的）"
 echo "  直链 $OFFICIAL_URL"
 rm -rf "$WORK"
 mkdir -p "$WORK"
@@ -245,7 +245,7 @@ if [[ "$UPLOAD" == true ]]; then
       --notes-file "$WIDGET_DIR/RELEASE-NOTES.template" \
       "$OUT_DMG#$DMG_NAME" "$OUT_DMG.sha256#$(basename "$OUT_DMG").sha256"
   fi
-  say "清理旧 release（只保留 $TAG）"
+  say "清理旧 release（只保留 ${TAG}）"
   gh release list --repo bemly/homebrew-tahoe --json tagName --jq '.[].tagName' \
     --limit 200 2>/dev/null | while read -r old; do
       if [[ "$old" == github-copilot-app-* && "$old" != "$TAG" && "${old#github-copilot-app-}" =~ ^[0-9] ]]; then
@@ -262,8 +262,8 @@ fi
 
 say "构建完成"
 cat <<EOF
-版本   $PATCHED_VERSION（宿主 $APP_VERSION）
-插件   $CN_REF（$ZH_REPO）
+版本   ${PATCHED_VERSION}（宿主 ${APP_VERSION}）
+插件   ${CN_REF}（${ZH_REPO}）
 产物   $OUT_DMG
 sha256 $PATCHED_SHA
 sidecar $OUT_DMG.sha256

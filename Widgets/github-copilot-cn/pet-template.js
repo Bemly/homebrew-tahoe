@@ -125,7 +125,15 @@
         settings.character = id;
         if (!save()) {
           settings.imported.pop();
-          alert('导入失败：本地存储空间不足（localStorage 约 5MB），请先移除一些导入的角色。');
+          // 不用 alert()：WKWebView 的 alert 要靠宿主实现 UIDelegate，Tauri 未必接，
+          // 弹不出来就等于静默失败。直接把提示写进气泡（页面内自有 DOM，一定看得见）。
+          settings.character = (PAYLOAD.characters[0] || {}).id;
+          renderAll();
+          if (bubble) {
+            bubble.textContent = '';
+            bubble.appendChild(el('div', 'gyw-quote',
+              '导入失败：本地存储空间不足（localStorage 约 5MB）。先在右键菜单里移除一些导入的角色，或换更小的图片。'));
+          }
           return;
         }
         renderAll();

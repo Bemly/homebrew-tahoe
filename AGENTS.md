@@ -2405,6 +2405,16 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
 10. **裸 `clang` 在开发机找不到 SDK 头**（`stdio.h file not found`）：一律 `xcrun clang`
     （CI 上裸 clang 可能可用，但别赌）。`xcrun swiftc` 同理（11.61 同轮踩过）。
 
+11. **`$VAR` 紧跟中文标点会被 bash 吞掉一个字节（CI 首轮 9 秒即红）**：
+    `say "官方包：$APP_VERSION（Intel 直链…"` 在 runner 上报
+    `APP_VERSION\xef: unbound variable`——bash 的变量名合法性判断走 `isalnum()`，
+    **受 locale 影响**，某些 locale 下高位字节（中文全角括号的首字节 0xEF）被当成名字的一部分。
+    开发机 locale 不同，`bash -n` 也查不出来（语法合法，运行才炸）。
+    修法：凡 `$VAR` 后面紧跟非 ASCII 字符，一律写 `${VAR}`。本轮用脚本扫全仓
+    `*.sh` 与 workflow（正则 `\$([A-Za-z_][A-Za-z0-9_]*)(?=[\x80-\xff])`），
+    copilot 6 处 + antigravity 7 处 + patched.yml 1 处全部加花括号。
+    **写含中文提示的 shell 时，变量一律带花括号**，别省。
+
 ## 12. 待办 / 后续演进
 
 - [x] 批量更新已是 watcher 的唯一模式：扫全部 `Formula/*.rb`（Swift 检查器）→ 提交 `main` → 单次 `bottle.yml` 出多瓶（见 5.1 / 7 / 9.8）。新增软件仍按第 9 节 SOP 加。
