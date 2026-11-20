@@ -7,11 +7,15 @@ GitHub Copilot 桌面版 中文补丁 + Gemini 娘挂件（bemly/tahoe 构建）
    本仓把其 inject.m 编译为 **x86_64** dylib（上游只发 arm64 思路/产物）；
 3. Gemini 娘挂件：本仓自有的第二个 dylib（GyWidgetCN），同手法 hook WKWebView
    注入页内 DOM 宠物（角色图可右键导入自己的图片，存 localStorage）；
-4. 加载方式：Info.plist `LSEnvironment` 设 `DYLD_INSERT_LIBRARIES`，LaunchServices
-   启动即注入，**无需启动器、不改 Mach-O**；运行时文件落
-   ~/Library/Application Support/CopilotCN（往签名 bundle 里写会破坏封印）；
+4. 加载方式：官方主二进制改名 `Contents/MacOS/github-real`，`github` 位置换成本仓
+   自编译的启动器——它算出两个 dylib 的**绝对路径**设进 `DYLD_INSERT_LIBRARIES` 再 exec
+   官方二进制。**不用 Info.plist `LSEnvironment` + `@executable_path`**：那样子进程继承到的
+   路径按子进程自身展开、不存在，dyld 会 SIGABRT 杀掉子进程（最小探针实测），
+   Copilot 大量 spawn git/shell/MCP，功能会全废。运行时文件落
+   ~/Library/Application Support/CopilotCN（往签名 bundle 里写会破坏封印），每次启动同步；
 5. ad-hoc 重签 + `disable-library-validation` / `allow-dyld-environment-variables`
-   entitlements（注入第三方 dylib 必需），hardened runtime 丢弃；原公证随之失效。
+   entitlements（注入第三方 dylib 必需），**保留 hardened runtime**（两条例外 entitlement
+   即可放行注入）；逐组件签名照上游 sign.sh，原公证随之失效。
 
 来源与许可（重要）
 - 中文插件为 MIT（licenses/ZH-MIT.txt）；挂件代码 MIT，衍生自 GPT-Niang / dsh-whale-widget

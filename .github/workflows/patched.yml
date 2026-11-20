@@ -7,8 +7,12 @@ name: Build patched cask artifacts
 # 仅手动触发（AGENTS.md §5 硬约定）。构建机必须 Intel + macOS 26：dylib 要 x86_64、
 # 重签与 hdiutil 要 macOS，对应 label macos-26-intel。
 #
-# 本 workflow 只构建 + 上传 + 打印 sidecar sha，**不改 cask**：cask 的 version/sha
-# 由维护者读 sidecar 后本地提交（保证 main 上的 cask 任何时刻都指向真实存在的资产）。
+# 步骤顺序是「构建 → 把 sidecar 的 sha 写回工作区 cask → lint → 提交 cask」：
+#   * lint 放在构建之后，才能审到「维护者将要提交的那份 cask」（sha 已是真值）；
+#     新收录时 cask 里的 sha 可以先写占位串 PENDING_CI_SIDECAR，由本 workflow 填实。
+#   * lint 绿了才提交，main 上的 cask 不会指向不存在的资产或错 sha。
+#   * dmg 不是逐字节可复现的（hdiutil 内嵌卷时间戳），所以 sha 只能取「本次上传的
+#     那份产物」的 sidecar，不能拿另一次构建的顶（AGENTS 11.61 第 10 条）。
 on:
   workflow_dispatch:
     inputs:
@@ -40,7 +44,7 @@ on:
 permissions:
   contents: write
 
-# 与 bottle 同理：上传/删 Release 的任务串行，避免并发互删。
+# 与 bottle 同理：上传/删 Release、推 main 的任务串行，避免并发互删。
 concurrency:
   group: patched
   cancel-in-progress: false
@@ -58,15 +62,8 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Lint casks（style + strict audit，CI 跑不占开发机）
-        run: |
-          brew tap bemly/tahoe "$GITHUB_WORKSPACE"
-          brew trust bemly/tahoe
-          brew style --cask bemly/tahoe/antigravity bemly/tahoe/github-copilot-app
-          brew audit --strict --cask bemly/tahoe/antigravity
-          brew audit --strict --cask bemly/tahoe/github-copilot-app
-
       - name: Build antigravity
+        id: ag
         if: inputs.package == 'antigravity' || inputs.package == 'all'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,6 +74,7 @@ jobs:
           Widgets/antigravity-niang/build.sh "${args[@]}"
 
       - name: Build github-copilot-app
+        id: copilot
         if: inputs.package == 'github-copilot-app' || inputs.package == 'all'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,9 +84,65 @@ jobs:
           [[ -n "${{ inputs.cn_ref }}" ]] && args+=(--cn-ref "${{ inputs.cn_ref }}")
           Widgets/github-copilot-cn/build.sh "${args[@]}"
 
-      - name: 打印 sidecar（维护者据此改 cask 的 version/sha256）
+      # 只改工作区（不提交）：把本次产物的版本号与 sha 写进 cask，供下一步 lint
+      # 审「将要提交的那份文件」。构建失败/未选中的包没有 sidecar，cask 保持原样。
+      - name: 把 sidecar 写回 cask（工作区）
+        id: writeback
+        if: always()
+        run: |
+          write_back() {
+            local dir="$1" cask="$2" prefix="$3"
+            local sidecar base ver sha
+            sidecar="$(ls .build/"$dir"/*.dmg.sha256 2>/dev/null | head -1)"
+            if [[ -z "$sidecar" ]]; then
+              echo "== $cask：无 sidecar（未构建或构建失败），cask 不动"
+              return 0
+            fi
+            sha="$(awk '{print $1}' "$sidecar")"
+            base="$(basename "$sidecar" .sha256)"
+            ver="${base#"$prefix"-}"
+            ver="${ver%.dmg}"
+            if [[ ! "$sha" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "sidecar 里的 sha 不合法：$sidecar"; return 1
+            fi
+            sed -i '' -E \
+              -e "s|^  version \".*\"|  version \"$ver\"|" \
+              -e "s|^  sha256 \".*\"|  sha256 \"$sha\"|" \
+              "Casks/$cask.rb"
+            echo "== $cask → version $ver / sha256 $sha"
+          }
+          write_back antigravity-cn     antigravity        Antigravity
+          write_back github-copilot-cn  github-copilot-app GitHub-Copilot
+          git --no-pager diff --stat -- Casks/
+
+      - name: Lint casks（style + strict audit，CI 跑不占开发机）
+        id: lint
+        run: |
+          brew tap bemly/tahoe "$GITHUB_WORKSPACE"
+          brew trust bemly/tahoe
+          brew style --cask bemly/tahoe/antigravity bemly/tahoe/github-copilot-app
+          brew audit --strict --cask bemly/tahoe/antigravity
+          brew audit --strict --cask bemly/tahoe/github-copilot-app
+
+      # lint 绿 + 构建成功才提交（success() 已含「前面没有失败步骤」）。
+      - name: 提交 cask 的 version/sha256
+        if: success()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- Casks/; then
+            echo "cask 无改动，不提交"
+            exit 0
+          fi
+          git --no-pager diff -- Casks/
+          git add Casks/antigravity.rb Casks/github-copilot-app.rb
+          git commit -m "patched: 更新补丁包 cask 的 version/sha256（${{ inputs.package }} cn${{ inputs.revision }}）"
+          git push origin HEAD:main
+
+      - name: 打印 sidecar 与最终 cask 行
         if: always()
         run: |
           for f in .build/antigravity-cn/*.dmg.sha256 .build/github-copilot-cn/*.dmg.sha256; do
             [[ -f "$f" ]] && { echo "== $f"; cat "$f"; }
           done
+          grep -n -E '^  (version|sha256) ' Casks/antigravity.rb Casks/github-copilot-app.rb

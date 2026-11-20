@@ -61,6 +61,18 @@ Intel 上缺汉化与挂件能力。约束：构建必须由 `Widgets/antigravit
 上游许可状况（汉化引擎仓库无 LICENSE、原角色形象 CC BY-NC-SA、默认立绘出处待确认）。
 细节与踩坑见 11.61。
 
+**第二例 `github-copilot-app`（2026-11-21 起）**：同一破例口径，但补丁形态不同——
+GitHub Copilot 桌面版是 **Tauri（WKWebView）**，前端资源 brotli 压在 500MB+ 的主二进制里，
+没有 asar 可改，故走**运行时注入**：官方 Intel dmg 复制后塞进两个 x86_64 dylib
+（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`），
+官方主二进制改名 `github-real`、`github` 位置换成自编译的启动器（算 dylib 绝对路径设
+`DYLD_INSERT_LIBRARIES` 再 exec），带 `disable-library-validation` 等 entitlements
+ad-hoc 重签后重打 dmg。
+中文插件是 MIT（`licenses/ZH-MIT.txt` 随仓），但**被注入的 GitHub 专有二进制仍是修改版**，
+破例性质与 antigravity 相同。构建同样一条命令复现
+（`Widgets/github-copilot-cn/build.sh`，CI 跑），官方输入 sha 由脚本实算并缓存
+（core cask 那份是 arm64 包的，不能用来核对 Intel 包）。细节见 11.62。
+
 ## 2. 命名约定
 
 | 项 | 值 | 说明 |
@@ -84,6 +96,7 @@ homebrew-tahoe/
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python / swift 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建：挂件源码 + asar 工具 + build.sh
+├── Widgets/github-copilot-cn/         # github-copilot-app 补丁成品构建：注入 dylib + 启动器 + 宠物 + build.sh
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
@@ -162,7 +175,7 @@ end
 | 版本来源按流分流 | brew 公式 / cask API、GitHub `releases/latest`、源 tap raw、上游自有接口；只有 brew 流走 formulae.brew.sh（**不消耗 GitHub API 限额**），见第 7 节 |
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
 | `concurrency` + `timeout-minutes` | 防重复跑、防挂死 |
-| 补丁成品构建与 cask lint 走 CI | `patched.yml`（macos-26-intel，手动）：先 `brew style`/`audit --strict` 再 `build.sh --upload`；**开发机只跑轻量取证**（语法/样本串/日志/fetch）。2026-11-21 用户纠正：本地跑 brew lint 与构建把 Intel 开发机卡死 |
+| 补丁成品构建与 cask lint 走 CI | `patched.yml`（macos-26-intel，手动）：`build.sh --upload` → 把 sidecar 的 sha 写回工作区 cask → `brew style`/`audit --strict` → 绿了才提交 cask；**开发机只跑轻量取证**（语法/样本串/探针/日志/fetch）。2026-11-21 用户纠正：本地跑 brew lint 与构建把 Intel 开发机卡死 |
 | 批量制瓶只占一次 runner | `watch-updates.yml` 扫全部（唯一模式），只触发**一次** `bottle.yml`（逗号列表传参）；`bottle.yml` 在单个 `macos-26-intel` 任务里顺序出瓶，绝不逐个触发 |
 | 递归依赖门控 | `bottle.yml` 在 `brew readall` 后展开每批公式的**运行时**依赖闭包（build deps 只在 CI 现编、不影响用户端，故不检查）：本仓依赖必须有瓶块（同批公式由拓扑排序在本轮出瓶，豁免）、core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶则直接失败并列出名单；旧公式确需 compat 时手动勾 `allow_unbottled_core: true` 放行，见 8.1 / 11.59 |
 
@@ -347,13 +360,13 @@ cask 无 bottle 机制：watcher 检测到新版本后下载发布包、上传�
 | --- | --- | --- | --- |
 | `afm` | 2026.09.15 | arm64 | 输入法；用户级 `~/Library/Input Methods`；arm64 破例；不检查更新 |
 | `amd` | 2026.09.18 | universal | 自有软件；app + `obcli`；本地构建镜像；不检查更新 |
-| `antigravity` | 2.33.0-4731201358004224-cn1 | Intel | 官方 darwin-x64 包 + 汉化/Gemini 娘挂件静态改写 + 禁自更新，ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-<构建号>-cn<补丁序号>`（见 11.61 第 9 条）；**分发修改版专有二进制的破例**（见 1 节与 11.61）；customRelease 读 core cask API 判新、sha 取构建脚本上传的 `.sha256` sidecar，产物由 `Widgets/antigravity-niang/build.sh` 本地构建（不走 uploadRelease 镜像分支） |
+| `antigravity` | 2.33.0-4731201358004224-cn4 | Intel | 官方 darwin-x64 包 + 汉化/页内 Gemini 娘挂件/补充词典静态改写 + 禁自更新，ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-<构建号>-cn<补丁序号>`（见 11.61 第 9 条）；**分发修改版专有二进制的破例**（见 1 节与 11.61）；customRelease 读 core cask API 判新、sha 取构建上传的 `.sha256` sidecar，产物由 `Widgets/antigravity-niang/build.sh` 在 **CI（patched.yml）** 构建（不走 uploadRelease 镜像分支） |
 | `blender-5x` | 5.2.2 | Intel | Intel 社区构建；github 流；镜像 |
 | `brewui` | 0.6.0 | universal | universal；github 流；镜像 |
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
 | `doubao-ime` | 1.1.1 | Intel | 输入法；custom API；镜像 |
 | `dsh-gui` | 0.2.1-rc.4 | Intel | nightly feed 判新；镜像 |
-| `github-copilot-app` | 1.4.2 | Intel | brewCask 判新；Intel dmg 实算；镜像 |
+| `github-copilot-app` | 1.4.2-cn1 | Intel | 官方 darwin-x64 dmg + 运行时注入补丁（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`；官方主二进制改名 `github-real`，`github` 位置换成设绝对路径 `DYLD_INSERT_LIBRARIES` 的启动器），带 disable-library-validation entitlements ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-cn<补丁序号>`；**第二个修改版专有二进制破例**（见 11.62）；customRelease 读 core cask API + sidecar，产物由 `Widgets/github-copilot-cn/build.sh` 在 **CI（patched.yml）** 构建；**自更新未禁用**（Tauri updater 在二进制里），caveats 写明变回英文就 reinstall |
 | `grok-bot` | 1.2.3 | Intel | Cursor 下载页锚定；镜像 |
 | `heliport` | 2.0.0-alpha | universal | universal；不检查更新 |
 | `konsole` | 5485 | dual | KDE CI 构建号；双架构；`alwaysUpdate`；每月手动跑 |
@@ -528,7 +541,7 @@ Homebrew 维护的校验和，上游换镜像自动跟随）。模板式（downl
 | `github` | `releases/latest` 跳转的 `Location` tag（HEAD，不耗 API 限额） | 剥 `githubTagPrefix`（默认 `v`）后套 `downloadURL` 模板 | fzf、chisel、brewui、frida-server、交叉工具链 |
 | `brew` 公式-模板式 | `api/formula/<brewName>.json` 的 `versions.stable` | 自己拼 `asset` / `downloadURL` / `checksumsURL` | gh、node 家族、fastfetch |
 | `brew` 公式-全量式 | 同上 | JSON 的 `urls.stable.url` / `.checksum`（随 core 换镜像） | `fork-*`、qemu 链、ripgrep |
-| `brew` cask | `api/cask/<brewName>.json` 的 `.version` | 必须自己给 x64 `downloadURL`（core 那份是 arm64），sha 实算 | zcode、lody、github-copilot-app |
+| `brew` cask | `api/cask/<brewName>.json` 的 `.version` | 必须自己给 x64 `downloadURL`（core 那份是 arm64），sha 实算 | zcode、lody |
 
 5. 版本比较（等价 `sort -V`）：数字段按数值（`2026.8.19` == `2026.08.19`）、预发布 < 正式版；
    本地更新 → `newer-than-brew` 保持不动；`alwaysUpdate` 的包（konsole）版本相同也继续；
@@ -690,7 +703,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
    - **brew 流-全量式**（qemu 链 / `fork-*` / ripgrep 这类从 core 拷入、url 模板不好推）：
      只需 `CheckConfig(formula: "<name>", brewName: "<name>")`，url 与 sha256 由核心直取
      JSON 的 `urls.stable.url` / `.checksum`，上游换镜像自动跟随（见 6.2 / 6.3；模板式仍优先）；
-   - **brew cask 流**（软件在 core 里是 cask，如 zcode / lody / github-copilot-app）：
+   - **brew cask 流**（软件在 core 里是 cask，如 zcode / lody）：
      `formulaPath: "Casks"` + `isCask: true` + `brewName: ...` + `brewCask: true`；
      **必须自己给 x64 `downloadURL` 模板**（core 的 url 是 arm64 的），sha 由核心实算；
    - **raw 流**（软件来自其他 tap 仓库，如 `anomalyco/homebrew-tap` 的三包）：
@@ -712,6 +725,13 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
      见 11.34）、旧快照自动清理。
      token→key 由核心 `caskArchKey` 显式映射，未知 token 直接 fail。
    - **浮动直链 / 版本号不变的上游**：加 `alwaysUpdate: true`（konsole 是例子）。
+   - **补丁成品 cask**（antigravity / github-copilot-app，破例见 1 节）：产物不是「下载上游
+     再镜像」，而是 `Widgets/<pkg>/build.sh` 在官方 Intel 包上打补丁后重打的 dmg，由
+     **`patched.yml` 在 CI 构建并上传**。检查器走 `customRelease`（core cask API 判新 +
+     拼 `-cn<N>`）、sha 取 Release 上的 `.sha256` sidecar、**不开 `uploadRelease`**；
+     sidecar 缺失即返回 `sha256: nil` → 核心 HEAD 探测 404 → `upstream-missing` 开 issue
+     （= 「该跑构建了」走既有告警通道）。cask 的 sha 可先写占位 `PENDING_CI_SIDECAR`，
+     由 workflow 用本次 sidecar 填实、lint 绿后提交（见 11.61 第 9 条 / 11.62 第 9 条）。
    ⚠️ **公式与 swift 文件没有 push 进远端之前，CI checkout 拿不到它们**（见 11.7）。
 
 ### 9.4 本地验证
@@ -2284,7 +2304,7 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
     die；该轮改用 `--version 2.33.0 --build …` 显式锁旧宿主出补丁版。等引擎跟上后再跑
     一次默认解析即回到自动跟版。
 
-17. **补充汉化词典是自有注入层，不改上游引擎**（`inject/extra-l10n.js`，标记块
+16. **补充汉化词典是自有注入层，不改上游引擎**（`inject/extra-l10n.js`，标记块
     `__AGY_EXTRA_L10N_START__`，追加在页内挂件块之后）。上游字典没覆盖模型名，用户要求：
     Gemini→哈基米、元素代号→周期表中文字（**全表 118 元素**，含 Aluminium/Cesium 等
     双拼写）、Claude→克劳德、Opus→巨著 / Sonnet→十四行诗 / Haiku→俳句 / Fable→神话 /
@@ -2299,6 +2319,91 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
     - `\b` 词边界 + 长词优先：`Leading`/`Golden` 不被 `Lead`/`Gold` 误伤（样本串实测）；
     - 计数上报**只在变化时**发 `gy:l10n`（初版每 500ms 重发同值，日志刷屏，cn4 修）。
     替换幂等：译成中文后不再命中拉丁模式，observer 回环自然终止。
+
+### 11.62 github-copilot-app 补丁成品：Tauri 运行时注入全链路（2026-11-21）
+
+宿主与 antigravity 完全不同，**没有 asar 可改**，所以走运行时注入。动手前读完 1–4 条，
+第 2 条是本轮最贵的坑（探针几秒就证伪了初版方案，省下一次 CI 空跑）。
+
+1. **宿主形态**：GitHub Copilot 桌面版是 **Tauri（WKWebView）**，前端资源 brotli 压在
+   500MB+ 的 `Contents/MacOS/github` 里；bundle id `com.github.githubapp`；另有
+   `Contents/MacOS/git-credential-copilot`、`Contents/Frameworks/*.dylib`（4 个）、
+   `Contents/Resources/plugins/computer-use/`（含嵌套 app 与 mcp 二进制）、
+   `embedded.provisionprofile`。上游中文插件 `shuhuNB515/githubcopilot-desktop-zh-mac`
+   是 **MIT**（`licenses/ZH-MIT.txt` 随仓），手法是 `DYLD_INSERT_LIBRARIES` 注入
+   `CopilotCN.dylib`，swizzle `-[WKWebView initWithFrame:configuration:]` 挂
+   `WKUserScript`，词典/脚本从 `COPILOT_CN_DIR` 读。上游只编 arm64，本仓改 `-arch x86_64`
+   （实测可编，无 arm64-only API）。
+
+2. **`LSEnvironment` + `@executable_path` 会 SIGABRT 掉所有子进程（探针实测，初版方案被证伪）**。
+   初版想「不改 Mach-O、不用启动器」：Info.plist 写
+   `LSEnvironment:DYLD_INSERT_LIBRARIES = @executable_path/../Resources/CopilotCN/*.dylib`。
+   主进程确实注入成功，但 **LaunchServices 设的环境会被所有子进程继承**，而
+   `@executable_path` 在子进程里按**子进程自己的**可执行文件路径展开 → 路径不存在 →
+   dyld 直接 SIGABRT。证据：`/tmp` 造最小 app bundle（`probe` + `libprobe.dylib` +
+   一个普通 ad-hoc 签名的 `child`），`open` 启动后 `main.log` 里 `ctor_marker=present`
+   但 `child_rc=6`、`child.log` 空。Copilot 会大量 spawn git / shell / MCP 子进程，
+   这条路等于把功能全废掉。**改用启动器 + 绝对路径后同一探针 `child_rc=0`、子进程正常输出**
+   （子进程也会载入注入库，但两个库都有主程序判定，非主进程直接 return，无副作用）。
+   方法论：**这种「dyld/签名/环境」假设先用几秒编译的最小探针验证，别拿 500MB 真包赌 CI**。
+
+3. **启动器形态**：官方主二进制改名 `Contents/MacOS/github-real`，`CFBundleExecutable`
+   仍指 `github`——那个位置换成自编译的 `launcher.c`：`_NSGetExecutablePath` + `realpath`
+   拿到自身目录 → 拼两个 dylib 的**绝对路径**（GyWidgetCN 在前）→ `setenv` → `execv`
+   `github-real`（argv[0] 换成真实路径）。**dylib 缺失时照常 exec**（fail-soft：界面回英文
+   但 app 能用，绝不拦启动）。两个注入库的主程序判定都要认 `github-real`：上游
+   `CNIsMainApp` 与本仓 `GyIsMainApp` 都是「exe 后缀 **or** bundle id」，bundle id 兜住了，
+   本仓仍显式加了后缀分支。**不要删 `embedded.provisionprofile`**（上游也不删）。
+
+4. **签名照上游 `src/sign.sh` 逐组件签，不用 `--deep` 一把梭**：`--deep` 会把主程序的
+   entitlements 灌给所有嵌套代码，而上游给 `git-credential-copilot` 用的是另一份
+   `ent-git-credential.plist`（只有 audio/camera），computer-use 两个二进制单独签。
+   顺序：Frameworks 的 dylib（ad-hoc，无 runtime）→ git-credential（runtime + 它自己的 ent）
+   → computer-use-mcp / 嵌套 app（runtime）→ **`github-real`（runtime + 注入 ent）**
+   → app 本体（runtime + 注入 ent，不带 --deep）。
+   **`github-real` 必须显式签**：不带 `--deep` 的 codesign 不会重签嵌套 Mach-O，漏了它
+   dyld 就会剥掉启动器设的 `DYLD_INSERT_LIBRARIES`。
+   **保留 hardened runtime 也能注入**——靠的是 `disable-library-validation` +
+   `allow-dyld-environment-variables` 两条例外 entitlement（ad-hoc 签名同样被承认，探针实证）。
+   这与 11.61 第 4 条「antigravity 必须丢 runtime」不矛盾：那边**压根没传 entitlements**。
+
+5. **运行时文件落用户目录，且每次启动覆盖同步**：`~/Library/Application Support/CopilotCN`
+   （往签名过的 bundle 里写文件会破坏封印）。GyWidgetCN 构造函数 `setenv COPILOT_CN_DIR`
+   并把包内 `runtime/{dict,translator,bridge,collector,menu}.json|js` 与 `gy/pet.js`
+   同步过去——**不是「缺才补」**：否则升级后旧词典/旧宠物会一直留着。用户自己的数据在
+   `dumps/`、`queue/`、`copilot-cn.log` 与宠物的 localStorage 里，不受影响。
+   装载顺序 GyWidgetCN 在前（它负责铺目录与设 env），上游库随后读同一目录。
+
+6. **词典重建**：上游 `tools/build_dict.py` 自己 `chdir` 到仓库根（读 `src/dict-*.tsv`
+   写 `runtime/dict.json`），从任意 CWD 跑都安全；但它对 BAD/DUP 行**只打印不失败**，
+   所以本仓加了「条目数下限 + JSON 可解析」自检，并把它的输出打进构建日志。
+
+7. **宠物是纯 DOM，没有 Electron 那套 IPC/fs**：WKWebView 里拿不到 `ipcRenderer`，
+   所以 13 个内置角色（base64 data URL，约 3.2MB 原图）+ 45 条语录在**构建期**打进
+   `gy/pet.js`（`pet-template.js` 的 `__PAYLOAD__` 占位由 node 替换，替换后 grep 不到占位才算过）；
+   导入自己的图片走隐藏 `<input type=file>` + FileReader + **localStorage**（有配额上限，
+   超了要提示而不是静默失败），设置也存 localStorage。素材与 antigravity 页内挂件同源
+   （`Widgets/antigravity-niang/characters` + `assets/quotes.json`），实现各写一份。
+
+8. **自更新未禁用，且 cask 不能写 `auto_updates true`**：Tauri updater 嵌在二进制里，
+   静态禁用代价过高。上游 `launch.sh` 的做法是每次启动检测签名被还原就重签（1–2 分钟 +
+   依赖用户目录里的脚本），本仓不引入这套——cask 成品应自包含。改为 caveats 明示
+   「一旦自更新，补丁被官方包覆盖、界面回英文 → `brew reinstall --cask`」。
+   连带：`auto_updates true` 会让 `brew upgrade` **跳过**这个 cask，补丁更新就永远送不到，
+   所以必须去掉（本包更新权归 brew）。
+
+9. **版本 / 检查器 / CI 顺序**：版本 `<宿主版本>-cn<N>`（宿主版本取 core cask API 的
+   `.version`，无构建号段）；tag `github-copilot-app-<版本>`、资产
+   `GitHub-Copilot-<版本>.dmg` + `.sha256` sidecar；检查器 `customRelease` + sidecar、
+   不开 `uploadRelease`（同 antigravity）。`patched.yml` 的步骤顺序是
+   **构建 → 把 sidecar 的 version/sha 写回工作区 cask → lint → 绿了才提交 cask**：
+   lint 必须在构建之后，才能审到「维护者将要提交的那份文件」；首轮 CI 就是因为
+   lint 在前、审到 main 上那份**资产名无版本的字面 url** 而红（`Use sha256 :no_check
+   when URL is unversioned`，11.43/11.53 的存量漂化）。新收录时 cask 的 sha 可先写
+   `PENDING_CI_SIDECAR`，由 workflow 填实——**占位只在 main 上短暂存在，CI 自愈**。
+
+10. **裸 `clang` 在开发机找不到 SDK 头**（`stdio.h file not found`）：一律 `xcrun clang`
+    （CI 上裸 clang 可能可用，但别赌）。`xcrun swiftc` 同理（11.61 同轮踩过）。
 
 ## 12. 待办 / 后续演进
 

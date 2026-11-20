@@ -6,12 +6,17 @@
 #
 # 宿主是 Tauri（WKWebView + brotli 前端嵌在 Mach-O 里），没有 asar 可改：
 #   官方 Intel dmg → 复制 app → 编两个 x86_64 注入 dylib（上游 CopilotCN + 本仓 GyWidgetCN）
-#   → runtime/词典/宠物 payload 进 Resources/CopilotCN → Info.plist LSEnvironment 设
-#     DYLD_INSERT_LIBRARIES（LaunchServices 启动即带环境，无需启动器、不改 Mach-O）
-#   → 带 disable-library-validation / allow-dyld-environment-variables entitlements
-#     ad-hoc 重签（丢 hardened runtime）→ 重打 dmg → （可选）传本仓 Release
+#   → runtime/词典/宠物 payload 进 Resources/CopilotCN
+#   → 官方主二进制改名 github-real，github 位置换成自编译的注入启动器（launcher.c）：
+#     它算出 dylib 的**绝对路径**设进 DYLD_INSERT_LIBRARIES 再 exec github-real。
+#     不用 Info.plist LSEnvironment + @executable_path：那样子进程继承到的路径按子进程
+#     自身展开 → 不存在 → dyld SIGABRT 杀掉子进程（/tmp 探针实测 child_rc=6），
+#     Copilot 大量 spawn git/shell/MCP，功能会全废；绝对路径实测 child_rc=0。
+#   → 照上游 sign.sh 逐组件 ad-hoc 重签，github-real 与 app 带 disable-library-validation /
+#     allow-dyld-environment-variables entitlements（保留 hardened runtime）
+#   → 重打 dmg → （可选）传本仓 Release
 #
-# 运行时文件由 GyWidgetCN 构造函数复制到 ~/Library/Application Support/CopilotCN：
+# 运行时文件由 GyWidgetCN 构造函数同步到 ~/Library/Application Support/CopilotCN：
 # 往签名过的 bundle 里写文件会破坏签名封印，故数据落用户目录。
 # 任一步失败立刻退出，绝不产出半成品；产物只落 .build/ 且不入 git。
 
@@ -41,7 +46,7 @@ done
 say() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 die() { printf '\033[31m[失败] %s\033[0m\n' "$1" >&2; exit 1; }
 
-for tool in node curl git clang codesign hdiutil python3 shasum lipo; do
+for tool in node curl git xcrun clang codesign hdiutil python3 shasum lipo strings; do
   command -v "$tool" >/dev/null 2>&1 || die "缺少命令：$tool"
 done
 if [[ "$UPLOAD" == true ]] && ! command -v gh >/dev/null 2>&1; then
@@ -106,10 +111,11 @@ curl -fL --retry 3 "$ZH_URL" | tar xz -C "$ZH" --strip-components=1
 say "编译 x86_64 注入 dylib（上游 CopilotCN + 本仓 GyWidgetCN）"
 RES="$APP/Contents/Resources/CopilotCN"
 mkdir -p "$RES/runtime" "$RES/gy"
-clang -dynamiclib -fobjc-arc -O2 -arch x86_64 -mmacosx-version-min=11.0 \
+# xcrun 而非裸 clang：开发机上裸 clang 可能找不到 SDK 头文件（stdio.h not found）。
+xcrun clang -dynamiclib -fobjc-arc -O2 -arch x86_64 -mmacosx-version-min=11.0 \
   -framework Foundation -framework AppKit -framework WebKit \
   -o "$RES/CopilotCN.dylib" "$ZH/src/inject.m" || die "CopilotCN.dylib 编译失败"
-clang -dynamiclib -fobjc-arc -O2 -arch x86_64 -mmacosx-version-min=11.0 \
+xcrun clang -dynamiclib -fobjc-arc -O2 -arch x86_64 -mmacosx-version-min=11.0 \
   -framework Foundation -framework AppKit -framework WebKit \
   -o "$RES/GyWidgetCN.dylib" "$WIDGET_DIR/widget-inject.m" || die "GyWidgetCN.dylib 编译失败"
 for dy in "$RES/CopilotCN.dylib" "$RES/GyWidgetCN.dylib"; do
@@ -119,13 +125,23 @@ done
 echo "  两个 dylib 均为 x86_64 且已 ad-hoc 签名"
 
 say "词典与运行时文件"
-python3 "$ZH/tools/build_dict.py" >/dev/null 2>&1 || die "dict.json 重建失败"
+DICT_LOG="$(python3 "$ZH/tools/build_dict.py" 2>&1)" || die "dict.json 重建失败：$DICT_LOG"
+echo "  $DICT_LOG"
 for f in dict.json translator.js bridge.js collector.js menu.json; do
   [[ -f "$ZH/runtime/$f" ]] || die "缺少 runtime/$f"
   cp "$ZH/runtime/$f" "$RES/runtime/$f"
 done
+python3 - "$RES/runtime/dict.json" <<'PY' || die "词典自检未通过"
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+if not isinstance(d, dict) or len(d) < 1000:
+    raise SystemExit(f"词典条目异常：{len(d) if isinstance(d, dict) else type(d)}")
+print(f"  词典自检通过：{len(d)} 条")
+PY
 cp "$ZH/src/ent.plist" "$WORK/ent.plist"
+cp "$ZH/src/ent-git-credential.plist" "$WORK/ent-git-credential.plist"
 grep -q disable-library-validation "$WORK/ent.plist" || die "entitlements 缺 disable-library-validation"
+grep -q allow-dyld-environment-variables "$WORK/ent.plist" || die "entitlements 缺 allow-dyld-environment-variables"
 
 say "生成宠物 payload（内置角色 base64 + 语录）"
 node - "$WIDGET_DIR" "$RES/gy/pet.js" <<'JS'
@@ -147,17 +163,63 @@ console.log('  角色 ' + characters.length + ' 个 / 语录 ' + quotes.length +
 JS
 grep -q __PAYLOAD__ "$RES/gy/pet.js" && die "payload 占位未被替换"
 
-say "Info.plist：LSEnvironment 注入环境（GyWidgetCN 在前，负责设 COPILOT_CN_DIR）"
+say "启动器：官方主二进制改名 github-real，github 位置换成注入启动器"
+# 不用 Info.plist LSEnvironment：@executable_path 形态的 DYLD_INSERT_LIBRARIES 会被
+# 子进程继承并按子进程路径展开 → 路径不存在 → dyld SIGABRT 杀子进程（/tmp 探针实测
+# child_rc=6）。启动器算绝对路径再 setenv，子进程继承到真实路径，实测 child_rc=0。
 PLIST="$APP/Contents/Info.plist"
+[[ "$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$PLIST")" == "github" ]] \
+  || die "CFBundleExecutable 不是 github，包结构变了"
 /usr/libexec/PlistBuddy -c "Delete :LSEnvironment" "$PLIST" >/dev/null 2>&1 || true
-/usr/libexec/PlistBuddy -c "Add :LSEnvironment dict" "$PLIST" >/dev/null
-/usr/libexec/PlistBuddy -c "Add :LSEnvironment:DYLD_INSERT_LIBRARIES string @executable_path/../Resources/CopilotCN/GyWidgetCN.dylib:@executable_path/../Resources/CopilotCN/CopilotCN.dylib" "$PLIST" >/dev/null
-/usr/libexec/PlistBuddy -c "Print :LSEnvironment:DYLD_INSERT_LIBRARIES" "$PLIST"
+mv "$APP/Contents/MacOS/github" "$APP/Contents/MacOS/github-real"
+xcrun clang -O2 -arch x86_64 -mmacosx-version-min=11.0 \
+  -o "$APP/Contents/MacOS/github" "$WIDGET_DIR/launcher.c" || die "启动器编译失败"
+chmod 0755 "$APP/Contents/MacOS/github"
+lipo -archs "$APP/Contents/MacOS/github" | grep -q x86_64 || die "启动器不是 x86_64"
+echo "  github（启动器）+ github-real（官方主二进制）就位"
 
-say "ad-hoc 重签（带 entitlements，丢 hardened runtime）"
-codesign --force --deep --sign - --entitlements "$WORK/ent.plist" "$APP" >/dev/null 2>&1 || die "重签名失败"
+say "注入物完整性门（缺一即不产出）"
+for f in CopilotCN.dylib GyWidgetCN.dylib runtime/dict.json runtime/translator.js \
+         runtime/bridge.js runtime/collector.js runtime/menu.json gy/pet.js; do
+  [[ -s "$RES/$f" ]] || die "注入物缺失或为空：CopilotCN/$f"
+done
+[[ -s "$APP/Contents/MacOS/github-real" ]] || die "官方主二进制丢失"
+strings "$APP/Contents/MacOS/github" | grep -q 'github-real' || die "启动器二进制里没有 github-real 路径"
+
+say "ad-hoc 重签（照上游 src/sign.sh：组件逐个签，主程序带注入 entitlements）"
+# 不用 --deep 一把梭：--deep 会把主程序的 entitlements 灌给所有嵌套代码，
+# 而上游对 git-credential-copilot / computer-use 用的是另一份 entitlements。
+# 主程序保留 hardened runtime（--options runtime）：注入靠的是
+# disable-library-validation + allow-dyld-environment-variables 两条例外 entitlement，
+# 不是靠丢硬化运行时（antigravity 那边丢 runtime 是因为压根没传 entitlements）。
+C="$APP/Contents"
+sign_one() {
+  codesign --force --sign - --timestamp=none "$@" >/dev/null 2>&1 || die "签名失败：$*"
+}
+for dy in "$C/Frameworks/"*.dylib; do
+  [[ -f "$dy" ]] || continue
+  sign_one "$dy"
+done
+if [[ -f "$C/MacOS/git-credential-copilot" ]]; then
+  sign_one --options runtime --entitlements "$WORK/ent-git-credential.plist" "$C/MacOS/git-credential-copilot"
+fi
+if [[ -f "$C/Resources/plugins/computer-use/computer-use-mcp" ]]; then
+  sign_one --options runtime "$C/Resources/plugins/computer-use/computer-use-mcp"
+fi
+if [[ -d "$C/Resources/plugins/computer-use/Copilot Computer Use.app" ]]; then
+  sign_one --deep --options runtime "$C/Resources/plugins/computer-use/Copilot Computer Use.app"
+fi
+# 真正被注入的是 github-real（启动器 exec 过去的主二进制）：它必须自己带
+# disable-library-validation + allow-dyld-environment-variables，否则 dyld 会剥掉
+# 启动器设的 DYLD_INSERT_LIBRARIES。不带 --deep 的 codesign 不会重签嵌套 Mach-O，
+# 所以这里显式签一次（/tmp 探针实测：先签 github-real 再签 app，entitlements 保留）。
+sign_one --options runtime --entitlements "$WORK/ent.plist" "$C/MacOS/github-real"
+sign_one --options runtime --entitlements "$WORK/ent.plist" "$APP"
 codesign --verify --deep "$APP" >/dev/null 2>&1 || die "重签后 codesign --verify 未通过"
 codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q disable-library-validation || die "entitlements 未生效"
+codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q allow-dyld-environment-variables || die "缺 allow-dyld-environment-variables"
+codesign -d --entitlements :- "$C/MacOS/github-real" 2>/dev/null | grep -q allow-dyld-environment-variables \
+  || die "github-real 缺 allow-dyld-environment-variables（注入会被 dyld 剥掉）"
 echo "  签名与 entitlements 校验通过"
 
 say "重打 dmg"
