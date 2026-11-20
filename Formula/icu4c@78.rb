@@ -1,4 +1,4 @@
-class ForkIcu4cAT78 < Formula
+class Icu4cAT78 < Formula
   desc "C/C++ and Java libraries for Unicode and globalization"
   homepage "https://icu.unicode.org/home"
   url "https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-sources.tgz"
@@ -20,7 +20,7 @@ class ForkIcu4cAT78 < Formula
     sha256 cellar: :any, tahoe: "4d28e5ef0b3d420e048bbd06e2feef9608f81cfc25d82a3d0671dfc64e1e313b"
   end
 
-  keg_only "fork of icu4c@78 for bemly/tahoe; avoid symlink conflicts with core"
+  keg_only "bottled by bemly/tahoe; avoid auto-link conflicts with core"
   keg_only :versioned_formula
 
   depends_on arch: :x86_64
