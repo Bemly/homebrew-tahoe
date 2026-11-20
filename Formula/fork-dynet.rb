@@ -5,6 +5,11 @@ class ForkDynet < Formula
   sha256 "014505dc3da2001db54f4b8f3a7a6e7a1bb9f33a18b6081b2a4044e082dab9c8"
   license "Apache-2.0"
   revision 1
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "5e0ca6fbe5ccf883a110b642be5d589e0a342740e38956659d045a8f4e09afa1"
+  end
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with core"
 
   deprecate! date: "2026-02-02", because: :unmaintained
