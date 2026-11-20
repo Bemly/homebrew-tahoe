@@ -7,7 +7,7 @@ class BoostAT185 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "1a492b8b49229a202147afe4fa9924c62fb27d45d4647f9eb15d855a5c4e0264"
+    sha256 cellar: :any, tahoe: "e5d3083e8db01a7905d663c8fb0cf135b797c8330cafc0d4238490d6823790bd"
   end
 
   depends_on arch: :x86_64
