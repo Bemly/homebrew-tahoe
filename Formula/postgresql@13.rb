@@ -11,7 +11,10 @@ class PostgresqlAT13 < Formula
   def install
     # brew 会自动下降进唯一顶层 pgsql 目录，兼容两种 CWD
     root = Dir["**/pgsql"].first || "."
-    prefix.install Dir[File.join(root, "*")]
+    %w[bin include lib share].each do |dir|
+      src = File.join(root, dir)
+      prefix.install Dir[File.join(src, "*")] if File.directory?(src)
+    end
   end
 
   test do
