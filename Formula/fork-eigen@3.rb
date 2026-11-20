@@ -20,6 +20,11 @@ class ForkEigenAT3 < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "fc8ff45166d256dab563721b6d21c77720d0e5432cf9f602bbd8cf51041a6f5e"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with core"
   keg_only :versioned_formula
 
