@@ -15,6 +15,11 @@ class ForkIcu4cAT78 < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "4d28e5ef0b3d420e048bbd06e2feef9608f81cfc25d82a3d0671dfc64e1e313b"
+  end
+
   keg_only "fork of icu4c@78 for bemly/tahoe; avoid symlink conflicts with core"
   keg_only :versioned_formula
 
