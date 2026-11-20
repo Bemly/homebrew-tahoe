@@ -13,7 +13,8 @@ class PostgresqlAT13 < Formula
     root = Dir["**/pgsql"].first || "."
     %w[bin include lib share].each do |dir|
       src = File.join(root, dir)
-      prefix.install Dir[File.join(src, "*")] if File.directory?(src)
+      files = Dir[File.join(src, "*")]
+      send(dir).install files unless files.empty?
     end
   end
 
