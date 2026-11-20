@@ -2409,6 +2409,24 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    （否则 AMFI 校验 profile 与 team 不符直接杀进程），上游 sign.sh 同样只留那 4 条。
    官方包还有一个上游没签的嵌套 dylib `Resources/oneauth-runtime/libOneAuthInterop.dylib`，
    保留原签名即可（library validation 已关，加载不受影响），不要顺手 `--deep` 灌 entitlements。
+   **子进程载入注入库是预期行为**：bundle 内的 helper（git-credential-copilot /
+   computer-use 系）的 `mainBundle.bundleIdentifier` 也是 `com.github.githubapp`，
+   会过主程序判定、载入 dylib 并打一行 injected 日志——它们没有 WKWebView，无副作用，
+   上游同款判定同样如此，别当 bug 修。
+
+12. **本机验收证据（1.4.3-cn1，sha `181f96b5…`，CI 构建 + lint 全绿后安装）**：
+    `brew fetch --cask` 出 `✔︎ Cask github-copilot-app (1.4.3-cn1)`；安装后
+    `Contents/MacOS/` 为 32KB 启动器 `github` + 630MB `github-real`；quarantine 全包计数 **0**；
+    `codesign --verify --deep` 通过；`github-real` 的 entitlements 含
+    disable-library-validation + allow-dyld-environment-variables。
+    直接从安装位置起进程：`[gyWidgetCN] injected … pet=4469196 bytes`，
+    用户目录铺齐 runtime 五件 + `gy/pet.js`；上游 `copilot-cn.log` 出
+    `user script attached (46728 bytes)`，DOM dump 里是中文界面
+    （「正在加载 GitHub Copilot」「侧边栏」「拉取请求」「议题」…）；
+    **挂件挂载门实证**：t1500 的落地页 dump 无宠物气泡文本，t5000 的工作台 dump 含
+    「Ciallo～ 今天也请多关照。」——登录/落地页不挂、工作台挂，与 antigravity 同语义。
+    挂件 UI 另在浏览器里用填充后的 `pet.js` + 模拟 textarea 逐项验过
+    （挂载/卸载/回挂、13 角色菜单、缩放与角色跨刷新持久化）。
 
 9. **版本 / 检查器 / CI 顺序**：版本 `<宿主版本>-cn<N>`（宿主版本取 core cask API 的
    `.version`，无构建号段）；tag `github-copilot-app-<版本>`、资产
