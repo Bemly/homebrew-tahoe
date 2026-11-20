@@ -5,7 +5,13 @@ class Freeling < Formula
   sha256 "c672a6379142ac2e872741e7662f17eccd8230bffc680564d2843d87480f1600"
   license "AGPL-3.0-only"
   revision 13
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "ee2ffc0a5fa58634e40cf46e2e36066e7a94998c9fc05d1f32efd39117169b02"
+  end
+
   depends_on "cmake" => :build
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/boost@1.85"
   depends_on "bemly/tahoe/fork-dynet"
