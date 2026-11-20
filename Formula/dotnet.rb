@@ -2,6 +2,7 @@ class Dotnet < Formula
   desc ".NET SDK (official macOS x64 tarball, repackaged)"
   homepage "https://dotnet.microsoft.com/"
   url "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100/dotnet-sdk-11.0.100-osx-x64.tar.gz"
+  version "11.0.100"
   sha256 "7e2adb537cf3259e75261c6a2f45e4aeb461e4974573ae8ffb7b1b70f0e652f1"
   license "MIT"
 
