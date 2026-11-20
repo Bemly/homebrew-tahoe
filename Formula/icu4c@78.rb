@@ -17,7 +17,7 @@ class Icu4cAT78 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "4d28e5ef0b3d420e048bbd06e2feef9608f81cfc25d82a3d0671dfc64e1e313b"
+    sha256 cellar: :any, tahoe: "e4a9fe9c2ed0a0514146de33467fa5365cb276b1c0e32b2b9509b3f84c00f3fc"
   end
 
   keg_only "bottled by bemly/tahoe; avoid auto-link conflicts with core"

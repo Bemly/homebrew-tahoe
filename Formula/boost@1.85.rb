@@ -5,6 +5,11 @@ class BoostAT185 < Formula
   sha256 "3dc046775e2e8114e58ae11672f5473bdf99a724afe9c0aa252959efa9ef16ce"
   license "BSL-1.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "804e5c8f9ce631c34b0488f7351ef4244bbf031aeafb54fe3e31f15b25427ca7"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
