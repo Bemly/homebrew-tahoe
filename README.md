@@ -126,7 +126,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `meson` | Fast build system, shares its name with core's formula — uninstall core's first; depends on this tap's `ninja` and `python@3.15`, bottled for Intel Tahoe so it no longer pulls core's source-built Python |
 | `lody` | Lody desktop app for sharing coding agent sessions across desktop and mobile; cask mirrored from the official Intel dmg (`Lody-<ver>-x64.dmg`), version tracked from the core cask |
 | `qoder` | Qoder CN (China edition) agentic coding platform by Alibaba; cask mirrored from the official Intel dmg (`Qoder-CN-mac-x64.dmg`), version tracked from the qoder.cn changelog; shares its token with core's international `qoder` cask — uninstall one before installing the other |
-| `fork-*` (37) | Dependency layer: runtime deps with no Intel Tahoe bottle in core are either taken over under the same name or renamed to `fork-*` when core still has dependents. All 37 (e.g. `fork-glib`, `fork-gnutls`, `fork-openssl@3`/`@4`, `fork-python@3.14`, `fork-xz`, `fork-zstd`) are `keg_only`, built from source, and referenced by full name `bemly/tahoe/fork-*` (list in AGENTS.md 6.3) |
+| `fork-*` (39) | Dependency layer: runtime deps with no Intel Tahoe bottle in core are either taken over under the same name or renamed to `fork-*` when core still has dependents. All 39 (e.g. `fork-glib`, `fork-gnutls`, `fork-openssl@3`/`@4`, `fork-python@3.14`, `fork-xz`, `fork-zstd`, `fork-dynet`, `fork-eigen@3`) are `keg_only`, built from source, and referenced by full name `bemly/tahoe/fork-*` (list in AGENTS.md 6.3) |
 | `openjdk` / `openjdk@26` | OpenJDK 26 GA official macOS x64 prebuilt (`keg_only`); shares its name with core's formula — uninstall core's first |
 | `openjdk@17` / `openjdk@21` | Eclipse Temurin x64 JDKs (versioned via the Adoptium API, `keg_only`); same-name conflict with core |
 | `git` | Git itself, built from core sources on Intel (depends on fork-pcre2/gettext/openssl@4); same-name conflict with core |
@@ -140,6 +140,14 @@ brew install --cask bemly/tahoe/doubao-ime
 | `llvm-mingw` | LLVM/Clang-based mingw-w64 cross toolchain (Intel host → Windows), version tracked from GitHub releases |
 | `aarch64-unknown-linux-gnu` | GCC cross toolchain targeting aarch64 Linux (Intel host prebuilt); companion to `x86_64-unknown-linux-gnu` |
 | `qwen-ime` | Qwen input method, cask taking the Mac dmg from the upstream download API and mirroring it to this repo's releases |
+| `antigravity-cli` | Google Antigravity CLI (installed as `agy`), repackaged from the official Intel macOS flat binary; version tracked from the official auto-updater manifest |
+| `dotnet` | .NET SDK 11, repackaged from the official macOS x64 tarball (whole tree into the prefix plus a `dotnet` shim); version tracked from Microsoft's release-metadata API; same-name conflict with core |
+| `node@20` | Node.js 20 LTS, taken directly from the official `node-v20.x-darwin-x64.tar.gz`; same-name conflict with core |
+| `postgresql@13` | PostgreSQL 13, repackaged from EDB's official macOS x64 binaries (only bin/include/lib/share — pgAdmin and the other apps are skipped); `keg_only` because the bundled openssl/icu would clash with core, so add `/usr/local/opt/postgresql@13/bin` to PATH to use its commands; same-name conflict with core |
+| `freeling` | Suite of language analyzers (tokenizing, POS tagging, named entities and friends), taken over under the same name and built from core sources; the bundled dynet/eigen copies are unbundled in favour of this tap's `fork-dynet`/`fork-eigen@3`/`boost@1.85`/`icu4c@78`; same-name conflict with core |
+| `icu4c@78` | ICU 78 Unicode / globalization libraries, taken over under the same name and built from source (`keg_only`); dependency of `freeling` |
+| `boost@1.85` | Boost C++ libraries 1.85, from the third-party prebuilt-boost macOS x86 `static+shared` package (prebuilt dylibs get an `@rpath` added and are re-signed ad-hoc); dependency of `freeling`; same-name conflict with core |
+| `wimlib` | Library plus the `wimlib-imagex` tools to create, extract and modify Windows Imaging (WIM) files, built from core sources on Intel (autotools, built with `fork-pkgconf`); no runtime dependencies on macOS |
 
 ## Switching sources (same-name conflict)
 
@@ -167,7 +175,8 @@ brew install bemly/tahoe/meson
 Other same-name packages (`git` / `bash` / `wget` / `aria2` / `automake` / `abseil` /
 `svt-av1` / `python@3.11` / `openjdk` / `openjdk@17` / `openjdk@21` / `openjdk@26` /
 `guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` /
-`snappy` / `zig`) are the same software as core's, so run `brew uninstall <name>` before
+`snappy` / `zig` / `node@20` / `dotnet` / `freeling` / `boost@1.85` / `icu4c@78` /
+`postgresql@13`) are the same software as core's, so run `brew uninstall <name>` before
 installing this tap's build (and vice versa). The `fork-*` packages are renamed and do
 not conflict with core.
 

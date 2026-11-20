@@ -119,7 +119,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `meson` | 快速构建系统，与 core 同名同物，先卸 core 版；依赖本 tap 的 `ninja` + `python@3.15`，出 Intel Tahoe 瓶，不再拖 core 的源码 Python |
 | `lody` | Lody 桌面 app（跨桌面/移动端同步 coding agent 会话）；cask 镜像官方 Intel dmg（`Lody-<ver>-x64.dmg`），版本跟随 core cask |
 | `qoder` | 阿里巴巴 Qoder CN（国内版）AI 编程平台；cask 镜像官网 Intel dmg（`Qoder-CN-mac-x64.dmg`），版本跟随 qoder.cn 更新日志；与 core 的国际版 `qoder` 同名，二者先卸一方再装 |
-| `fork-*`（37 个） | 依赖层：core 里没有 Intel Tahoe 瓶的运行时依赖，按「能同名就同名接管、有 core 依赖方就改名 fork」处理。`fork-glib`/`fork-gnutls`/`fork-openssl@3`/`fork-openssl@4`/`fork-python@3.14`/`fork-xz`/`fork-zstd` 等 37 个，全部 `keg_only`、源码现编，依赖方按全名 `bemly/tahoe/fork-*` 引用（清单见 AGENTS.md 6.3） |
+| `fork-*`（39 个） | 依赖层：core 里没有 Intel Tahoe 瓶的运行时依赖，按「能同名就同名接管、有 core 依赖方就改名 fork」处理。`fork-glib`/`fork-gnutls`/`fork-openssl@3`/`fork-openssl@4`/`fork-python@3.14`/`fork-xz`/`fork-zstd`/`fork-dynet`/`fork-eigen@3` 等 39 个，全部 `keg_only`、源码现编，依赖方按全名 `bemly/tahoe/fork-*` 引用（清单见 AGENTS.md 6.3） |
 | `openjdk` / `openjdk@26` | OpenJDK 26 GA 官方 macOS x64 预编译包（`keg_only`）；与 core 同名，先卸 core 版 |
 | `openjdk@17` / `openjdk@21` | Eclipse Temurin x64 JDK（Adoptium API 判新，`keg_only`）；与 core 同名 |
 | `git` | Git 本体，core 拷入源码现编（依赖 fork-pcre2/gettext/openssl@4）；与 core 同名 |
@@ -133,6 +133,14 @@ brew install --cask bemly/tahoe/doubao-ime
 | `llvm-mingw` | LLVM/Clang 的 mingw-w64 交叉工具链（Intel host → Windows），版本跟 GitHub release |
 | `aarch64-unknown-linux-gnu` | 面向 aarch64 Linux 的 GCC 交叉工具链（Intel host 预编译），与 `x86_64-unknown-linux-gnu` 配套 |
 | `qwen-ime` | 千问输入法，cask 取上游下载 API 的 Mac dmg，镜像到本仓 Release |
+| `antigravity-cli` | Google Antigravity CLI（装成 `agy` 命令），官方 Intel macOS 扁平二进制重打包；版本跟随官方 auto-updater manifest |
+| `dotnet` | .NET SDK 11，官方 macOS x64 tarball 重打包（整包进 prefix + `dotnet` 垫片）；版本跟随微软 release-metadata API；与 core 同名 |
+| `node@20` | Node.js 20 LTS，直接取官方 `node-v20.x-darwin-x64.tar.gz`；与 core 同名 |
+| `postgresql@13` | PostgreSQL 13，EDB 官方 macOS x64 二进制包重打包（只装 bin/include/lib/share，跳过 pgAdmin 等 app）；`keg_only`（自带 openssl/icu 会撞 core），用其中的命令需把 `/usr/local/opt/postgresql@13/bin` 加进 PATH；与 core 同名 |
+| `freeling` | 自然语言分析器套件（分词 / 词性标注 / 命名实体等），core 同名接管源码现编；解捆自带的 dynet/eigen，改用本源的 `fork-dynet`/`fork-eigen@3`/`boost@1.85`/`icu4c@78`；与 core 同名 |
+| `icu4c@78` | ICU 78 Unicode / 国际化库，core 同名接管源码现编（`keg_only`）；`freeling` 的依赖 |
+| `boost@1.85` | Boost C++ 库 1.85，取第三方 prebuilt-boost 的 macOS x86 `static+shared` 包（预编译 dylib 补 `@rpath` 后 ad-hoc 重签）；`freeling` 的依赖；与 core 同名 |
+| `wimlib` | 创建 / 解包 / 修改 Windows Imaging（WIM）映像的库与 `wimlib-imagex` 工具集，core 拷入源码现编（autotools，`fork-pkgconf` 构建）；macOS 上零运行时依赖 |
 
 ## 注意事项（同名冲突）
 
@@ -159,7 +167,8 @@ brew install bemly/tahoe/meson
 
 其余同名包（`git` / `bash` / `wget` / `aria2` / `automake` / `abseil` / `svt-av1` /
 `python@3.11` / `openjdk` / `openjdk@17` / `openjdk@21` / `openjdk@26` / `guile` /
-`jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` / `zig`）
+`jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` / `zig` /
+`node@20` / `dotnet` / `freeling` / `boost@1.85` / `icu4c@78` / `postgresql@13`）
 都与 core 同名同物，装本 tap 版前先 `brew uninstall <name>`（反之亦然）。
 `fork-*` 是改名包，与 core 不冲突，不需要卸载。
 

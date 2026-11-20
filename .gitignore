@@ -19,3 +19,6 @@
 # macOS 杂物
 .DS_Store
 ._*
+
+# 上游残留的 npm 包描述文件（dsh-web-app 等，与本 tap 无关）
+/package.json

@@ -68,13 +68,13 @@ cask 写 `depends_on arch: :arm64`（Intel 安装直接拒绝，见 11.40），m
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：约定 + 计划
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 121 个公式，一个软件一个文件（含 37 个 fork-*）
+├── Formula/                           # 130 个公式，一个软件一个文件（含 39 个 fork-*）
 ├── Casks/                             # 24 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python / swift 补丁
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 134 个检查器入口，与 Formula|cask 一一同名
+│   └── <name>.swift                   # 143 个检查器入口，与 Formula|cask 一一同名
 └── .github/
     └── workflows/
         ├── watch-updates.yml          # 手动触发的批量版本 watcher（ubuntu + Swift）
@@ -161,7 +161,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 
 ## 6. 当前收录
 
-> 2026-11-20 核对：**121 个公式 + 24 个 cask**，`updater/` 134 个检查器（另有 `UpdaterCore.swift`）。
+> 2026-11-20 核对：**130 个公式 + 24 个 cask**，`updater/` 143 个检查器（另有 `UpdaterCore.swift`）。
 > 供给方式四类：**预编译直引**（上游 macOS Intel 包）、**源码 / 代编译**（core 拷入或上游源码，CI 现编）、
 > **`fork-*` 依赖层**（core 依赖改名 + `keg_only` 自瓶）、**cask**（桌面 app / 输入法，镜像到本仓 Release）。
 > 所有公式都带 `depends_on arch: :x86_64` + `depends_on macos: :tahoe`；cask 按架构门槛。
@@ -171,6 +171,8 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | 软件 | 版本 | 来源 | 备注 |
 | --- | --- | --- | --- |
 | `aarch64-unknown-linux-gnu` | 15.2.0 | messense 交叉工具链 GitHub Releases | 只收 Intel host 段；交叉到 aarch64 Linux；github 流 + `.sha256` sidecar |
+| `antigravity-cli` | 1.5.13 | Google GCS `antigravity-public` 的 `cli_mac_x64.tar.gz`（按构建号分目录） | 扁平裸二进制装成 `agy`；customRelease 跟官方 auto-updater manifest（只给 sha512，核心回退下载实算）；core 无同名公式 |
+| `boost@1.85` | 1.85.0 | MarkusJx/prebuilt-boost GitHub `boost-<ver>-macos-13-clang-static+shared-x86.tar.gz` | 第三方预编译 static+shared；dylib 补 `@rpath` + ad-hoc 重签；与 core 同名；freeling 依赖 |
 | `caddy` | 2.11.9 | 官方 `caddy_<ver>_mac_amd64.tar.gz` | 扁平包；H2/H3 基线；brew 模板流 |
 | `chisel` | 1.12.0 | GitHub `chisel_<ver>_darwin_amd64.gz` | gzip 裸二进制；github 流；与 core 同名异物 |
 | `cmake` | 4.5.0 | Kitware GitHub `cmake-<ver>-macos-universal.tar.gz` | universal；core 无 Intel 瓶；brew 模板流 |
@@ -178,6 +180,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `deepseek-harness` | 0.2.2-rc.1 | npm `@deepseek-ai/dsh` tarball | 纯 JS；`dsh web`；依赖本 tap node；跟 npm latest |
 | `docker-buildx` | 0.39.0 | GitHub 裸二进制 `buildx-v<ver>.darwin-amd64` | brew 模板流 |
 | `docker-compose` | 5.8.0 | GitHub 裸二进制 `docker-compose-darwin-x86_64` | 文件名无版本；brew 模板流 |
+| `dotnet` | 11.0.100 | 官方 builds.dotnet.microsoft.com `dotnet-sdk-<ver>-osx-x64.tar.gz` | .NET SDK；整包进 prefix + `write_exec_script`；显式 version 行；customRelease 跟 release-metadata API；与 core 同名 |
 | `exiftool` | 13.55 | SourceForge `Image-ExifTool-<ver>.tar.gz` | 纯 Perl 直装；与 core 同名同物 |
 | `fastfetch` | 2.71.0 | GitHub `fastfetch-macos-amd64.tar.gz` | release tag 无 `v`；brew 模板流 |
 | `ffmpeg` | 9.0.2 | evermeet 静态 `ffmpeg-<ver>.zip` | 单二进制；版本跟 core ffmpeg |
@@ -198,6 +201,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `mufetch` | 0.1.1 | GitHub `mufetch_darwin_x86_64.tar.gz` | tar 无顶层目录；sha 走 checksums.txt |
 | `ninja` | 1.13.2 | GitHub `ninja-mac.zip` | universal；core 有瓶仍镜像 |
 | `node` | 26.13.1 | 官方 `node-v<ver>-darwin-x64.tar.gz` | 显式 version 行；brew 模板流 |
+| `node@20` | 20.20.2 | 官方 `node-v20.x-darwin-x64.tar.gz` | 显式 version 行；与 core 同名 |
 | `node@22` | 22.23.5 | 官方 `node-v22.x-darwin-x64.tar.gz` | 显式 version 行 |
 | `node@24` | 24.22.3 | 官方 `node-v24.x-darwin-x64.tar.gz` | 显式 version 行 |
 | `opencode` | 1.19.6 | anomalyco raw 公式（双架构） | Intel 走瓶、ARM 直链；依赖 `ripgrep` |
@@ -205,6 +209,7 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `openjdk@17` | 17.0.21 | Adoptium Temurin x64 tar.gz | customRelease API；keg-only |
 | `openjdk@21` | 21.0.13 | Adoptium Temurin x64 tar.gz | customRelease API；keg-only |
 | `openjdk@26` | 26.0.2.1_macos | jdk.java.net GA（锁 26 线） | 与 `openjdk` 同源同物 |
+| `postgresql@13` | 13.23 | EDB `postgresql-<ver>-1-osx-binaries.zip` | 只装 bin/include/lib/share（跳过 pgAdmin 等 app）；`keg_only`（自带 openssl/icu 会撞 core）；与 core 同名 |
 | `protobuf` | 36.2 | 官方 `protoc-<ver>-osx-x86_64.zip` | 预编译；与 core 同名 |
 | `rustup` | 1.29.3 | static.rust-lang.org 裸二进制 | cargo/rustc 垫片；跟 release-stable.toml |
 | `scrcpy` | 5.0.1 | GitHub `scrcpy-macos-x86_64-v<ver>.tar.gz` | 静态；整包进 libexec |
@@ -227,9 +232,11 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `capstone` | 5.0.9 | core 拷入（源码） | cmake；fork-gettext；qemu 依赖 |
 | `curl3` | 8.23.0 | core 拷入（源码） | 改名 + `--enable-proxy-http3`；纯客户端；fork-* 依赖 |
 | `dtc` | 1.8.1 | core 拷入（源码） | 依赖 `libyaml`；qemu 依赖 |
+| `freeling` | 4.2 | core 同名接管（源码） | cmake；解捆自带 dynet/eigen；依赖本 tap `boost@1.85`/`icu4c@78`/`fork-dynet`；`revision` 与 core 同步 |
 | `git` | 2.56.1 | core 拷入（源码） | make；fork-pcre2/gettext/openssl@4；与 core 同名 |
 | `graphviz` | 16.1.1 | core 拷入（源码） | 零第三方渲染插件；autotools |
 | `guile` | 3.0.11 | core 同名接管（源码） | fork-bdw-gc/gmp/libunistring…；交叉工具链依赖 |
+| `icu4c@78` | 78.3 | core 同名接管（源码） | autotools；`keg_only`；freeling 依赖；`revision` 与 core 同步 |
 | `jemalloc` | 5.4.0 | core 同名接管（源码） | autotools；nghttp2 依赖 |
 | `libev` | 4.33 | core 同名接管（源码） | autotools；nghttp2 依赖 |
 | `libimobiledevice` | 1.4.0 | core 拷入（源码） | idevice 栈主包；30+ 工具 |
@@ -260,13 +267,14 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 | `wget` | 1.25.0 | core 拷入（源码） | fork-libidn2/libpsl/openssl@4/gettext |
 | `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
 
-### 6.3 `fork-*` 依赖层（37 个）
+### 6.3 `fork-*` 依赖层（39 个）
 
 core 里仍有 39 个运行时依赖在 Intel Tahoe 没有瓶（`glib`/`openssl@4`/`gnutls`/`python@3.14`…）。
 同名跨 tap 是 Homebrew 硬限制：**有 core 依赖方的包不能同名搬进来**（卸 core 版会带崩它的
 core 依赖方），所以统一改名 `fork-<core>` + `keg_only`，本仓公式按全名
-`bemly/tahoe/fork-<core>` 引用；**能同名的 8 个直接接管**（`abseil`/`guile`/`jemalloc`/
-`libev`/`libnghttp2`/`libssh`/`libyaml`/`snappy`，见 6.2）。
+`bemly/tahoe/fork-<core>` 引用；**能同名的直接接管**（`abseil`/`guile`/`jemalloc`/
+`libev`/`libnghttp2`/`libssh`/`libyaml`/`snappy`，freeling 链再加 `boost@1.85`/
+`icu4c@78`/`freeling` 本体，见 6.1 / 6.2）。
 
 - 全部走 **brew JSON 全量流**（`CheckConfig(formula: "fork-x", brewName: "x")`），url/sha 跟随 core；
 - 源码现编，`keg_only` 保证不污染 core 的链接；补丁随 `Patches/` 入库；
@@ -277,6 +285,8 @@ core 依赖方），所以统一改名 `fork-<core>` + `keg_only`，本仓公式
 | `fork-bdw-gc` | `bdw-gc` | 8.2.12 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-brotli` | `brotli` | 1.2.1 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-c-ares` | `c-ares` | 1.34.9 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-dynet` | `dynet` | 2.1.2 | 源码现编；`keg_only`；freeling 依赖；`revision` 与 core 同步；上游 2020 停更（core 已标 deprecated） |
+| `fork-eigen@3` | `eigen@3` | 3.4.1 | 源码现编；`keg_only`；`fork-dynet` 依赖（`EIGEN3_INCLUDE_DIR` 指本源） |
 | `fork-freetype` | `freetype` | 2.15.0 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-gettext` | `gettext` | 1.0 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-giflib` | `giflib` | 6.1.3 | 源码现编；`keg_only`；依赖方写全名 |
