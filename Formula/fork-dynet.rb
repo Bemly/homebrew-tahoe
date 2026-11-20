@@ -32,7 +32,7 @@ class ForkDynet < Formula
   def install
     args = %W[
       -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-      -DEIGEN3_INCLUDE_DIR=#{formula_opt_include("eigen@3")}/eigen3
+      -DEIGEN3_INCLUDE_DIR=#{formula_opt_include("bemly/tahoe/fork-eigen@3")}/eigen3
     ]
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
     system "cmake", "--build", "build"
