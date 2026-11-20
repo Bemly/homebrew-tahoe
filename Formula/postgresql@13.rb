@@ -22,12 +22,14 @@ class PostgresqlAT13 < Formula
     end
   end
 
+  def caveats
+    <<~EOS
+      EDB 二进制包自带 openssl/icu，未链接到 /usr/local 以避免撞 core openssl@3。
+      要用其中的命令请把 /usr/local/opt/postgresql@13/bin 加进 PATH，或用绝对路径调用。
+    EOS
+  end
+
   test do
     assert_match "13.23", shell_output("#{bin}/postgres --version")
   end
-
-  caveats <<~EOS
-    EDB 二进制包自带 openssl/icu，未链接到 /usr/local 以避免撞 core openssl@3。
-    要用其中的命令请把 /usr/local/opt/postgresql@13/bin 加进 PATH，或用绝对路径调用。
-  EOS
 end
