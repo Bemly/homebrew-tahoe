@@ -14,7 +14,9 @@ class BoostAT185 < Formula
   depends_on macos: :tahoe
 
   def install
-    prefix.install Dir["boost/*"]
+    # brew 会自动下降进唯一顶层 boost 目录，兼容两种 CWD
+    root = Dir["**/boost"].first || "."
+    prefix.install Dir[File.join(root, "*")]
   end
 
   test do
