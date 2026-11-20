@@ -20,7 +20,7 @@ class BoostAT185 < Formula
     lib.install Dir[File.join(root, "lib", "*")]
     # 第三方预编译 dylib 用 @rpath 但没有 LC_RPATH，补上并 ad-hoc 重签
     Dir[lib/"*.dylib"].each do |f|
-      system "install_name_tool", "-add_rpath", "@loader_path", f
+      MachO::Tools.add_rpath(f, "@loader_path")
       system "codesign", "--force", "--sign", "-", f
     end
   end
