@@ -2,7 +2,8 @@
 # Antigravity 中文补丁版成品构建（本 tap 破例：分发修改并重签过的专有包）
 #
 #   Widgets/antigravity-niang/build.sh [--version 2.33.0] [--build 4731201358004224]
-#                                      [--revision 1] [--upload] [--keep-work]
+#                                      [--revision 1] [--cn-ref <tag|commit>]
+#                                      [--upload] [--keep-work]
 #
 # 流程：官方 darwin-x64 dmg → 校验 sha → 挂载取 app → 汉化引擎静态改写 asar →
 #       巡检门 → 注入挂件与禁自更新 → ad-hoc 重签 → 重打 dmg → （可选）传本仓 Release
@@ -14,8 +15,12 @@ set -euo pipefail
 WIDGET_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$WIDGET_DIR/../.." && pwd)"
 CN_REPO="Silas-02/antigravity-desktop-cn"
-# 汉化引擎与字典和宿主版本强耦合，必须按 commit 固定，不能追 main。
-CN_PIN="c6ba0b83be8c74fa5c9e9271f9f7fb6e91077ca7"
+# 汉化引擎与宿主版本强耦合，但上游是**按宿主版本打 tag** 的（v2.33.0、v2.33.0.1…，
+# 每个 Antigravity 版本一对，通常两天内跟上），所以默认跟着 tag 走：宿主升版自动拿到
+# 对应字典，不需要人工改脚本。tag 缺失说明上游还没适配 → 直接失败，绝不拿旧字典硬上
+# （旧字典的锚点对不上，最坏情况是「装得上但没汉化」）。
+# 需要临时锁定（回滚验证、上游 tag 被移动）时用 --cn-ref 传 tag 名或 commit。
+CN_REF=""
 
 APP_VERSION=""
 APP_BUILD=""
@@ -28,7 +33,8 @@ while [[ $# -gt 0 ]]; do
     --version) APP_VERSION="$2"; shift 2 ;;
     --build) APP_BUILD="$2"; shift 2 ;;
     --revision) REVISION="$2"; shift 2 ;;
-    --cn-pin) CN_PIN="$2"; shift 2 ;;
+    --cn-ref) CN_REF="$2"; shift 2 ;;
+    --cn-pin) CN_REF="$2"; shift 2 ;;   # 旧名，等价 --cn-ref
     --upload) UPLOAD=true; shift ;;
     --keep-work) KEEP_WORK=true; shift ;;
     *) echo "未知参数：$1" >&2; exit 2 ;;
@@ -64,7 +70,7 @@ OUT_DMG="${REPO_DIR}/.build/antigravity-cn/${DMG_NAME}"
 say() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 die() { printf '\033[31m[失败] %s\033[0m\n' "$1" >&2; exit 1; }
 
-for tool in node curl hdiutil codesign python3 shasum; do
+for tool in node curl git hdiutil codesign python3 shasum; do
   command -v "$tool" >/dev/null 2>&1 || die "缺少命令：$tool"
 done
 if [[ "$UPLOAD" == true ]] && ! command -v gh >/dev/null 2>&1; then
@@ -113,10 +119,30 @@ asar_size="$(stat -f%z "$RES/app.asar")"
 echo "  app 就位，app.asar ${asar_size} B"
 [[ -f "$RES/app.asar" ]] || die "缺少 Contents/Resources/app.asar"
 
-say "取汉化引擎（pin $CN_PIN）"
+say "取汉化引擎"
+if [[ -z "$CN_REF" ]]; then
+  # v<宿主版本> 与 v<宿主版本>.<引擎补丁> 都算候选，取版本号最大的那个。
+  # ls-remote 会同时给 tag 对象与 Peel 后的 commit 行（refs/tags/x^{}），
+  # 后者去掉 ^{} 后与前者同名，sort -u 去重。
+  CN_REF="$(git ls-remote --tags "https://github.com/$CN_REPO" 2>/dev/null \
+            | awk -v prefix="refs/tags/v$APP_VERSION" '
+                { ref = $2; sub(/\^\{\}$/, "", ref)
+                  if (ref == prefix || index(ref, prefix ".") == 1) print substr(ref, 11) }' \
+            | sort -u | sort -V | tail -1)"
+  [[ -n "$CN_REF" ]] || die "汉化引擎还没有适配 Antigravity $APP_VERSION 的 tag（v$APP_VERSION / v$APP_VERSION.x）——等 $CN_REPO 出对应版本再构建，不要拿旧字典硬上"
+  echo "  按宿主版本 $APP_VERSION 解析到 tag $CN_REF"
+else
+  echo "  人工指定 ref：$CN_REF"
+fi
+# commit 用 /tar.gz/<sha>，tag 用 /tar.gz/refs/tags/<tag>（codeload 两种形态路径不同）。
+if [[ "$CN_REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
+  CN_TARBALL_URL="https://codeload.github.com/$CN_REPO/tar.gz/$CN_REF"
+else
+  CN_TARBALL_URL="https://codeload.github.com/$CN_REPO/tar.gz/refs/tags/$CN_REF"
+fi
 CN="$WORK/cn"
 mkdir -p "$CN"
-curl -fL --retry 3 "https://codeload.github.com/$CN_REPO/tar.gz/$CN_PIN" | tar xz -C "$CN" --strip-components=1
+curl -fL --retry 3 "$CN_TARBALL_URL" | tar xz -C "$CN" --strip-components=1
 [[ -f "$CN/localization_engine.js" ]] || die "引擎源码不完整"
 # Node 按「最近的 package.json」判定模块类型。引擎是 CommonJS（require），而本仓
 # 根目录存在过 "type": "module" 的残留 package.json —— 那样会把引擎当 ESM 加载，
@@ -149,9 +175,11 @@ cp -R "$RES/app.asar.unpacked" "$WORK/verify.unpacked" 2>/dev/null || true
 cat > "$WORK/verify.cjs" <<'JS'
 const fs=require('fs');
 const base=process.env.VERIFY_ASAR;
-const must=['package.json','dist/main.js','dist/gyWidgetMain.js','dist/gyWidget/renderer/index.html','dist/gyWidget/characters/characters.json'];
+const must=['package.json','dist/main.js','dist/gyWidgetMain.js','dist/preload.js','dist/gyWidget/characters/characters.json'];
 for(const p of must){
-  try{const s=fs.readFileSync(base+'/'+p,'utf8'); if(p==='package.json') JSON.parse(s);}
+  try{const s=fs.readFileSync(base+'/'+p,'utf8'); if(p==='package.json') JSON.parse(s);
+      if(p==='dist/preload.js' && !s.includes('__AGY_WIDGET_PAGE_START__')) throw new Error('preload 缺页内挂件块');
+      if(p==='dist/preload.js' && !s.includes('__AGY_EXTRA_L10N_START__')) throw new Error('preload 缺补充词典块');}
   catch(e){console.error('读取失败 '+p+': '+String(e.message).slice(0,80)); process.exit(1);}
 }
 console.log('Electron fs 复验通过：'+must.length+' 个关键条目可读，package.json 为合法 JSON');
@@ -201,6 +229,7 @@ fi
 say "构建完成"
 cat <<EOF
 版本   $PATCHED_VERSION（宿主 $APP_VERSION build $APP_BUILD）
+引擎   $CN_REF（$CN_REPO）
 产物   $OUT_DMG
 sha256 $PATCHED_SHA
 sidecar $OUT_DMG.sha256

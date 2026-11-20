@@ -2139,10 +2139,18 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    `--preserve-metadata=flags,runtime`——保留硬化运行时会强制 Library Validation，
    ad-hoc 签名没有 Team ID，dyld 启动即 SIGABRT。实测重签后 `flags=0x2(adhoc)`、
    `TeamIdentifier=not set`、`codesign --verify --deep` 通过、`spctl` rejected。
-   与 11.22 的区别要说清：**签名有效但无公证 + 有 quarantine** 只会得到「无法验证开发者」，
-   右键打开一次即可绕过（palera1n/blender-5x 同型），所以本 cask **不写清隔离属性的
-   postflight**；TSKMGR 那种「签名已破 → 已损坏、右键也绕不过」才必须清。
-   cask 侧也因此避免命令式 flight（11.40/11.60），少一处 sandbox 摩擦。
+   **quarantine 由 cask 的声明式 `postflight_steps` 清掉**（用户拍板：不要每次升级都
+   弹 Gatekeeper）：brew 解包后会主动给 app 打 `com.apple.quarantine`（`Cask::Quarantine`），
+   不清的话 ad-hoc 签名 + 隔离属性 = 首启必拦。step 用
+   `run "/usr/bin/xattr", args: ["-d","-r","-s", …, "{{appdir}}/Antigravity.app"]`，
+   `writable_paths` 同路径、`must_succeed: false`（macOS「App 管理」权限可能拒绝改写
+   /Applications 里的 app，缺权限时只是没清掉，不该让安装失败）。
+   **`-s` 不可省**：brew 把属性递归打到包内每个条目，framework 的 14 个**符号链接**
+   （`Versions/Current`、`Squirrel.framework/Resources` 这类）属性挂在链接自身上，
+   只 `-d -r` 清完仍剩 14 个（实测），`-d -r -s` 才归零。清完 `open -a` 直接起、无弹窗。
+   与 11.22 的区分仍成立：TSKMGR 是「签名已破 → 已损坏」必须清；本包是「签名有效但
+   无公证」，清隔离属性是为了免弹窗而非救损坏。cask 侧用声明式 steps（11.40/11.60），
+   不写命令式 flight。
 
 5. **额度接口在 macOS 上直通**，Windows 那套 Win32 依赖整个可以丢掉。
    `~/.gemini/antigravity/daemon/hub_*.json` 给 `{pid, httpPort, csrfToken, lsVersion}`，
@@ -2154,14 +2162,28 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    `status.json` 形状与上游 Windows 挂件保持一致，配套的 `antigravity-plugin` 额度 MCP
    仍可直接读。
 
-6. **挂件跟窗只用公开 Electron API**。宿主是 `BaseWindow + WebContentsView`（不是
-   BrowserWindow 单体），所以：`BrowserWindow.getAllWindows()` **必须排掉浮窗自己**，
-   否则挂件把自己当宿主、位置自指；事件面不完整，除窗口事件外还要 200ms 定时器兜底重算
-   位置。好处是跟窗、随最小化隐藏都不需要辅助功能权限或 CGWindowList。
-   渲染层 `img` 直接指 `file://…/app.asar/dist/gyWidget/characters/*.png` 可正常解码
-   （png/jpg/gif/webp/avif/bmp 全支持，因此不需要 Windows 版那套转码）。
-   透明区域用 `setIgnoreMouseEvents(true,{forward:true})` + 渲染层命中测试切换，
-   否则一块透明矩形会吃掉宿主点击。
+6. **挂件形态：页内 DOM，不开独立窗口**（2026-11-21 用户纠正后重做；初版是透明覆盖窗，
+   被否）。初版覆盖窗有两个真问题：① 宿主有 `[Auto-Restart] Port changed! Reloading all
+   windows`——LS 换端口时把**所有** BrowserWindow 一起 `loadURL`，我们的浮窗被劫持去
+   加载宿主登录页，用户看到「登录页上多出一块英文欢迎窗」；② 登录/欢迎页本就不该有宠物。
+   现形态与汉化引擎面板同路：UI 代码（`inject/renderer/widget-page.js`）由
+   `inject-widget.mjs` 追加进**宿主自己的 `dist/preload.js`**（标记块
+   `__AGY_WIDGET_PAGE_START__`），preload 有 DOM 访问权，挂件直接长在页面里：
+   跟窗/最小化/全屏/重载后重建全是天然行为，零窗口、零辅助功能权限。
+   三个实现要点：
+   - **门控**用引擎面板同款选择器 `[data-testid="agent-input-box"]`（工作台输入框）：
+     登录/欢迎页没有该节点 → 不挂载；SPA 切换不重跑 preload，靠 MutationObserver
+     （250ms 防抖）+ 1.5s 定时器补判。
+   - **preload 是 webpack bundle**，拿 ipcRenderer 要靠 bundle 作用域里的 `electron_1`
+     别名（引擎的 bridge 注入也依赖它），`require('electron')` 仅作兜底；只挂主框架
+     （`top === self`）且限 127.0.0.1/localhost 的 http(s) 页。
+   - **图片走 data URL**：页内拿不到 fs，主进程 `gy:portrait` 读 asar/导入目录回
+     base64。实测本页 CSP 只有 `frame-ancestors`（`curl -kI` 本地服务确认），
+     script/style/img 全不设限，内联 `<style>` 与 data: 图都放行。
+   容器 `pointer-events:none`、交互子元素 `auto`，透明区域不吃宿主点击；拖拽用
+   pointer capture 改 right/bottom 偏移并经 `gy:action{type:offset}` 持久化。
+   主进程模块只留数据层（额度/图库/导入对话框/设置），`pushState` 广播给所有
+   `getType()==='window'` 的 webContents，由页内自行决定挂不挂。
 
 7. **`path.join(os.homedir(), 'Library', 'Application', 'Support')` 是错的**——
    `'Application Support'` 必须**一段**传入，否则拼成 `Library/Application/Support/…`。
@@ -2237,12 +2259,44 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
     exit 0（zap/uninstall 与真实残留的比对一并过）；`brew fetch --cask` 出
     `✔︎ Cask antigravity`（Release 上的字节 == cask 声明的 sha）；
     `install --cask` 装成 519MB，`codesign --verify --deep` 有效、`TeamIdentifier` 未设、
-    `spctl` rejected（预期，见第 4 条）；从安装位置直接起进程，日志里
-    `[gyWidget] 浮窗已创建 / 额度刷新：hub-api 分组=3 / 渲染层就绪：角色图=loaded
-    额度行数=5 语录=45 条`，`AutoUpdater` 相关日志 **0 行**；
+    `spctl` rejected（预期，见第 4 条）；quarantine 全包计数 **0**，`open -a` 直接起、
+    无 Gatekeeper 弹窗；从安装位置起进程，`AutoUpdater` 相关日志 **0 行**；
     与官方包对比 CJK 汉字净增 **145,094** 个（字典确实进了交付物）；
     包内 13 个内置角色 + `custom-<32hex>` 导入通路（`DATA_DIR/characters.json` 持久化）。
-    看不了截图：本会话终端无「屏幕录制」权限，故 UI 的肉眼验收交给用户本机启动。
+    cn2（页内 DOM 形态）复验：preload 含页内块、登录页**不挂载**（无「页内挂件就绪」
+    日志）、主进程零窗口创建；用户登录后 cn3 日志出
+    `页内挂件就绪：角色图=loaded 额度行数=5 语录=45 条 工作台=true` 与
+    `补充词典生效：累计替换文本节点 N 个`——挂载门与词典都在真工作台里生效。
+    终端无屏幕录制权限，看不了截图，模型菜单的肉眼验收交给用户。
+
+15. **汉化引擎跟「宿主版本的 tag」，不 pin commit**（2026-11-21 用户纠正后改）。
+    上游 `Silas-02/antigravity-desktop-cn` 是**按 Antigravity 版本打 tag** 的
+    （`v2.33.0`、`v2.33.0.1`…每个宿主版本一对，通常两天内跟上），初版 pin 死 commit
+    意味着宿主每次升版都要人工改脚本，是错的。现 `build.sh` 用
+    `git ls-remote --tags`（不耗 API 限额）取 `v<宿主版本>` 与 `v<宿主版本>.<n>` 里
+    版本号最大者；**tag 缺失 = 上游还没适配 → 直接 die**，绝不拿旧字典硬上（旧字典
+    锚点对不上，最坏是「装得上但没汉化」）。`--cn-ref <tag|commit>` 保留人工锁定口子。
+    实测 `v2.33.0.1` peel 后正是初版 pin 的 `c6ba0b83…`，重跑构建 `app.asar` 与已发布
+    产物逐字节一致（`9b8f9789…`）——tag 化不改变内容，故无需重传 dmg。
+    **门当天就真拦了一次**：core 把宿主升到 2.33.1 而引擎尚无 `v2.33.1` tag，构建按设计
+    die；该轮改用 `--version 2.33.0 --build …` 显式锁旧宿主出补丁版。等引擎跟上后再跑
+    一次默认解析即回到自动跟版。
+
+17. **补充汉化词典是自有注入层，不改上游引擎**（`inject/extra-l10n.js`，标记块
+    `__AGY_EXTRA_L10N_START__`，追加在页内挂件块之后）。上游字典没覆盖模型名，用户要求：
+    Gemini→哈基米、元素代号→周期表中文字（**全表 118 元素**，含 Aluminium/Cesium 等
+    双拼写）、Claude→克劳德、Opus→巨著 / Sonnet→十四行诗 / Haiku→俳句 / Fable→神话 /
+    Flash→闪电 等、思考档位 Low/Medium/High→低/中/高、New→新。
+    实现是文本节点替换 + MutationObserver，四条硬约束：
+    - **只改可见文本节点**，`script/style/textarea/input/select/code/pre/.monaco-editor/
+      .xterm/[contenteditable]` 整子树剪枝——模型 id 与编辑器/终端内容保持英文，
+      服务端标识不被破坏；
+    - TreeWalker 用**元素级 FILTER_REJECT 剪枝**（SHOW_ELEMENT|SHOW_TEXT），否则 Monaco
+      里每个文本节点都要跑一次 `closest`，忙时卡死；也不做周期性全 body 重扫，
+      新增节点走 addedNodes、改字走 characterData；
+    - `\b` 词边界 + 长词优先：`Leading`/`Golden` 不被 `Lead`/`Gold` 误伤（样本串实测）；
+    - 计数上报**只在变化时**发 `gy:l10n`（初版每 500ms 重发同值，日志刷屏，cn4 修）。
+    替换幂等：译成中文后不再命中拉丁模式，observer 回环自然终止。
 
 ## 12. 待办 / 后续演进
 

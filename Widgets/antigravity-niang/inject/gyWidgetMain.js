@@ -4,19 +4,20 @@
 // 构建脚本把它写入 app.asar 的 dist/gyWidgetMain.js，并在 dist/main.js 末尾以
 // try/catch 包裹 require —— 任何异常都不允许影响 Antigravity 本体启动。
 //
-// 只用 Electron 公开 API（BaseWindow/BrowserWindow 枚举 + 窗口事件 + 定时器），
-// 不包宿主内部函数：宿主升级改了 dist 内部形状时，挂件顶多是跟不准，不会崩宿主。
+// 形态：**不开独立窗口**。UI 全部注入宿主页面 DOM（见 inject/renderer/widget-page.js，
+// 由构建脚本追加进宿主自己的 dist/preload.js，与汉化引擎面板同一条注入路径）。
+// 本模块只做数据与系统能力：额度拉取、角色图库、导入对话框、设置持久化，
+// 经 ipcMain 与页内挂件通信。好处是跟窗/最小化/登录页隐藏都是页面内天然行为，
+// 也不会被宿主「Port changed! Reloading all windows」之类的整窗重载劫持。
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
-const { URL, pathToFileURL } = require('url');
 const electron = require('electron');
 
-const { app, dialog, ipcMain, shell, BrowserWindow } = electron;
-const BaseWindow = electron.BaseWindow || BrowserWindow;
+const { app, dialog, ipcMain, shell, webContents } = electron;
 
 const WIDGET_DIR = path.join(__dirname, 'gyWidget');
 const APP_NAME = 'GeminiNiangWidget';
@@ -26,17 +27,19 @@ const DATA_DIR = path.join(os.homedir(), 'Library', 'Application Support', APP_N
 const QUOTA_PATH = '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary';
 const ROWS_PER_PAGE = 3;
 const REFRESH_MS = 60000;
-const FOLLOW_MS = 200;
 const IMPORT_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.bmp'];
 const SCALE_MIN = 0.6;
 const SCALE_MAX = 2;
+const MIME = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
+  '.webp': 'image/webp', '.avif': 'image/avif', '.bmp': 'image/bmp',
+};
 
 const BUILTIN = readJson(path.join(WIDGET_DIR, 'characters', 'characters.json'), { characters: [], default: '' });
 const BUILTIN_QUOTES = readJson(path.join(WIDGET_DIR, 'assets', 'quotes.json'), { quotes: [] }).quotes || [];
 
-let overlay = null;
-let hostWindow = null;
 let timers = [];
+let sessionHidden = false;
 let quota = { source: 'none', groups: [], updatedAt: 0, reason: '' };
 let settings = loadSettings();
 
@@ -90,6 +93,7 @@ function activeQuotes() {
 
 // ---------------------------------------------------------------------------
 // 角色图库：内置清单 + 用户导入（id 形如 custom-<32hex>，移除进 removed/ 可恢复）
+// 页内挂件拿不到 fs，图片字节由本模块经 gy:portrait 以 data URL 交付。
 // ---------------------------------------------------------------------------
 
 function customCatalog() {
@@ -113,30 +117,41 @@ function characterList() {
     id: c.id,
     name: c.name,
     kind: 'built-in',
-    url: pathToFileURL(path.join(WIDGET_DIR, 'characters', c.file)).href,
-  })).filter((c) => c.url);
+    path: path.join(WIDGET_DIR, 'characters', c.file),
+  })).filter((c) => fs.existsSync(c.path));
 
   const custom = customCatalog().characters
     .filter(isOwnCustom)
-    .filter((c) => fs.existsSync(path.join(customDir(c), c.file)))
     .map((c) => ({
       id: c.id,
       name: c.name || '自定义角色',
       kind: c.removed ? 'removed' : 'custom',
-      url: pathToFileURL(path.join(customDir(c), c.file)).href,
-    }));
+      path: path.join(customDir(c), c.file),
+    }))
+    .filter((c) => fs.existsSync(c.path));
 
   return { shown: builtin.concat(custom.filter((c) => c.kind === 'custom')), removed: custom.filter((c) => c.kind === 'removed') };
 }
 
-function characterUrl(id) {
+function characterPath(id) {
   const { shown, removed } = characterList();
   const hit = shown.find((c) => c.id === id) || removed.find((c) => c.id === id) || shown.find((c) => c.id === settings.character);
-  return hit ? hit.url : null;
+  return hit ? hit.path : null;
+}
+
+function portrait(id) {
+  const file = characterPath(id);
+  if (!file) return { ok: false, reason: '角色不存在' };
+  try {
+    const mime = MIME[path.extname(file).toLowerCase()] || 'image/png';
+    return { ok: true, dataUrl: 'data:' + mime + ';base64,' + fs.readFileSync(file).toString('base64') };
+  } catch (e) {
+    return { ok: false, reason: e.message };
+  }
 }
 
 function importCharacter() {
-  const picked = dialog.showOpenDialogSync(overlay || undefined, {
+  const picked = dialog.showOpenDialogSync({
     title: '导入角色图片',
     buttonLabel: '导入',
     properties: ['openFile'],
@@ -338,116 +353,36 @@ function quotaPages() {
 }
 
 // ---------------------------------------------------------------------------
-// 覆盖窗：贴在宿主窗口右下角的透明浮窗
+// 状态广播与 IPC：页内挂件是唯一 UI，主进程不创建任何窗口
 // ---------------------------------------------------------------------------
 
-function widgetSize() {
-  return { w: Math.round(600 * settings.scale), h: Math.round(300 * settings.scale) };
+function statePayload() {
+  const { shown, removed } = characterList();
+  return {
+    characters: shown,
+    removedCharacters: removed,
+    active: settings.character,
+    scale: settings.scale,
+    offset: settings.offset,
+    hidden: sessionHidden,
+    quota: { source: quota.source, updatedAt: quota.updatedAt, reason: quota.reason, pages: quotaPages() },
+    quotes: activeQuotes(),
+    dataDir: DATA_DIR,
+  };
 }
 
-function isLive(win) {
+function pushStateTo(wc) {
   try {
-    return win && win.isDestroyed() === false;
-  } catch (_e) {
-    return false;
-  }
-}
-
-// 关键：必须排掉浮窗自己，否则getAllWindows 会把挂件当成宿主，跟窗自指。
-function pickHost() {
-  const candidates = [];
-  for (const win of BaseWindow.getAllWindows()) {
-    if (!isLive(win) || win === overlay) continue;
-    try {
-      if (!win.isVisible() || win.isMinimized()) continue;
-    } catch (_e) {
-      continue;
-    }
-    candidates.push(win);
-  }
-  if (!candidates.length) return null;
-  const focused = candidates.find((w) => {
-    try { return w.isFocused(); } catch (_e) { return false; }
-  });
-  return focused || candidates[candidates.length - 1];
-}
-
-function clamp(value, lo, hi) {
-  if (hi < lo) return lo;
-  return Math.min(hi, Math.max(lo, value));
-}
-
-function placeOverlay() {
-  if (!isLive(overlay)) return;
-  const host = pickHost();
-  if (!host) {
-    if (overlay.isVisible()) overlay.hide();
-    hostWindow = null;
-    return;
-  }
-  hostWindow = host;
-  const bounds = typeof host.getContentBounds === 'function' ? host.getContentBounds() : host.getBounds();
-  const { w, h } = widgetSize();
-  const anchorX = bounds.x + bounds.width - w - Math.round(28 * settings.scale);
-  const anchorY = bounds.y + bounds.height - h - Math.round(20 * settings.scale);
-  // 锚点 + 用户拖动偏移，并夹在宿主可视区内：拖动不会被跟位弹回，也不会丢出屏幕。
-  const x = Math.round(clamp(anchorX + settings.offset.x, bounds.x + 4, bounds.x + bounds.width - w - 4));
-  const y = Math.round(clamp(anchorY + settings.offset.y, bounds.y + 4, bounds.y + bounds.height - h - 4));
-  if (!overlay.isVisible()) overlay.showInactive();
-  if (overlay.getSize().join() !== [w, h].join()) overlay.setSize(w, h);
-  if (overlay.getPosition().join() !== [x, y].join()) overlay.setPosition(x, y);
-}
-
-function dragBy(dx, dy) {
-  if (!isLive(overlay)) return;
-  const host = pickHost();
-  const bounds = host ? (typeof host.getContentBounds === 'function' ? host.getContentBounds() : host.getBounds()) : null;
-  const { w, h } = widgetSize();
-  settings.offset.x = Math.round(clamp(settings.offset.x + dx, -Math.max(0, bounds ? bounds.width - w - 8 : 4000), 0));
-  settings.offset.y = Math.round(clamp(settings.offset.y + dy, -Math.max(0, bounds ? bounds.height - h - 8 : 4000), 0));
-  saveSettings();
-  placeOverlay();
-}
-
-function createOverlay() {
-  const { w, h } = widgetSize();
-  overlay = new BrowserWindow({
-    width: w,
-    height: h,
-    show: false,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: true,
-    minimizable: false,
-    maximizable: false,
-    fullscreenable: false,
-    skipTaskbar: true,
-    hasShadow: false,
-    alwaysOnTop: true,
-    webPreferences: {
-      preload: path.join(WIDGET_DIR, 'widget-preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
-  });
-  overlay.setMenuBarVisibility(false);
-  overlay.setAlwaysOnTop(true, 'floating');
-  try {
-    overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    if (wc && !wc.isDestroyed()) wc.send('gy:state', statePayload());
   } catch (_e) {}
-  // 默认穿透，由渲染层在指针落到角色/气泡时按需收回，避免透明区域吃掉宿主点击。
-  overlay.setIgnoreMouseEvents(true, { forward: true });
-  overlay.loadFile(path.join(WIDGET_DIR, 'renderer', 'index.html'));
-  overlay.on('closed', () => { overlay = null; });
+}
 
-  ['move', 'resize', 'minimize', 'restore', 'show', 'hide', 'focus', 'blur'].forEach((event) => {
-    app.on('browser-window-' + event, () => placeOverlay());
-  });
-  // 宿主用 BaseWindow + WebContentsView，事件面不完全一致，定时器兜底跟位。
-  timers.push(setInterval(placeOverlay, FOLLOW_MS));
-  placeOverlay();
+function pushState() {
+  for (const wc of webContents.getAllWebContents()) {
+    try {
+      if (wc.getType() === 'window') pushStateTo(wc);
+    } catch (_e) {}
+  }
 }
 
 function setCharacter(id) {
@@ -462,134 +397,66 @@ function setScale(value) {
   settings.scale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, scale));
   saveSettings();
   pushState();
-  placeOverlay();
 }
 
-function pushState() {
-  if (!isLive(overlay)) return;
-  pushStateTo(overlay.webContents);
-}
-
-// ---------------------------------------------------------------------------
-// IPC 与右键菜单
-// ---------------------------------------------------------------------------
-
-function reply(event, channel, payload) {
-  if (event && event.sender && !event.sender.isDestroyed()) event.sender.send(channel, payload);
-}
-
-function showContextMenu() {
-  const { shown, removed } = characterList();
-  const template = [
-    { label: '立即刷新额度', click: () => refreshQuota() },
-    { label: '导入角色图片…', click: () => importCharacter() },
-    {
-      label: '选择角色',
-      submenu: shown.map((c) => ({
-        label: c.name + (c.kind === 'custom' ? '（导入）' : ''),
-        type: 'radio',
-        checked: c.id === settings.character,
-        click: () => setCharacter(c.id),
-      })),
-    },
-  ];
-
-  if (removed.length) {
-    template.push({
-      label: '恢复已移除的角色',
-      submenu: removed.map((c) => ({ label: c.name, click: () => restoreCharacter(c.id) })),
-    });
+function handleAction(arg) {
+  const type = arg && arg.type;
+  switch (type) {
+    case 'select': if (typeof arg.id === 'string' && arg.id) setCharacter(arg.id); return { ok: true };
+    case 'scale': setScale(arg.value); return { ok: true };
+    case 'offset': {
+      const x = Number(arg.x); const y = Number(arg.y);
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        settings.offset = { x: Math.round(x), y: Math.round(y) };
+        saveSettings();
+      }
+      return { ok: true };
+    }
+    case 'refresh': refreshQuota(); return { ok: true };
+    case 'import': return importCharacter();
+    case 'remove': return removeCharacter(arg.id);
+    case 'restore': return restoreCharacter(arg.id);
+    case 'edit-quotes': {
+      const file = path.join(DATA_DIR, 'quotes.json');
+      if (!fs.existsSync(file)) writeJson(file, { version: 1, quotes: activeQuotes().slice() });
+      shell.openPath(file);
+      return { ok: true };
+    }
+    case 'reset-quotes': {
+      try { fs.rmSync(path.join(DATA_DIR, 'quotes.json'), { force: true }); } catch (_e) {}
+      settings.quotes = null;
+      pushState();
+      return { ok: true };
+    }
+    case 'open-dir': shell.openPath(DATA_DIR); return { ok: true };
+    case 'hide': sessionHidden = true; pushState(); return { ok: true };
+    default: return { ok: false, reason: '未知动作：' + type };
   }
-
-  template.push(
-    { type: 'separator' },
-    {
-      label: '大小',
-      submenu: [0.75, 1, 1.25, 1.5, 2].map((s) => ({
-        label: Math.round(s * 100) + '%',
-        type: 'radio',
-        checked: Math.abs(settings.scale - s) < 0.01,
-        click: () => setScale(s),
-      })),
-    },
-    { type: 'separator' },
-    {
-      label: '编辑我的语录…',
-      click: () => {
-        const file = path.join(DATA_DIR, 'quotes.json');
-        if (!fs.existsSync(file)) writeJson(file, { version: 1, quotes: activeQuotes().slice() });
-        shell.openPath(file);
-      },
-    },
-    {
-      label: '恢复内置语录',
-      click: () => {
-        try { fs.rmSync(path.join(DATA_DIR, 'quotes.json'), { force: true }); } catch (_e) {}
-        settings.quotes = null;
-        pushState();
-      },
-    },
-    { label: '打开数据目录', click: () => shell.openPath(DATA_DIR) },
-    { type: 'separator' },
-    { label: '本次运行隐藏挂件', click: () => { if (isLive(overlay)) overlay.hide(); } }
-  );
-
-  Menu.buildFromTemplate(template).popup({ window: overlay });
 }
 
 function registerIpc() {
-  ipcMain.handle('gy:state', (event) => { pushStateTo(event.sender); return true; });
-  ipcMain.on('gy:select-character', (_e, id) => { if (typeof id === 'string' && id) setCharacter(id); });
-  ipcMain.on('gy:set-scale', (_e, scale) => setScale(scale));
-  ipcMain.on('gy:refresh-quota', () => refreshQuota());
-  ipcMain.on('gy:import-character', (event, channel) => reply(event, channel, importCharacter()));
-  ipcMain.on('gy:remove-character', (event, arg) => reply(event, arg && arg.channel, removeCharacter(arg && arg.id)));
-  ipcMain.on('gy:restore-character', (event, arg) => reply(event, arg && arg.channel, restoreCharacter(arg && arg.id)));
-  ipcMain.on('gy:context-menu', () => showContextMenu());
-  ipcMain.on('gy:renderer-ready', (_e, info) => {
-    const line = '[gyWidget] 渲染层就绪：角色图=' + (info && info.portraitState) +
-      ' 额度行数=' + (info && info.quotaGroups) + ' 语录=' + (info && info.quoteCount) + ' 条';
-    console.log(line);
-    if (info && info.portraitState === 'error') {
-      console.warn('[gyWidget] 角色图加载失败：' + info.portraitUrl);
-    }
+  ipcMain.handle('gy:state', () => statePayload());
+  ipcMain.handle('gy:portrait', (_e, id) => portrait(id));
+  ipcMain.handle('gy:action', (_e, arg) => handleAction(arg));
+  ipcMain.on('gy:l10n', (_e, info) => {
+    console.log('[gyWidget] 补充词典生效：累计替换文本节点 ' + (info && info.replaced) + ' 个');
   });
-  ipcMain.on('gy:drag-by', (_e, arg) => {
-    if (!arg) return;
-    const dx = Number(arg.dx);
-    const dy = Number(arg.dy);
-    if (Number.isFinite(dx) && Number.isFinite(dy)) dragBy(dx, dy);
+  ipcMain.on('gy:ready', (_e, info) => {
+    console.log('[gyWidget] 页内挂件就绪：角色图=' + (info && info.portraitState) +
+      ' 额度行数=' + (info && info.quotaRows) + ' 语录=' + (info && info.quoteCount) + ' 条' +
+      ' 工作台=' + (info && info.workbench));
+    if (info && info.portraitState === 'error') console.warn('[gyWidget] 角色图加载失败：' + info.reason);
   });
-  ipcMain.on('gy:set-ignore-mouse', (_e, ignore) => {
-    if (!isLive(overlay)) return;
-    if (ignore) overlay.setIgnoreMouseEvents(true, { forward: true });
-    else overlay.setIgnoreMouseEvents(false);
-  });
-}
-
-function pushStateTo(webContents) {
-  if (!webContents || webContents.isDestroyed()) return;
-  const { shown, removed } = characterList();
-  webContents.send('gy:state', {
-    characters: shown,
-    removedCharacters: removed,
-    active: settings.character,
-    activeUrl: characterUrl(settings.character),
-    scale: settings.scale,
-    quota: { source: quota.source, updatedAt: quota.updatedAt, reason: quota.reason, pages: quotaPages() },
-    quotes: activeQuotes(),
-    dataDir: DATA_DIR,
+  // 新加载的窗口立刻拿一份状态（页内挂件挂载时也会主动 pull，双保险）。
+  app.on('web-contents-created', (_e, wc) => {
+    wc.on('did-finish-load', () => pushStateTo(wc));
   });
 }
 
 function init() {
-  console.log('[gyWidget] homedir=' + os.homedir() + ' DATA_DIR=' + DATA_DIR);
+  console.log('[gyWidget] homedir=' + os.homedir() + ' DATA_DIR=' + DATA_DIR + '（页内 DOM 形态，无独立窗口）');
   fs.mkdirSync(path.join(DATA_DIR, 'characters'), { recursive: true });
   registerIpc();
-  createOverlay();
-  if (overlay && !overlay.isDestroyed()) {
-    console.log('[gyWidget] 浮窗已创建', JSON.stringify(overlay.getBounds()), '角色=' + settings.character);
-  }
   refreshQuota();
   timers.push(setInterval(refreshQuota, REFRESH_MS));
   app.on('before-quit', () => {

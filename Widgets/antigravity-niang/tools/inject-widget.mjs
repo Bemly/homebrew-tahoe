@@ -8,6 +8,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { appendText, loadEntries, parseAsar, readEntry, replaceText, writeAsar } from './asar-lib.mjs';
 
 const args = process.argv.slice(2);
@@ -24,12 +25,14 @@ if (!asarPath || !root) {
 
 const UPDATE_DISABLED_MARK = '自动更新已由 bemly/tahoe 补丁禁用';
 const WIDGET_MARK = '__AGY_WIDGET_START__';
+const PAGE_MARK = '__AGY_WIDGET_PAGE_START__';
+const L10N_MARK = '__AGY_EXTRA_L10N_START__';
 const CN_MARK = '__AG_CTX_MONITOR_START__';
 
+// 页内 DOM 形态：UI 代码追加进宿主自己的 dist/preload.js（与汉化引擎面板同路径），
+// asar 里只放主进程模块与素材，不再有任何独立渲染层文件/窗口。
 const files = [
   ['inject/gyWidgetMain.js', 'dist/gyWidgetMain.js'],
-  ['inject/widget-preload.js', 'dist/gyWidget/widget-preload.js'],
-  ['inject/renderer', 'dist/gyWidget/renderer'],
   ['characters', 'dist/gyWidget/characters'],
   ['assets/quotes.json', 'dist/gyWidget/assets/quotes.json'],
 ];
@@ -103,6 +106,30 @@ const snippet = [
 ].join('\n');
 appendText(entries, 'dist/main.js', snippet);
 
+// 页内挂件：先做语法门（与汉化引擎同款 vm.Script 校验），再追加进宿主 preload。
+// preload 是 webpack bundle，electron 别名 electron_1 在其模块作用域内可见，
+// 页内代码靠它拿 ipcRenderer（另有 require 兜底）。
+const pageSrc = fs.readFileSync(path.join(root, 'inject/renderer/widget-page.js'), 'utf8');
+try {
+  new vm.Script(pageSrc);
+} catch (e) {
+  throw new Error(`页内挂件脚本语法错误，已中止注入：${e.message}`);
+}
+const preload = entries.get('dist/preload.js');
+if (!preload) throw new Error('asar 内没有 dist/preload.js，无法挂载页内挂件');
+appendText(entries, 'dist/preload.js', [`'${PAGE_MARK}';`, pageSrc, `'__AGY_WIDGET_PAGE_END__';`].join('\n'));
+console.log('[inject] inject/renderer/widget-page.js → dist/preload.js（页内 DOM 挂载）');
+
+// 补充汉化词典（模型名/元素字/思考档位），独立标记块，与挂件解耦。
+const l10nSrc = fs.readFileSync(path.join(root, 'inject/extra-l10n.js'), 'utf8');
+try {
+  new vm.Script(l10nSrc);
+} catch (e) {
+  throw new Error(`补充词典脚本语法错误，已中止注入：${e.message}`);
+}
+appendText(entries, 'dist/preload.js', [`'${L10N_MARK}';`, l10nSrc, `'__AGY_EXTRA_L10N_END__';`].join('\n'));
+console.log('[inject] inject/extra-l10n.js → dist/preload.js（补充汉化词典）');
+
 const stats = writeAsar(entries, asarPath);
 console.log(`[inject] 写回 ${asarPath}：${stats.entries} 条目 / packed ${stats.packedBytes} B`);
 
@@ -110,13 +137,15 @@ console.log(`[inject] 写回 ${asarPath}：${stats.entries} 条目 / packed ${st
 const verify = parseAsar(asarPath);
 const mainText = readEntry(verify, 'dist/main.js').toString('utf8');
 const updaterText = readEntry(verify, 'dist/updater.js').toString('utf8');
+const preloadText = readEntry(verify, 'dist/preload.js').toString('utf8');
+const widgetMainText = readEntry(verify, 'dist/gyWidgetMain.js').toString('utf8');
 const checks = [
   ['main.js 含挂件注入块', mainText.includes(WIDGET_MARK) && mainText.includes("require('./gyWidgetMain.js')")],
   ['main.js 仍含汉化注入块', mainText.includes(CN_MARK)],
   ['updater.js 已禁自更新', updaterText.includes(UPDATE_DISABLED_MARK) && updaterText.includes('autoDownload = false')],
-  ['挂件主模块存在', readEntry(verify, 'dist/gyWidgetMain.js') !== null],
-  ['预加载脚本存在', readEntry(verify, 'dist/gyWidget/widget-preload.js') !== null],
-  ['渲染层存在', readEntry(verify, 'dist/gyWidget/renderer/index.html') !== null],
+  ['preload.js 含页内挂件块', preloadText.includes(PAGE_MARK) && preloadText.includes('agent-input-box')],
+  ['preload.js 含补充词典块', preloadText.includes(L10N_MARK) && preloadText.includes('哈基米')],
+  ['主进程模块不再开独立窗口', !widgetMainText.includes('new BrowserWindow') && !widgetMainText.includes('new BaseWindow')],
   ['角色清单存在', readEntry(verify, 'dist/gyWidget/characters/characters.json') !== null],
   ['默认立绘存在', readEntry(verify, 'dist/gyWidget/characters/gemini_default.png') !== null],
   ['语录存在', readEntry(verify, 'dist/gyWidget/assets/quotes.json') !== null],
