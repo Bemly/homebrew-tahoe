@@ -43,6 +43,11 @@ brew install --cask bemly/tahoe/workbuddy
 # doubao-ime is an input method, delivered as a cask (auto-runs the official
 # installer into /Library/Input Methods, requires sudo password)
 brew install --cask bemly/tahoe/doubao-ime
+# antigravity is delivered as a cask too, but as a *patched artifact*: Chinese
+# localization and a companion overlay widget are baked into app.asar, and the
+# in-app auto-update is disabled so the patch survives. First launch needs
+# right-click → Open (the re-sign is ad-hoc, so there is no notarization).
+brew install --cask bemly/tahoe/antigravity
 ```
 
 ## Packages
@@ -148,6 +153,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `icu4c@78` | ICU 78 Unicode / globalization libraries, taken over under the same name and built from source (`keg_only`); dependency of `freeling` |
 | `boost@1.85` | Boost C++ libraries 1.85, from the third-party prebuilt-boost macOS x86 `static+shared` package (prebuilt dylibs get an `@rpath` added and are re-signed ad-hoc); dependency of `freeling`; same-name conflict with core |
 | `wimlib` | Library plus the `wimlib-imagex` tools to create, extract and modify Windows Imaging (WIM) files, built from core sources on Intel (autotools, built with `fork-pkgconf`); no runtime dependencies on macOS |
+| `antigravity` | Google Antigravity agent IDE, **shipped as a patched artifact**: the official Intel dmg is unpacked, `app.asar` is rewritten statically (Chinese localization + a Gemini companion overlay widget showing quota and reset time, with your own images importable as the character; in-app auto-update disabled so the patch cannot be overwritten) and the app is re-signed ad-hoc, then the dmg is mirrored to this repo's releases. Built reproducibly by `Widgets/antigravity-niang/build.sh`; version tracked from the core cask plus this release's `.sha256` sidecar. First launch needs right-click → Open (no notarization); shares its token with core's unpatched `antigravity` cask — uninstall one before installing the other |
 
 ## Switching sources (same-name conflict)
 
@@ -179,6 +185,10 @@ Other same-name packages (`git` / `bash` / `wget` / `aria2` / `automake` / `abse
 `postgresql@13`) are the same software as core's, so run `brew uninstall <name>` before
 installing this tap's build (and vice versa). The `fork-*` packages are renamed and do
 not conflict with core.
+
+The `antigravity` cask is a special case: core has a cask of the same token for the same
+app, but core's is the unpatched official build while this tap's is the localized/patched
+artifact. They share `Caskroom/antigravity` and cannot coexist either — pick one.
 
 ## GHCR bottles
 

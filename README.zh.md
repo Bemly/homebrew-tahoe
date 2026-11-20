@@ -36,6 +36,10 @@ brew install bemly/tahoe/opencode # 会连带装上本 tap 的 ripgrep 依赖
 brew install --cask bemly/tahoe/workbuddy
 # doubao-ime 是输入法，走 cask（自动跑官方安装器装进 /Library/Input Methods，会弹密码框）
 brew install --cask bemly/tahoe/doubao-ime
+# antigravity 也走 cask，但分发的是「打补丁的成品」：app.asar 里已静态注入中文汉化
+# 与伴生挂件，并禁用应用内自动更新（否则补丁会被官方新包覆盖）。
+# 重签是 ad-hoc（无公证），首次打开要右键 →「打开」放行一次。
+brew install --cask bemly/tahoe/antigravity
 ```
 
 ## 收录的软件
@@ -141,6 +145,7 @@ brew install --cask bemly/tahoe/doubao-ime
 | `icu4c@78` | ICU 78 Unicode / 国际化库，core 同名接管源码现编（`keg_only`）；`freeling` 的依赖 |
 | `boost@1.85` | Boost C++ 库 1.85，取第三方 prebuilt-boost 的 macOS x86 `static+shared` 包（预编译 dylib 补 `@rpath` 后 ad-hoc 重签）；`freeling` 的依赖；与 core 同名 |
 | `wimlib` | 创建 / 解包 / 修改 Windows Imaging（WIM）映像的库与 `wimlib-imagex` 工具集，core 拷入源码现编（autotools，`fork-pkgconf` 构建）；macOS 上零运行时依赖 |
+| `antigravity` | Google Antigravity 智能体 IDE，**分发的是打补丁后的成品**：解包官方 Intel dmg → 静态改写 `app.asar`（中文汉化 + 右下角 Gemini 伴生挂件：额度剩余与重置时间、可导入自己的图片换立绘；同时禁用应用内自动更新，避免补丁被官方新包覆盖）→ ad-hoc 重签名 → 镜像到本仓 Release。构建可复现（`Widgets/antigravity-niang/build.sh`），版本跟随 core cask + 本 Release 的 `.sha256` sidecar。首次打开需右键 →「打开」（无公证签名）；与 core 的未打补丁同名 cask 不能共存，先卸一方再装 |
 
 ## 注意事项（同名冲突）
 
@@ -171,6 +176,9 @@ brew install bemly/tahoe/meson
 `node@20` / `dotnet` / `freeling` / `boost@1.85` / `icu4c@78` / `postgresql@13`）
 都与 core 同名同物，装本 tap 版前先 `brew uninstall <name>`（反之亦然）。
 `fork-*` 是改名包，与 core 不冲突，不需要卸载。
+
+`antigravity` 是特例：core 也有同名 cask，装的是未打补丁的官方包，本 tap 这份是
+汉化 + 挂件 + 禁自更新的成品；二者共用 `Caskroom/antigravity`，同样只能二选一。
 
 ## GHCR 瓶
 

@@ -1,0 +1,36 @@
+GPT娘内置语录来源与许可
+
+内置33句由原创台词、用户提供台词和以下7句上游文本组成。
+上游来源：https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget/blob/770d3f55ff40284eb244fff33fc9ed4654be8a45/assets/whale-widget.js
+
+真当我是便宜货啊...
+不知道用户有什么用，先养着吧～
+恭喜你实现token自由！token全跑了！
+看到这个指令，我血压又上来了
+我来看看那个AI改了什么导致插件又崩了...
+上班让我意识到时间是可以被浪费的...
+地球online的金币也太难获取了...
+
+以下许可适用于上述7句上游文本；未复制上游图片、动图、音效或字体。
+
+MIT License
+
+Copyright (c) 2026 MeteorNOX
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

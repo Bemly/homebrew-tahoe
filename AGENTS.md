@@ -49,6 +49,18 @@ thin arm64，Intel 机跑不起来，但值得收录。经用户拍板作为首�
 cask 写 `depends_on arch: :arm64`（Intel 安装直接拒绝，见 11.40），macos 门槛不变。
 此口子只为自有软件（AFM）开，不接外部 arm64-only 收录。
 
+**例外——分发修改版专有二进制（2026-11-20 起，`antigravity` 为首例）**：本仓此前所有
+镜像（11.34 政策）传的都是**未改动的官方包**，只是把地址换成本仓 Release 以免直链腐烂。
+`antigravity` cask 不同：它分发的是**在官方 darwin-x64 包上静态改写 `app.asar`
+（中文汉化 + Gemini 娘挂件 + 禁用应用自更新）后 ad-hoc 重签**的重打 dmg——即
+**公共 Release 上放了修改过的 Google 专有二进制**。这是与 Google 条款冲突的显式破例，
+经用户拍板收录；理由是本 tap 的使命就是让 Intel Tahoe 能用上这些软件，而官方包在
+Intel 上缺汉化与挂件能力。约束：构建必须由 `Widgets/antigravity-niang/build.sh`
+一条命令复现、官方输入的 sha256 必须与 homebrew/core 的 cask API 核对一致、
+每步都有硬质量门（宁可不产出，不出半成品）；`RELEASE-NOTES.template` 里如实写明
+上游许可状况（汉化引擎仓库无 LICENSE、原角色形象 CC BY-NC-SA、默认立绘出处待确认）。
+细节与踩坑见 11.61。
+
 ## 2. 命名约定
 
 | 项 | 值 | 说明 |
@@ -69,12 +81,13 @@ homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：约定 + 计划
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
 ├── Formula/                           # 130 个公式，一个软件一个文件（含 39 个 fork-*）
-├── Casks/                             # 24 个 cask（桌面 app / 输入法）
+├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python / swift 补丁
+├── Widgets/antigravity-niang/         # antigravity 补丁成品构建：挂件源码 + asar 工具 + build.sh
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 143 个检查器入口，与 Formula|cask 一一同名
+│   └── <name>.swift                   # 144 个检查器入口，与 Formula|cask 一一同名
 └── .github/
     └── workflows/
         ├── watch-updates.yml          # 手动触发的批量版本 watcher（ubuntu + Swift）
@@ -161,9 +174,10 @@ watcher 把更新直接提交 `main`，再用**一个** `gh workflow run -f form
 
 ## 6. 当前收录
 
-> 2026-11-20 核对：**130 个公式 + 24 个 cask**，`updater/` 143 个检查器（另有 `UpdaterCore.swift`）。
-> 供给方式四类：**预编译直引**（上游 macOS Intel 包）、**源码 / 代编译**（core 拷入或上游源码，CI 现编）、
-> **`fork-*` 依赖层**（core 依赖改名 + `keg_only` 自瓶）、**cask**（桌面 app / 输入法，镜像到本仓 Release）。
+> 2026-11-21 核对：**130 个公式 + 25 个 cask**，`updater/` 144 个检查器（另有 `UpdaterCore.swift`）。
+> 供给方式五类：**预编译直引**（上游 macOS Intel 包）、**源码 / 代编译**（core 拷入或上游源码，CI 现编）、
+> **`fork-*` 依赖层**（core 依赖改名 + `keg_only` 自瓶）、**cask**（桌面 app / 输入法，镜像到本仓 Release）、
+> **补丁成品**（本地重打包：官方包 + 静态改写 + 重签，仅 `antigravity`，见 1 节破例与 11.61）。
 > 所有公式都带 `depends_on arch: :x86_64` + `depends_on macos: :tahoe`；cask 按架构门槛。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
@@ -322,7 +336,7 @@ core 依赖方），所以统一改名 `fork-<core>` + `keg_only`，本仓公式
 | `fork-xz` | `xz` | 5.8.4 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-zstd` | `zstd` | 1.5.7 | 源码现编；`keg_only`；依赖方写全名 |
 
-### 6.4 cask（24 个，桌面 app / 输入法）
+### 6.4 cask（25 个，桌面 app / 输入法）
 
 cask 无 bottle 机制：watcher 检测到新版本后下载发布包、上传本仓 GitHub Release、
 改写 `Casks/<name>.rb`，**不触发 `bottle.yml`**。所有 cask 一律镜像最新版（见 11.34）。
@@ -331,6 +345,7 @@ cask 无 bottle 机制：watcher 检测到新版本后下载发布包、上传�
 | --- | --- | --- | --- |
 | `afm` | 2026.09.15 | arm64 | 输入法；用户级 `~/Library/Input Methods`；arm64 破例；不检查更新 |
 | `amd` | 2026.09.18 | universal | 自有软件；app + `obcli`；本地构建镜像；不检查更新 |
+| `antigravity` | 2.33.0-4731201358004224-cn1 | Intel | 官方 darwin-x64 包 + 汉化/Gemini 娘挂件静态改写 + 禁自更新，ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-<构建号>-cn<补丁序号>`（见 11.61 第 9 条）；**分发修改版专有二进制的破例**（见 1 节与 11.61）；customRelease 读 core cask API 判新、sha 取构建脚本上传的 `.sha256` sidecar，产物由 `Widgets/antigravity-niang/build.sh` 本地构建（不走 uploadRelease 镜像分支） |
 | `blender-5x` | 5.2.2 | Intel | Intel 社区构建；github 流；镜像 |
 | `brewui` | 0.6.0 | universal | universal；github 流；镜像 |
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
@@ -2084,6 +2099,150 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
    `brew fetch --cask` ✔︎（插值 url 端到端）；`CaskLoader.load` 零告警
    （用户症状消失的直接证据）。真实 `install --cask` 未跑——会往用户系统
    装输入法并改输入源偏好，需要时用户自行安装即全链路验证。
+
+### 11.61 antigravity 补丁成品：asar 静态改写全链路实录（2026-11-21 实测）
+
+交付形态与许可破例见 1 节；本节只记执行中拿到的事实，动手前务必读完 1、2 条。
+
+1. **asar 头部的 4 字节对齐陷阱（本轮最贵的一条）**。帧是
+   `[u32=4][u32=align4(jsonLen)+8][u32=align4(jsonLen)+4][u32=jsonLen][JSON 补 NUL 到 4 字节][数据]`，
+   **@4/@8 用的是补齐后的长度，@12 是真实长度**，Chromium 按 `8+@4` 定位数据区。
+   若按直觉写成 `jsonLen+8`，则 `jsonLen % 4 == 0` 时**恰好正确**、不为 0 时数据区起点
+   偏移 1–3 字节，`package.json` 读到尾部 NUL 填充变成 `"\n}{…"` 垃圾 →
+   Electron 认为没有应用包，回落 `default_app.asar` 并打印 `Usage: electron [options] [path]`，
+   且**进程照常起、无任何报错**。症状极具误导性：实测「只往 asar 加文件」能启动、
+   「改任一个已有文件」就起不来——那只是 header 长度撞没撞上 4 对齐的运气，不是语义差别。
+   两个已知可加载的包（Google 原始包、汉化引擎写回的包）帧一致，可当参照。
+   **定位手段**（比读日志猜快一个数量级）：
+   `ELECTRON_RUN_AS_NODE=1 <App>/Contents/MacOS/<App> probe.js`，用宿主自带、带 asar 支持的
+   `fs` 直接读 `<x>.asar/package.json`，错误原文会告诉你在哪一步偏了。
+   对策已固化：`tools/asar-lib.mjs` 的 `writeAsar` 写完立刻自校验 `8+@4 === 16+align4(jsonLen)`，
+   不一致直接抛错，不产出半成品。
+
+2. **asar 完整性 fuse 没启用**——这是整条「静态改写」路线成立的前提。官方包的
+   `Contents/Info.plist` 里写了 `ElectronAsarIntegrity`（`Resources/app.asar` 与
+   `default_app.asar` 都有），官方包的头块 SHA256 与 plist **逐字节一致**、779 个 packed
+   文件 integrity **零失配**；汉化引擎改写 9 个模块后既不动 plist 也不重算 integrity
+   （实测 9 个失配 + 头哈希对不上），应用仍正常启动并执行注入代码。结论：**改写 asar
+   可行，不需要碰 plist**；本仓写包器仍为每个条目重算 integrity（约 10 行，保持自洽，
+   万一 Google 将来开 fuse 至少不欠账）。
+
+3. **禁自更新是必需项，不是偏好**。`Contents/Resources/app-update.yml` 是
+   `provider: generic` + Google 的 Cloud Run 源，宿主会自己拉新版覆盖 `app.asar`，
+   补丁静默消失。实测唯一通往网络的函数是 `dist/updater.js` 的 `checkForUpdates()`
+   （周期检查与菜单手动都走它），另有 `startAutoUpdateChecks()`、`autoDownload`、
+   `autoInstallOnAppQuit` 三处；四处锚点各出现 1 次，改写后 `AutoUpdater` 日志为 **0 行**
+   （连 `Starting auto update checks` 都不再打印，说明定时器根本没 armed）。
+   版本更新权因此完全交给本 tap 的 watcher + cask。
+
+4. **ad-hoc 重签必须丢掉 hardened runtime**。汉化引擎的注释即结论：绝不能传
+   `--preserve-metadata=flags,runtime`——保留硬化运行时会强制 Library Validation，
+   ad-hoc 签名没有 Team ID，dyld 启动即 SIGABRT。实测重签后 `flags=0x2(adhoc)`、
+   `TeamIdentifier=not set`、`codesign --verify --deep` 通过、`spctl` rejected。
+   与 11.22 的区别要说清：**签名有效但无公证 + 有 quarantine** 只会得到「无法验证开发者」，
+   右键打开一次即可绕过（palera1n/blender-5x 同型），所以本 cask **不写清隔离属性的
+   postflight**；TSKMGR 那种「签名已破 → 已损坏、右键也绕不过」才必须清。
+   cask 侧也因此避免命令式 flight（11.40/11.60），少一处 sandbox 摩擦。
+
+5. **额度接口在 macOS 上直通**，Windows 那套 Win32 依赖整个可以丢掉。
+   `~/.gemini/antigravity/daemon/hub_*.json` 给 `{pid, httpPort, csrfToken, lsVersion}`，
+   `POST http://127.0.0.1:<httpPort>/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary`
+   （body `{}`、头 `X-Codeium-Csrf-Token`）实测 200，返回 3 分组 5 个 bucket 的
+   `remainingFraction` + `resetTime`。Windows 侧用 `Get-NetTCPConnection` 验端口归属，
+   macOS 用 `process.kill(pid,0)` + 请求成败即可。**意外发现**：监听该端口的进程可能是
+   `~/.gemini/bin/agy --hub`（CLI），即桌面版没在跑也读得到额度。
+   `status.json` 形状与上游 Windows 挂件保持一致，配套的 `antigravity-plugin` 额度 MCP
+   仍可直接读。
+
+6. **挂件跟窗只用公开 Electron API**。宿主是 `BaseWindow + WebContentsView`（不是
+   BrowserWindow 单体），所以：`BrowserWindow.getAllWindows()` **必须排掉浮窗自己**，
+   否则挂件把自己当宿主、位置自指；事件面不完整，除窗口事件外还要 200ms 定时器兜底重算
+   位置。好处是跟窗、随最小化隐藏都不需要辅助功能权限或 CGWindowList。
+   渲染层 `img` 直接指 `file://…/app.asar/dist/gyWidget/characters/*.png` 可正常解码
+   （png/jpg/gif/webp/avif/bmp 全支持，因此不需要 Windows 版那套转码）。
+   透明区域用 `setIgnoreMouseEvents(true,{forward:true})` + 渲染层命中测试切换，
+   否则一块透明矩形会吃掉宿主点击。
+
+7. **`path.join(os.homedir(), 'Library', 'Application', 'Support')` 是错的**——
+   `'Application Support'` 必须**一段**传入，否则拼成 `Library/Application/Support/…`。
+   最阴的地方在于 `mkdirSync(recursive)` 和写入**都成功**，只是落到错误目录，日志无异常，
+   只有去 `~/Library/Application Support/` 查才发现没落盘。已在真机跑出来后修正。
+
+8. **仓库根目录残留的 `"type": "module"` package.json 会破坏仓库内任何 CommonJS 脚本**。
+   Node 向上找最近的 `package.json` 决定模块类型；`localization_engine.js` 第一行
+   `require('fs')` 因此 `ReferenceError: require is not defined in ES module scope`，
+   而报错路径指向引擎自己的目录，很容易误判成上游坏了。对策两层：该文件已
+   `.gitignore`（`/package.json`），且 `build.sh` 在引擎目录里显式钉
+   `{"type":"commonjs"}`（仅当上游没带 package.json 时），让构建对周边环境免疫。
+
+9. **版本形态与产物命名**：core cask 版本是 `2.33.0,4731201358004224`（Homebrew 的
+   `version,build` 约定）。本包版本取 **`<宿主版本>-<宿主构建号>-cn<补丁序号>`**
+   → `2.33.0-4731201358004224-cn1`：留构建号是为了让「宿主只跳构建号」的发布也能判新，
+   `-cnN` 是为了让「同一宿主版本重打补丁」也有可升级的版本差。
+   tag `antigravity-<版本>`、资产 `Antigravity-<版本>.dmg` 加
+   `Antigravity-<版本>.dmg.sha256` sidecar（sidecar 先例见 mirage-wallpaper /
+   交叉工具链，省掉每次 250MB 实算）。**版本号是 tag 与资产名的纯函数**，cask 的
+   url 因此写 `#{version}` 双插值（手工重打补丁时只需动 version/sha256 两行）。
+   但**插值活不过第一次自动更新**（/tmp 摆拍实测）：`UpdaterCore` 的 `replaceURLLine`
+   取 `config.uploadRelease || config.downloadURL == nil`，而 customRelease 的 url 来自
+   `UpstreamRelease` 而不是 `downloadURL` 模板 → 命中「按全量式整条替换 url 行」，
+   写回的是含版本号的字面量（`.../antigravity-<版本>/Antigravity-<版本>.dmg`）。
+   结果依然正确、audit 也照样过（版本字面就在 url 里），想要插值按 11.26 / 11.53.6
+   的老办法手工改回——**别以为核心会保留插值**。
+   检查器 `updater/antigravity.swift` 与 `build.sh` 的 `REVISION` **必须同步**：检查器里
+   写死 `cn1`（新宿主版本的第一个补丁包），同宿主重打时人工用 `--revision 2` 构建、
+   手改 cask 的 version/sha256，此时检查器算出的 `-cn1` 小于本地 `-cn2` →
+   `newer-than-brew` 不动文件（防回退，符合预期）。走 customRelease、**不开 uploadRelease**
+   （产物不是「下载上游」而是本地 `build.sh` 构建）。sidecar 缺失（=补丁包还没构建）时
+   故意返回 `sha256: nil`，由核心的 HEAD 探测 404 → `upstream-missing` 开 issue，
+   这样「需要跑构建」走既有告警通道，而不是把指向空资产的 url 写进 cask。
+
+10. **`hdiutil create` 出的 dmg 不是逐字节可复现的**：同一份 app 连打三次得到三个 sha
+    （卷时间戳等元数据内嵌）。所以 **cask 的 sha256 必须取「实际上传到 Release 的那次
+    构建」的 sidecar 值**，不能拿另一次构建的顶；`build.sh --upload` 把出包与上传放在
+    同一次运行里就是为了不让两者脱节。上传后以 `brew fetch --cask` 打出
+    `✔︎ Cask antigravity` 为准——那才是「Release 上的字节 == cask 声明的 sha」的硬证据。
+
+11. **上游的巡检脚本是白送的质量门**：`ag_audit.js check --asar <path>` 会从包里
+    动态提取引擎依赖的 20 个锚点逐个报 `[OK]`，实测 2.33.0 全过；字典侧还顺带查
+    重键/大小写/高危单字（2596 条，5 个单字预警属正常）。构建脚本把它当硬门用。
+    注意它 `asar` 子命令**不认 `--asar`**（只有 `check` 认），单独跑 `asar` 会报
+    「未定位到 app.asar」，别误判成包坏了。
+
+12. **从 core 版切过来时，「手动删掉 .app」会卡住本包安装**：cask 元数据还登记着
+    core 的 `antigravity`（`brew list --cask` 有、`/usr/local/Caskroom/antigravity/` 在），
+    但 `/Applications/Antigravity.app` 已被人手动拖走。此时装本 tap 的同名 cask，
+    brew 走「同名先卸旧版」路径，卸载阶段找不到 app 直接
+    `Error: bemly/tahoe/antigravity: It seems the App source '/Applications/Antigravity.app' is not there.`
+    ——`brew list --cask --versions | grep` 这类检查看不到它（元数据在、文件不在，
+    版本目录已是空的）。清掉这条僵尸登记即可：
+    `brew uninstall --cask --force antigravity`（只删登记与空的 Caskroom 目录），
+    然后重装本 cask 一次过。用户侧遇到同一句报错也是这个原因，caveats 里那句
+    「先卸 core 版」要用 `--cask --force` 才治得住。
+
+13. **两条 cask 侧的工程常识**：
+    - `Cask/ArrayAlphabetization` 的排序键是 **`line.strip.downcase`**（源码
+      `rubocops/cask/array_alphabetization.rb`，大小写不敏感），所以照抄 core 的
+      `zap` 清单再插一条自己的目录时，`…/Application Support/com.apple.sharedfilelist/…`
+      必须排在 `…/Application Support/GeminiNiangWidget` **前面**（`c` < `g`），
+      按「大写字母开头的名字在前」的直觉排会红。`brew audit --strict` 内部会跑同一套
+      cop，所以它报的 exit 1 常常就是 style 红，别只盯 audit 的文案。
+    - 本机（Intel）单文件 `brew style` 要 **6–10 分钟**（portable-ruby + 全部 cop，
+      实测 97% CPU 在算，不是死锁）。别按 `pkill -f "brew style"` 杀——真正的进程是
+      `brew.rb style` 与 `vendor/.../rubocop.rb`，模式不匹配只会留下一堆
+      `--parallel` 孤儿 worker。要判死活看 `%cpu`，不是看存活时间。
+
+14. **本机验收证据（2.33.0-4731201358004224-cn1，sha `b7213237…`）**：
+    `brew style --cask` 零 offense；`brew audit --strict --cask` 在**已安装**状态下
+    exit 0（zap/uninstall 与真实残留的比对一并过）；`brew fetch --cask` 出
+    `✔︎ Cask antigravity`（Release 上的字节 == cask 声明的 sha）；
+    `install --cask` 装成 519MB，`codesign --verify --deep` 有效、`TeamIdentifier` 未设、
+    `spctl` rejected（预期，见第 4 条）；从安装位置直接起进程，日志里
+    `[gyWidget] 浮窗已创建 / 额度刷新：hub-api 分组=3 / 渲染层就绪：角色图=loaded
+    额度行数=5 语录=45 条`，`AutoUpdater` 相关日志 **0 行**；
+    与官方包对比 CJK 汉字净增 **145,094** 个（字典确实进了交付物）；
+    包内 13 个内置角色 + `custom-<32hex>` 导入通路（`DATA_DIR/characters.json` 持久化）。
+    看不了截图：本会话终端无「屏幕录制」权限，故 UI 的肉眼验收交给用户本机启动。
 
 ## 12. 待办 / 后续演进
 

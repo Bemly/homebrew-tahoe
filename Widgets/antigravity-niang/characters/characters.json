@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "default": "gemini-default",
+  "characters": [
+    {
+      "id": "gemini-default",
+      "name": "Gemini 娘",
+      "file": "gemini_default.png",
+      "source": "CosmicShinosawa/agy-gemini-niang-widget (gemini-widget.png)",
+      "license": "上游代码 MIT；该立绘上游自述制作者与公开分发许可待确认",
+      "attribution": "原形象由 ZipZipPipe 创作（CC BY-NC-SA 4.0），与 Google 官方无关"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini（AIchan）",
+      "file": "gemini.avif",
+      "source": "Bemly/AIchan-Widget/assets/Gemini.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "claude",
+      "name": "Claude（AIchan）",
+      "file": "claude.avif",
+      "source": "Bemly/AIchan-Widget/assets/Claude.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek（AIchan）",
+      "file": "deepseek.avif",
+      "source": "Bemly/AIchan-Widget/assets/DeepSeek.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "glm",
+      "name": "GLM（AIchan）",
+      "file": "glm.avif",
+      "source": "Bemly/AIchan-Widget/assets/GLM.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "gpt",
+      "name": "GPT（AIchan）",
+      "file": "gpt.avif",
+      "source": "Bemly/AIchan-Widget/assets/GPT.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "grok",
+      "name": "Grok（AIchan）",
+      "file": "grok.avif",
+      "source": "Bemly/AIchan-Widget/assets/Grok.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "kimi",
+      "name": "Kimi（AIchan）",
+      "file": "kimi.avif",
+      "source": "Bemly/AIchan-Widget/assets/Kimi.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "meta",
+      "name": "Meta（AIchan）",
+      "file": "meta.avif",
+      "source": "Bemly/AIchan-Widget/assets/Meta.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen（AIchan）",
+      "file": "qwen.avif",
+      "source": "Bemly/AIchan-Widget/assets/Qwen.avif",
+      "license": "MIT"
+    },
+    {
+      "id": "turing-helmet",
+      "name": "图灵奖头盔",
+      "file": "turing_helmet.png",
+      "source": "用户提供本机图片",
+      "license": "未声明；仅在本地与用户自己的导入图中使用"
+    },
+    {
+      "id": "xiao-jiji",
+      "name": "小基基",
+      "file": "xiao_jiji.png",
+      "source": "用户提供本机图片",
+      "license": "未声明；仅在本地与用户自己的导入图中使用"
+    },
+    {
+      "id": "mutsumi",
+      "name": "Mutsumi",
+      "file": "mutsumi.png",
+      "source": "用户提供本机图片",
+      "license": "未声明；仅在本地与用户自己的导入图中使用"
+    }
+  ]
+}

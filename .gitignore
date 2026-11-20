@@ -22,3 +22,6 @@
 
 # 上游残留的 npm 包描述文件（dsh-web-app 等，与本 tap 无关）
 /package.json
+
+# antigravity 成品构建产物
+.build/

@@ -1,0 +1,26 @@
+Antigravity 中文补丁版（bemly/tahoe 构建）
+
+本产物是在 Google 官方 macOS **darwin-x64** 发布包基础上、按可复现脚本重打的处理包：
+
+1. 官方 dmg（sha256 与 homebrew/core 的 `antigravity` cask `tahoe` 变体逐字节核对）；
+2. 汉化：Silas-02/antigravity-desktop-cn 的 localization engine，静态改写 `app.asar`
+   （字典 + 9 个 dist 模块注入，原包备份为 `app.asar.bak`）；
+3. 挂件：Gemini 娘额度挂件（移植自 CosmicShinosawa/agy-gemini-niang-widget 的
+   Windows PowerShell/WPF 实现，改为注入 `app.asar` 的 Electron 覆盖窗）；
+4. **禁用应用自更新**：否则宿主会自行拉官方新版覆盖打过补丁的 `app.asar`，
+   让汉化与挂件静默消失。版本更新改由本 tap 的 watcher + cask 负责；
+5. ad-hoc 重签名（原公证签名随内容改动失效，首次启动需放行 Gatekeeper）。
+
+来源与许可（重要）
+- 汉化引擎仓库 **未声明许可证**（GitHub `licenseInfo = null`），本脚本在构建时按其
+  固定 commit 拉取使用，不在本 Release 中再分发其源码；
+- 挂件代码为 MIT，衍生自 GPT-Niang（MIT）与 dsh-whale-widget（MIT），版权与许可文本
+  随 `Widgets/antigravity-niang/licenses/` 保留；
+- 内置角色图：AIchan-Widget 系列（MIT）、上游默认立绘（其制作者与公开分发许可由上游
+  自述「待确认」）、以及用户自备图片；原角色形象 CC BY-NC-SA 4.0（ZipZipPipe），
+  与 Google 官方无关、未获其认可或授权；
+- Antigravity 本体为 Google 专有软件。**本 Release 分发的是修改后的专有包**，这是
+  bemly/tahoe 已记录的显式破例，仅用于 Intel Mac 上的 macOS 26；如需还原官方英文原版，
+  `brew uninstall --cask bemly/tahoe/antigravity` 后改装 homebrew/core 的 `antigravity`。
+
+构建脚本：仓库内 `Widgets/antigravity-niang/build.sh`（可复现，产物不落 git）。
