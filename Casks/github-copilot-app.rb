@@ -1,9 +1,4 @@
 cask "github-copilot-app" do
-<<<<<<< Updated upstream
-  # 版本形态：<宿主版本>-cn<补丁序号>，与 antigravity 同约定（AGENTS 11.61 第 9 条）。
-  version "1.4.3-cn4"
-  sha256 "8a0441f2345d7639b468790138c7a0c23a2093e0233df69a12b2710fbd6753e7"
-=======
   version "1.4.3"
   # 上游 github/app 按架构分包：core 的 url/sha 是 darwin-arm64 的，本 tap 取
   # GitHub-Copilot-darwin-x64.dmg（主二进制 file 实测 x86_64 thin）。
@@ -15,7 +10,6 @@ cask "github-copilot-app" do
   # 短链 gh.io/copilot-app-mac-intel（releases/latest/download/...）——HEAD
   # 探测不跟随跳转，检查器只能用版本化直链。
   sha256 "9aabf8a001091557c7ff89305c2b73fdab1cd7d2d0b7425363072865b5e0a6b5"
->>>>>>> Stashed changes
 
   url "https://github.com/Bemly/homebrew-tahoe/releases/download/github-copilot-app-#{version}/GitHub-Copilot-darwin-x64.dmg"
   name "GitHub Copilot"
