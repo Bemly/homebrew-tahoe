@@ -66,7 +66,13 @@ class Qemu < Formula
   def install
     setuptools_site = Dir[formula_opt_lib("python-setuptools")/"python3*/site-packages"].first
     ENV.prepend_path "PYTHONPATH", setuptools_site if setuptools_site
-    ENV.prepend_path "PKG_CONFIG_PATH", formula_opt_prefix("spice-protocol")/"share/pkgconfig"
+    spice_stage = buildpath/".spice-protocol"
+    cp_r formula_opt_prefix("spice-protocol").realpath, spice_stage
+    chmod 0644, spice_stage/"share/pkgconfig/spice-protocol.pc"
+    inreplace spice_stage/"share/pkgconfig/spice-protocol.pc",
+              /^prefix=.*$/,
+              "prefix=#{spice_stage}"
+    ENV.prepend_path "PKG_CONFIG_PATH", spice_stage/"share/pkgconfig"
     ENV["LIBTOOL"] = "glibtool"
 
     # Remove wheels unless explicitly permitted. Currently this:
