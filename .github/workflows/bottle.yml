@@ -81,8 +81,6 @@ jobs:
           mkdir -p "$taps_dir"
           ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe"
           brew tap-info bemly/tahoe
-          # 清理 runner 镜像自带的过期 API 缓存与 core checkout，防止 vulkan-headers 等 core `all` 瓶命中旧版导致编译失配
-          rm -rf "$(brew --cache)/api" "$(brew --repository)/Library/Taps/homebrew/homebrew-core"
 
       # 新版本 Homebrew 要求显式信任 tap，否则会忽略公式、制瓶拿不到公式。
       # 软链进来的 tap 默认不受信任，这里整体信任本 tap。
@@ -158,7 +156,12 @@ jobs:
           echo "递归依赖检查通过：${#FORMULAS[@]} 个公式"
 
       - name: 安装 skopeo（推 GHCR 的依赖）
-        run: brew install skopeo
+        run: |
+          set -euo pipefail
+          # skopeo 安装须先利用 runner 镜像自带 API 缓存中的 sonoma 瓶（最新 core 1.25.2 已撤回 x86_64 瓶）
+          brew install skopeo
+          # 安装完 skopeo 后再清理过期 API 缓存与 core checkout，使后续 vulkan-headers / spirv-headers 等 `all` 瓶拉取最新版
+          rm -rf "$(brew --cache)/api" "$(brew --repository)/Library/Taps/homebrew/homebrew-core"
 
       # 一次任务内顺序处理所有软件：build-bottle 安装 → 制瓶 → 删旧标签 → 推 GHCR。
       # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md 5）。
@@ -270,8 +273,10 @@ jobs:
             # openssl@4 这类裸名枢纽不在清理范围，避免每次 all 制瓶多编一个枢纽。
             for dep in $(sed -n 's/^[[:space:]]*depends_on "bemly\/tahoe\/\([^"]*\)".*/\1/p;s/^[[:space:]]*depends_on "\([^"]*\)".*/\1/p' "Formula/${f}.rb"); do
               if [[ -n "$dep" && -f "Formula/${dep}.rb" ]]; then
-                brew uninstall --force --ignore-dependencies "$dep" >/dev/null 2>&1 || true
-                rm -f "${BREW_PREFIX}/bin/${dep}" >/dev/null 2>&1 || true
+                if ! grep -Eq '"tap":[[:space:]]*"bemly/tahoe"' "${BREW_PREFIX}/opt/${dep}/INSTALL_RECEIPT.json" 2>/dev/null; then
+                  brew uninstall --force --ignore-dependencies "$dep" >/dev/null 2>&1 || true
+                  rm -f "${BREW_PREFIX}/bin/${dep}" >/dev/null 2>&1 || true
+                fi
               fi
             done
 
