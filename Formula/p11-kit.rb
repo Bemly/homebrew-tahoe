@@ -8,6 +8,11 @@ class P11Kit < Formula
 
   head "https://github.com/p11-glue/p11-kit.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "f0d684537e38fa7b8e6ca1c56fc151778baede6252ffb6551ed6121a8097b1da"
+  end
+
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build

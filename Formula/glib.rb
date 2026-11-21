@@ -13,6 +13,11 @@ class Glib < Formula
     regex(/glib[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "2b90d72ed54754f03c901448094332a6bb6ba92e59b1d36ae6e50d92bff2125f"
+  end
+
   depends_on "bemly/tahoe/fork-gettext" => :build
 
   depends_on "bemly/tahoe/fork-pkgconf" => [:build, :test]

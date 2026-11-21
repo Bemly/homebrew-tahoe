@@ -11,6 +11,11 @@ class Pixman < Formula
     regex(/href=.*?pixman[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "f2bef2a72c333756857b2238509d37820c6220b307eacbb4ecd9ae4d918d7a59"
+  end
+
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :test
