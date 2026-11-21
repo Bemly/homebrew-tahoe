@@ -6,6 +6,11 @@ class Jadx < Formula
   license "Apache-2.0"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "b6a80386410ce2f27b8cdc2168fb053b759d58c31317b67f699bc4b45aabb067"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/openjdk"
   depends_on macos: :tahoe
