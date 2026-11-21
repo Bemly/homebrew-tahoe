@@ -12,10 +12,10 @@ class Aria2 < Formula
   end
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-c-ares"
-  depends_on "bemly/tahoe/fork-libssh2"
+  depends_on "bemly/tahoe/c-ares"
+  depends_on "bemly/tahoe/libssh2"
   depends_on "bemly/tahoe/fork-openssl@4"
-  depends_on "bemly/tahoe/fork-sqlite"
+  depends_on "bemly/tahoe/sqlite"
   depends_on macos: :tahoe
 
   uses_from_macos "libxml2"

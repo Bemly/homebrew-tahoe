@@ -43,9 +43,9 @@ class Curl3 < Formula
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-brotli"
-  depends_on "bemly/tahoe/fork-libpsl"
-  depends_on "bemly/tahoe/fork-libssh2"
+  depends_on "bemly/tahoe/brotli"
+  depends_on "bemly/tahoe/libpsl"
+  depends_on "bemly/tahoe/libssh2"
   depends_on "bemly/tahoe/fork-openssl@3"
   depends_on "bemly/tahoe/fork-zstd"
   depends_on "bemly/tahoe/libnghttp2"
@@ -57,7 +57,7 @@ class Curl3 < Formula
   uses_from_macos "openldap"
 
   on_system :linux, macos: :monterey_or_older do
-    depends_on "bemly/tahoe/fork-libidn2"
+    depends_on "bemly/tahoe/libidn2"
   end
 
   on_linux do

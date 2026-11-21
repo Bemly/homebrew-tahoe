@@ -254,24 +254,21 @@ jobs:
             done
             rm -f "${BREW_PREFIX}/share/man/man1/node.1"
 
-            # macOS 自带/官网 Python 3.11 在 /usr/local/bin 留下的链接会阻塞
-            # 本 tap python@3.11（作为本体或依赖安装时）的 link 步骤（runner 一次性环境）。
-            for b in 2to3-3.11 idle3.11 pydoc3.11 python3.11 python3.11-config; do
+            # macOS 自带/官网 Python 在 /usr/local/bin 留下的链接会阻塞
+            # 本 tap python@3.11 / python@3.14（作为本体或依赖安装时）的 link 步骤（runner 一次性环境）。
+            for b in 2to3-3.11 idle3.11 pydoc3.11 python3.11 python3.11-config \
+                     2to3-3.14 idle3.14 pydoc3.14 python3.14 python3.14-config pip3.14 wheel3.14; do
               rm -f "${BREW_PREFIX}/bin/${b}"
             done
             # 清理 runner 预装的旧版 headers，避免命中旧版 vulkan-headers / spirv-headers
             brew uninstall --force --ignore-dependencies vulkan-headers spirv-headers >/dev/null 2>&1 || true
 
-            # 全名依赖的同名 keg 冲突（2026-10-20 wabt 首例，node@24 预装同型，
-            # 见 AGENTS.md 11.10）：macos-26-intel 镜像预装了 core 的 cmake 同名
-            # keg，而 wabt 声明 depends_on "bemly/tahoe/cmake" => :build ——
-            # brew install 解析全名依赖时先撞「已装自别的 tap」odie：
-            #   "cmake is already installed from homebrew/core!"
-            # 处理：本公式依赖名若在本 tap 有对应公式（Formula/<dep>.rb 存在），
-            # 先强卸同名 keg，再交给 install 装回（全名依赖命中的是本 tap GHCR 瓶，
-            # core 侧现编一次无瓶的 cmake 也一并跳过）。只卸「本 tap 拥有的名字」，
-            # openssl@4 这类裸名枢纽不在清理范围，避免每次 all 制瓶多编一个枢纽。
-            for dep in $(sed -n 's/^[[:space:]]*depends_on "bemly\/tahoe\/\([^"]*\)".*/\1/p;s/^[[:space:]]*depends_on "\([^"]*\)".*/\1/p' "Formula/${f}.rb"); do
+            # 传递依赖闭包里的全名同名 keg 冲突清理：
+            # macos-26-intel 镜像预装了部分 core keg（如 python@3.14 / gnutls / glib / ncurses 等），
+            # 沿 `brew deps --include-build --full-name` 扫描所有本仓 `bemly/tahoe/*` 传递依赖，
+            # 若本地已装 keg 不是来自 `bemly/tahoe`，先强卸再交给 install 倒回本源 GHCR 瓶；
+            # 裸名依赖（如 fork-zstd 里的 bare cmake）不在其中，避免误卸预装构建工具。
+            for dep in $(HOMEBREW_NO_ENV_HINTS=1 brew deps --include-build --full-name "bemly/tahoe/$f" 2>/dev/null | sed -n 's|^bemly/tahoe/||p'); do
               if [[ -n "$dep" && -f "Formula/${dep}.rb" ]]; then
                 if ! grep -Eq '"tap":[[:space:]]*"bemly/tahoe"' "${BREW_PREFIX}/opt/${dep}/INSTALL_RECEIPT.json" 2>/dev/null; then
                   brew uninstall --force --ignore-dependencies "$dep" >/dev/null 2>&1 || true
@@ -283,12 +280,9 @@ jobs:
             # 同名公式跨 tap 不能共存（check.rb:47 的 odie）：卸掉可能预装的 core 版。
             # 加 --ignore-dependencies 是因为 brew 会以「被其它已装包依赖」为由拒绝卸载
             # （如镜像预装的 ca-certificates）；runner 是一次性环境，强卸安全。
-            # 注意：能进本 tap 的公式都经过 hub/叶子分流（见 AGENTS.md），
-            # 只有确定可被卸载、不会被生态其他包依赖的包才自己制瓶，
-            # 生态枢纽包（openssl@3 / glib / gettext 等）一律走 core 不进本 tap。
             brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
-            # 构建工具走 PATH（llvm/z3，见 AGENTS.md 11.51）：公式里用 system "cmake"
-            # 但刻意不声明 cmake 依赖——树里已有 python 拖入的裸 cmake，再挂全名会让
+            # 构建工具走 PATH（llvm/z3，见 AGENTS.md 11.2）：公式里用 system "cmake"
+            # 但刻意不声明 cmake 依赖——树里已有 python/zstd 拖入的裸 cmake，再挂全名会让
             # 同一 Cellar 名以两个 full_name 进锁数组，macOS flock 同进程双开自锁。
             # 这里预装本 tap cmake 瓶（幂等，已装即 no-op），构建走 PATH 即可。
             if grep -q 'system "cmake"' "Formula/${f}.rb" && \
@@ -297,6 +291,16 @@ jobs:
               for b in cmake ccmake cpack ctest; do rm -f "${BREW_PREFIX}/bin/${b}"; done
               brew install "bemly/tahoe/cmake" 2>&1 | tail -n 3
               hash -r; command -v cmake && { cmake --version 2>&1 | head -n 1 || true; }
+            fi
+            # `python-setuptools` / `spice-protocol` 为 core `all` 瓶且无运行时依赖，
+            # 但它们的 `:build` 依赖包含裸 `python@3.15`，声明在公式 `depends_on` 中会
+            # 与本仓 `python@3.15`/`mpdecimal`/`sqlite` 在 `FormulaInstaller#lock` 相撞；
+            # 仅在公式引用时用 `--ignore-dependencies` 预先倒瓶。
+            if grep -q 'python-setuptools' "Formula/${f}.rb"; then
+              brew list --formula python-setuptools >/dev/null 2>&1 || brew install --ignore-dependencies python-setuptools
+            fi
+            if grep -q 'spice-protocol' "Formula/${f}.rb"; then
+              brew list --formula spice-protocol >/dev/null 2>&1 || brew install --ignore-dependencies spice-protocol
             fi
             # 先用普通模式装齐依赖再制瓶：--build-bottle 下任一依赖无瓶即硬拒
             # （UnbottledError，如 python 大版本升级要现编；llvm/z3 实测）；普通模式

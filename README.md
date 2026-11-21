@@ -121,7 +121,7 @@ brew install --cask bemly/tahoe/antigravity
 | `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies); core has no Intel bottle and pulls a Python stack |
 | `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS device communication stack, compiled from source on Intel (core has no Intel bottles); dependencies use this tap's bottled `fork-libtasn1` and `fork-openssl@4` |
 | `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends), compiled from source on Intel (upstream's macOS asset is arm64-only and core has no Intel Tahoe bottle); cmake build dependency taken from this tap |
-| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's bottled `fork-bdw-gc`, `fork-python@3.14`, `fork-zstd`, and `guile`; version tracked via GitHub releases with `.sha256` sidecar |
+| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's bottled `guile`, `python@3.14`, `fork-bdw-gc`, `fork-xz`, and `fork-zstd`; version tracked via GitHub releases with `.sha256` sidecar |
 | `mirage-wallpaper` | Mirage native live wallpaper engine, compatible with Wallpaper Engine (Intel-only cask, thin x86_64, notarized); upstream per-arch builds mirrored to this repo's releases, version tracked via custom checker |
 | `llvm` | Next-gen compiler infrastructure, upstream 19.1.7 Intel macOS prebuilt pinned (later versions are ARM64-only; building 23.x from source exceeds the 6h CI limit); thin x86_64, zero dependencies, keg-only like core; point bindgen at it via `LIBCLANG_PATH` |
 | `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
@@ -134,14 +134,14 @@ brew install --cask bemly/tahoe/antigravity
 | `meson` | Fast build system, shares its name with core's formula — uninstall core's first; depends on this tap's `ninja` and `python@3.15`, bottled for Intel Tahoe so it no longer pulls core's source-built Python |
 | `lody` | Lody desktop app for sharing coding agent sessions across desktop and mobile; cask mirrored from the official Intel dmg (`Lody-<ver>-x64.dmg`), version tracked from the core cask |
 | `qoder` | Qoder CN (China edition) agentic coding platform by Alibaba; cask mirrored from the official Intel dmg (`Qoder-CN-mac-x64.dmg`), version tracked from the qoder.cn changelog; shares its token with core's international `qoder` cask — uninstall one before installing the other |
-| `fork-*` (39) | Dependency layer: runtime deps with no Intel Tahoe bottle in core are either taken over under the same name or renamed to `fork-*` when core still has dependents. All 39 (e.g. `fork-glib`, `fork-gnutls`, `fork-openssl@3`/`@4`, `fork-python@3.14`, `fork-xz`, `fork-zstd`, `fork-dynet`, `fork-eigen@3`) are `keg_only`, built from source, and referenced by full name `bemly/tahoe/fork-*` (list in AGENTS.md 6.3) |
+| `fork-*` (14) | Dependency layer: runtime deps with no Intel Tahoe bottle in core are taken over under the same name whenever no core dependents remain, or kept renamed as `fork-*` when core dependents still exist (14 remaining: `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`/`@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`); `keg_only`, built from source, and referenced by full name `bemly/tahoe/fork-*` (list in AGENTS.md 6.3) |
 | `openjdk` / `openjdk@26` | OpenJDK 26 GA official macOS x64 prebuilt (`keg_only`); shares its name with core's formula — uninstall core's first |
 | `openjdk@17` / `openjdk@21` | Eclipse Temurin x64 JDKs (versioned via the Adoptium API, `keg_only`); same-name conflict with core |
 | `git` | Git itself, built from core sources on Intel (depends on fork-pcre2/gettext/openssl@4); same-name conflict with core |
-| `bash` | GNU Bash 5.3, built from core sources on Intel (fork-ncurses/readline); same-name conflict with core |
-| `wget` / `aria2` | Download tools, built from core sources on Intel (fork-libidn2/libpsl/openssl@4 and friends); same-name conflict with core |
+| `bash` | GNU Bash 5.3, built from core sources on Intel (`ncurses`/fork-readline/fork-gettext); same-name conflict with core |
+| `wget` / `aria2` | Download tools, built from core sources on Intel (`libidn2`/`libpsl`/`c-ares`/`libssh2`/`sqlite` + fork-openssl@4 and friends); same-name conflict with core |
 | `automake` / `abseil` / `svt-av1` / `python@3.11` | Build/runtime dependencies built from core sources on Intel (automake, abseil, SVT-AV1, Python 3.11); same-name conflict with core |
-| `guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` | Same-name dependency takeovers (keep the core name, uninstall core's build first), built from source and bottled; `libnghttp2` is also the curl3/nghttp2 dependency |
+| `guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` (and 20 promoted `fork-*` deps) | Same-name dependency takeovers (keep the core name, uninstall core's build first), built from source and bottled — including `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `jpeg-turbo`, `libidn2`, `libpng`, `libpsl`, `libssh2`, `libusb`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `p11-kit`, `pixman`, `python@3.14`, and `sqlite` |
 | `fzf` | Command-line fuzzy finder, upstream `fzf-<ver>-darwin_amd64.tar.gz` single binary; version tracked from GitHub releases |
 | `zig` | Zig toolchain, official `zig-x86_64-macos-<ver>.tar.xz` (Intel host); same-name conflict with core |
 | `swift` | Official Swift 6.4.2 macOS pkg repackaged, exposing only `swift`/`swiftc` (no collisions with other toolchains); version tracked from swift.org |
@@ -152,7 +152,7 @@ brew install --cask bemly/tahoe/antigravity
 | `dotnet` | .NET SDK 11, repackaged from the official macOS x64 tarball (whole tree into the prefix plus a `dotnet` shim); version tracked from Microsoft's release-metadata API; same-name conflict with core |
 | `node@20` | Node.js 20 LTS, taken directly from the official `node-v20.x-darwin-x64.tar.gz`; same-name conflict with core |
 | `postgresql@13` | PostgreSQL 13, repackaged from EDB's official macOS x64 binaries (only bin/include/lib/share — pgAdmin and the other apps are skipped); `keg_only` because the bundled openssl/icu would clash with core, so add `/usr/local/opt/postgresql@13/bin` to PATH to use its commands; same-name conflict with core |
-| `freeling` | Suite of language analyzers (tokenizing, POS tagging, named entities and friends), taken over under the same name and built from core sources; the bundled dynet/eigen copies are unbundled in favour of this tap's `fork-dynet`/`fork-eigen@3`/`boost@1.85`/`icu4c@78`; same-name conflict with core |
+| `freeling` | Suite of language analyzers (tokenizing, POS tagging, named entities and friends), taken over under the same name and built from core sources; the bundled dynet/eigen copies are unbundled in favour of this tap's `dynet`/`eigen@3`/`boost@1.85`/`icu4c@78`; same-name conflict with core |
 | `icu4c@78` | ICU 78 Unicode / globalization libraries, taken over under the same name and built from source (`keg_only`); dependency of `freeling` |
 | `boost@1.85` | Boost C++ libraries 1.85, from the third-party prebuilt-boost macOS x86 `static+shared` package (prebuilt dylibs get an `@rpath` added and are re-signed ad-hoc); dependency of `freeling`; same-name conflict with core |
 | `wimlib` | Library plus the `wimlib-imagex` tools to create, extract and modify Windows Imaging (WIM) files, built from core sources on Intel (autotools, built with `fork-pkgconf`); no runtime dependencies on macOS |
@@ -166,7 +166,7 @@ brew install --cask bemly/tahoe/antigravity
 | `mercurial` | Distributed version control system (`hg` + `chg`), built from source on Intel with this tap's `python@3.11`; same-name conflict with core |
 | `spirv-tools` | SPIR-V shader optimizer/validator tools, compiled from core sources (zero runtime dependencies); same-name conflict with core |
 | `vulkan-loader` | Vulkan ICD Loader, compiled from core sources (depends only on core's `vulkan-headers` `all` bottle); same-name conflict with core |
-| `gnupg` | GNU Privacy Guard (OpenPGP), compiled from core sources reusing this tap's `fork-gnutls`/`fork-libusb`/`fork-readline`/`fork-gettext` together with same-name `libassuan`, `libgcrypt`, `libgpg-error`, `libksba`, `npth`, and `pinentry`; same-name conflict with core |
+| `gnupg` | GNU Privacy Guard (OpenPGP), compiled from core sources reusing this tap's `fork-readline`/`fork-gettext` together with same-name `gnutls`, `libusb`, `libassuan`, `libgcrypt`, `libgpg-error`, `libksba`, `npth`, and `pinentry`; same-name conflict with core |
 
 ## Switching sources (same-name conflict)
 
@@ -174,7 +174,7 @@ Homebrew forbids installing formulae or casks with the same name/token from two
 different taps at the same time — they share the same `Cellar/<name>` or `Caskroom/<token>`
 directory.
 
-Except for renamed `keg_only` `fork-*` packages (39) and tap-exclusive packages (`curl3`,
+Except for renamed `keg_only` `fork-*` packages (14) and tap-exclusive packages (`curl3`,
 `ffplay`, `ffprobe`, `ffserver`, `antigravity-cli`, `aarch64-unknown-linux-gnu`,
 `x86_64-unknown-linux-gnu`, `llvm-mingw`, `cmd`, `deepseek-harness`, `mufetch`, `sst`,
 `torpedo`, and tap-only casks), **any package sharing a name with `homebrew/core` requires
@@ -199,12 +199,15 @@ brew install bemly/tahoe/meson
 ```
 
 Other same-name formulae (`node`, `node@20`/`22`/`24`, `go`, `cmake`, `git`, `bash`,
-`wget`, `aria2`, `automake`, `abseil`, `svt-av1`, `python@3.11`, `openjdk*`, `guile`,
-`jemalloc`, `libev`, `libnghttp2`, `libssh`, `libyaml`, `simdjson`, `snappy`, `zig`,
-`swift`, `fzf`, `protobuf`, `z3`, `wimlib`, `ripgrep`, `dotnet`, `freeling`, `boost@1.85`,
-`icu4c@78`, `postgresql@13`, `chisel`, `exiftool`, `opencode`, `jadx`, `xcodegen`, `starship`,
-`bun`, `docker`, `lima`, `mercurial`, `spirv-tools`, `vulkan-loader`, `gnupg`, `libassuan`,
-`libgcrypt`, `libgpg-error`, `libksba`, `npth`, `pinentry`, etc.) and same-token casks
+`wget`, `aria2`, `automake`, `abseil`, `svt-av1`, `python@3.11`, `python@3.14`, `openjdk*`,
+`guile`, `jemalloc`, `libev`, `libnghttp2`, `libssh`, `libyaml`, `simdjson`, `snappy`,
+`brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `jpeg-turbo`, `libidn2`,
+`libpng`, `libpsl`, `libssh2`, `libusb`, `lzo`, `mpdecimal`, `ncurses`, `nettle`,
+`p11-kit`, `pixman`, `sqlite`, `zig`, `swift`, `fzf`, `protobuf`, `z3`, `wimlib`,
+`ripgrep`, `dotnet`, `freeling`, `boost@1.85`, `icu4c@78`, `postgresql@13`, `chisel`,
+`exiftool`, `opencode`, `jadx`, `xcodegen`, `starship`, `bun`, `docker`, `lima`,
+`mercurial`, `spirv-tools`, `vulkan-loader`, `gnupg`, `libassuan`, `libgcrypt`,
+`libgpg-error`, `libksba`, `npth`, `pinentry`, etc.) and same-token casks
 (`zcode`, `lody`, `qoder`, `github-copilot-app`, `wireshark`, `checkra1n`, `palera1n`,
 `antigravity`; `blender-5x` also shares `/Applications/Blender.app` with core's `blender`)
 must likewise be uninstalled before switching taps.

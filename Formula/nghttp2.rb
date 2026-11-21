@@ -21,7 +21,7 @@ class Nghttp2 < Formula
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-c-ares"
+  depends_on "bemly/tahoe/c-ares"
   depends_on "bemly/tahoe/jemalloc"
   depends_on "bemly/tahoe/libev"
   depends_on "bemly/tahoe/libnghttp2"

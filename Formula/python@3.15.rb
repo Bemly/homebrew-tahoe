@@ -25,9 +25,9 @@ class PythonAT315 < Formula
   depends_on arch: :x86_64
   depends_on "ca-certificates" => :no_linkage
   depends_on macos: :tahoe
-  depends_on "bemly/tahoe/fork-mpdecimal"
+  depends_on "bemly/tahoe/mpdecimal"
   depends_on "bemly/tahoe/fork-openssl@4"
-  depends_on "bemly/tahoe/fork-sqlite"
+  depends_on "bemly/tahoe/sqlite"
   depends_on "bemly/tahoe/fork-xz"
   depends_on "bemly/tahoe/fork-zstd"
 

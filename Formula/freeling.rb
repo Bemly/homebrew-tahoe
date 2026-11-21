@@ -10,11 +10,9 @@ class Freeling < Formula
     sha256 cellar: :any, tahoe: "ee2ffc0a5fa58634e40cf46e2e36066e7a94998c9fc05d1f32efd39117169b02"
   end
 
-  depends_on "cmake" => :build
-
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/boost@1.85"
-  depends_on "bemly/tahoe/fork-dynet"
+  depends_on "bemly/tahoe/dynet"
   depends_on "bemly/tahoe/icu4c@78"
   depends_on macos: :tahoe
 
@@ -30,6 +28,7 @@ class Freeling < Formula
   conflicts_with "crfsuite", because: "both install `crfsuite` binaries"
 
   def install
+    ENV.prepend_path "PATH", Formula["bemly/tahoe/cmake"].opt_bin
     # Unbundle `dynet` and its dependency `eigen`
     rm_r(["src/eigen3", "src/libdynet"])
     (buildpath/"src/eigen3").mkpath

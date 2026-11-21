@@ -16,7 +16,7 @@ class X8664UnknownLinuxGnu < Formula
   # 运行时依赖走本源 fork-* 与同名接管瓶（guile），用户端零源码编译。
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-bdw-gc"
-  depends_on "bemly/tahoe/fork-python@3.14"
+  depends_on "bemly/tahoe/python@3.14"
   depends_on "bemly/tahoe/fork-xz"
   depends_on "bemly/tahoe/fork-zstd"
   depends_on "bemly/tahoe/guile"
@@ -47,7 +47,7 @@ class X8664UnknownLinuxGnu < Formula
     gdb = prefix/"toolchain/bin/x86_64-unknown-linux-gnu-gdb"
     system "install_name_tool",
            "-change", "/usr/local/opt/python@3.14/Frameworks/Python.framework/Versions/3.14/Python",
-                      "#{Formula["bemly/tahoe/fork-python@3.14"].opt_prefix}/Frameworks/Python.framework/Versions/3.14/Python",
+                      "#{Formula["bemly/tahoe/python@3.14"].opt_prefix}/Frameworks/Python.framework/Versions/3.14/Python",
            "-change", "/usr/local/opt/xz/lib/liblzma.5.dylib",
                       "#{Formula["bemly/tahoe/fork-xz"].opt_lib}/liblzma.5.dylib",
            gdb.to_s

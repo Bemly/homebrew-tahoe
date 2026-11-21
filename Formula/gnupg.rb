@@ -25,8 +25,8 @@ class Gnupg < Formula
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-gnutls"
-  depends_on "bemly/tahoe/fork-libusb"
+  depends_on "bemly/tahoe/gnutls"
+  depends_on "bemly/tahoe/libusb"
   depends_on "bemly/tahoe/fork-readline"
   depends_on "bemly/tahoe/libassuan"
   depends_on "bemly/tahoe/libgcrypt"
@@ -66,7 +66,7 @@ class Gnupg < Formula
   deny_network_access!
 
   def install
-    libusb = Formula["bemly/tahoe/fork-libusb"]
+    libusb = Formula["bemly/tahoe/libusb"]
     ENV.append "CPPFLAGS", "-I#{libusb.opt_include}/libusb-#{libusb.version.major_minor}"
 
     # gpgscm otherwise hard-codes /tmp on Unix.

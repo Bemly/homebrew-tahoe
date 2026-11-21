@@ -97,7 +97,7 @@ class Bash < Formula
   end
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-ncurses"
+  depends_on "bemly/tahoe/ncurses"
   depends_on "bemly/tahoe/fork-readline"
   depends_on macos: :tahoe
 

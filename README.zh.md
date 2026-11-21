@@ -109,7 +109,7 @@ brew install --cask bemly/tahoe/antigravity
 | `yt-dlp` | 音视频下载器，上游 universal macOS 单二进制（零依赖）；core 无 Intel 瓶且拖 Python 栈 |
 | `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS 设备通信栈，Intel 现编出瓶（core 无 Intel 瓶）；运行时依赖全部走本 tap 的 `fork-libtasn1` 与 `fork-openssl@4` 瓶 |
 | `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等全套工具）——上游 macOS 资产仅 arm64、core 无 Intel Tahoe 瓶，core 拷入代编译；cmake 构建依赖走本 tap |
-| `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖全部走本 tap 的 `fork-bdw-gc` / `fork-python@3.14` / `fork-zstd` / `guile` 瓶；版本跟随 GitHub release，sha 走 `.sha256` sidecar |
+| `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖全部走本 tap 的 `guile` / `python@3.14` / `fork-bdw-gc` / `fork-xz` / `fork-zstd` 瓶；版本跟随 GitHub release，sha 走 `.sha256` sidecar |
 | `mirage-wallpaper` | Mirage 原生动态壁纸管理器，兼容 Wallpaper Engine（仅 Intel cask，thin x86_64，公证签名）；上游按架构分包，镜像到本仓 Release，版本由自定义检查器跟踪 |
 | `llvm` | 新一代编译器基础设施——上游 19.1.7 Intel 预编译 pinned（之后只有 ARM64 包；23.x 源码编超 6 小时上限）；thin x86_64，零依赖，keg-only；bindgen 用 `LIBCLANG_PATH` 指过去即用 |
 | `z3` | 高性能定理证明器，官方 macOS x64 预编译包（`z3-<ver>-x64-osx-13.3.zip`，零依赖）；与 core 同名 |
@@ -122,14 +122,14 @@ brew install --cask bemly/tahoe/antigravity
 | `meson` | 快速构建系统，与 core 同名同物，先卸 core 版；依赖本 tap 的 `ninja` + `python@3.15`，出 Intel Tahoe 瓶，不再拖 core 的源码 Python |
 | `lody` | Lody 桌面 app（跨桌面/移动端同步 coding agent 会话）；cask 镜像官方 Intel dmg（`Lody-<ver>-x64.dmg`），版本跟随 core cask |
 | `qoder` | 阿里巴巴 Qoder CN（国内版）AI 编程平台；cask 镜像官网 Intel dmg（`Qoder-CN-mac-x64.dmg`），版本跟随 qoder.cn 更新日志；与 core 的国际版 `qoder` 同名，二者先卸一方再装 |
-| `fork-*`（39 个） | 依赖层：core 里没有 Intel Tahoe 瓶的运行时依赖，按「能同名就同名接管、有 core 依赖方就改名 fork」处理。`fork-glib`/`fork-gnutls`/`fork-openssl@3`/`fork-openssl@4`/`fork-python@3.14`/`fork-xz`/`fork-zstd`/`fork-dynet`/`fork-eigen@3` 等 39 个，全部 `keg_only`、源码现编，依赖方按全名 `bemly/tahoe/fork-*` 引用（清单见 AGENTS.md 6.3） |
+| `fork-*`（14 个） | 依赖层：core 里没有 Intel Tahoe 瓶的运行时依赖，按「能同名就同名接管、有 core 依赖方就保留 `fork-*`」处理，剩余 `fork-bdw-gc`/`fork-gettext`/`fork-gmp`/`fork-json-c`/`fork-libtasn1`/`fork-libunistring`/`fork-lz4`/`fork-openssl@3`/`fork-openssl@4`/`fork-pcre2`/`fork-pkgconf`/`fork-readline`/`fork-xz`/`fork-zstd` 共 14 个，全部 `keg_only`、源码现编，依赖方按全名 `bemly/tahoe/fork-*` 引用（清单见 AGENTS.md 6.3） |
 | `openjdk` / `openjdk@26` | OpenJDK 26 GA 官方 macOS x64 预编译包（`keg_only`）；与 core 同名，先卸 core 版 |
 | `openjdk@17` / `openjdk@21` | Eclipse Temurin x64 JDK（Adoptium API 判新，`keg_only`）；与 core 同名 |
 | `git` | Git 本体，core 拷入源码现编（依赖 fork-pcre2/gettext/openssl@4）；与 core 同名 |
-| `bash` | GNU Bash 5.3，core 拷入源码现编（fork-ncurses/readline）；与 core 同名 |
-| `wget` / `aria2` | 下载工具，core 拷入源码现编（fork-libidn2/libpsl/openssl@4 等）；与 core 同名 |
+| `bash` | GNU Bash 5.3，core 拷入源码现编（`ncurses`/fork-readline/fork-gettext）；与 core 同名 |
+| `wget` / `aria2` | 下载工具，core 拷入源码现编（`libidn2`/`libpsl`/`c-ares`/`libssh2`/`sqlite` + fork-openssl@4 等）；与 core 同名 |
 | `automake` / `abseil` / `svt-av1` / `python@3.11` | core 拷入源码现编的构建/运行依赖（automake、abseil、SVT-AV1、Python 3.11）；与 core 同名 |
-| `guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` | 可同名接管的依赖层（直接沿用 core 名字，先卸 core 版），源码现编出瓶；`libnghttp2` 同时是 curl3/nghttp2 的依赖 |
+| `guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy`（及 20 个同名化的原 `fork-*` 依赖） | 同名接管的依赖层（直接沿用 core 名字，先卸 core 版），源码现编出瓶，含 `brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gnutls`、`jpeg-turbo`、`libidn2`、`libpng`、`libpsl`、`libssh2`、`libusb`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`p11-kit`、`pixman`、`python@3.14`、`sqlite` |
 | `fzf` | 命令行模糊查找，上游 `fzf-<ver>-darwin_amd64.tar.gz` 单二进制；版本跟 GitHub release |
 | `zig` | Zig 工具链，官方 `zig-x86_64-macos-<ver>.tar.xz`（Intel host）；与 core 同名 |
 | `swift` | 官方 Swift 6.4.2 macOS pkg 重打包，只暴露 `swift`/`swiftc`（不污染其它工具链）；版本跟 swift.org |
@@ -140,7 +140,7 @@ brew install --cask bemly/tahoe/antigravity
 | `dotnet` | .NET SDK 11，官方 macOS x64 tarball 重打包（整包进 prefix + `dotnet` 垫片）；版本跟随微软 release-metadata API；与 core 同名 |
 | `node@20` | Node.js 20 LTS，直接取官方 `node-v20.x-darwin-x64.tar.gz`；与 core 同名 |
 | `postgresql@13` | PostgreSQL 13，EDB 官方 macOS x64 二进制包重打包（只装 bin/include/lib/share，跳过 pgAdmin 等 app）；`keg_only`（自带 openssl/icu 会撞 core），用其中的命令需把 `/usr/local/opt/postgresql@13/bin` 加进 PATH；与 core 同名 |
-| `freeling` | 自然语言分析器套件（分词 / 词性标注 / 命名实体等），core 同名接管源码现编；解捆自带的 dynet/eigen，改用本源的 `fork-dynet`/`fork-eigen@3`/`boost@1.85`/`icu4c@78`；与 core 同名 |
+| `freeling` | 自然语言分析器套件（分词 / 词性标注 / 命名实体等），core 同名接管源码现编；解捆自带的 dynet/eigen，改用本源的 `dynet`/`eigen@3`/`boost@1.85`/`icu4c@78`；与 core 同名 |
 | `icu4c@78` | ICU 78 Unicode / 国际化库，core 同名接管源码现编（`keg_only`）；`freeling` 的依赖 |
 | `boost@1.85` | Boost C++ 库 1.85，取第三方 prebuilt-boost 的 macOS x86 `static+shared` 包（预编译 dylib 补 `@rpath` 后 ad-hoc 重签）；`freeling` 的依赖；与 core 同名 |
 | `wimlib` | 创建 / 解包 / 修改 Windows Imaging（WIM）映像的库与 `wimlib-imagex` 工具集，core 拷入源码现编（autotools，`fork-pkgconf` 构建）；macOS 上零运行时依赖 |
@@ -154,14 +154,14 @@ brew install --cask bemly/tahoe/antigravity
 | `mercurial` | 分布式版本控制系统（`hg` + `chg`），使用本 tap 的 `python@3.11` 源码现编出瓶；与 core 同名 |
 | `spirv-tools` | SPIR-V 着色器优化与校验工具集，core 拷入源码现编出瓶（零运行时依赖）；与 core 同名 |
 | `vulkan-loader` | Vulkan ICD 加载器，core 拷入源码现编出瓶（仅依赖 core 的 `vulkan-headers` `all` 瓶）；与 core 同名 |
-| `gnupg` | GNU Privacy Guard（OpenPGP），core 拷入源码现编出瓶，复用本源 `fork-gnutls`/`fork-libusb`/`fork-readline`/`fork-gettext` 与同名接管的 `libassuan`/`libgcrypt`/`libgpg-error`/`libksba`/`npth`/`pinentry`；与 core 同名 |
+| `gnupg` | GNU Privacy Guard（OpenPGP），core 拷入源码现编出瓶，复用本源 `fork-readline`/`fork-gettext` 与同名接管的 `gnutls`/`libusb`/`libassuan`/`libgcrypt`/`libgpg-error`/`libksba`/`npth`/`pinentry`；与 core 同名 |
 
 ## 注意事项（同名冲突）
 
 Homebrew 禁止同时安装来自不同 tap 的同名公式或同 token cask——它们共用同一份
 `Cellar/<name>` 或 `Caskroom/<token>` 目录。
 
-除改名且 `keg_only` 的 `fork-*`（39 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
+除改名且 `keg_only` 的 `fork-*`（14 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
 `ffserver`、`antigravity-cli`、`aarch64-unknown-linux-gnu`、`x86_64-unknown-linux-gnu`、
 `llvm-mingw`、`cmd`、`deepseek-harness`、`mufetch`、`sst`、`torpedo` 以及本仓独有 cask）外，
 **凡与 `homebrew/core` 同名的软件都必须先卸载另一方**（`brew uninstall <name>` /
@@ -186,12 +186,14 @@ brew install bemly/tahoe/meson
 ```
 
 其余与 core 同名的公式（`node`、`node@20`/`22`/`24`、`go`、`cmake`、`git`、`bash`、`wget`、
-`aria2`、`automake`、`abseil`、`svt-av1`、`python@3.11`、`openjdk*`、`guile`、`jemalloc`、
-`libev`、`libnghttp2`、`libssh`、`libyaml`、`simdjson`、`snappy`、`zig`、`swift`、`fzf`、
-`protobuf`、`z3`、`wimlib`、`ripgrep`、`dotnet`、`freeling`、`boost@1.85`、`icu4c@78`、
-`postgresql@13`、`chisel`、`exiftool`、`opencode`、`jadx`、`xcodegen`、`starship`、`bun`、
-`docker`、`lima`、`mercurial`、`spirv-tools`、`vulkan-loader`、`gnupg`、`libassuan`、`libgcrypt`、
-`libgpg-error`、`libksba`、`npth`、`pinentry` 等）和同名 cask（`zcode`、`lody`、
+`aria2`、`automake`、`abseil`、`svt-av1`、`python@3.11`、`python@3.14`、`openjdk*`、`guile`、
+`jemalloc`、`libev`、`libnghttp2`、`libssh`、`libyaml`、`simdjson`、`snappy`、`brotli`、
+`c-ares`、`dynet`、`eigen@3`、`glib`、`gnutls`、`jpeg-turbo`、`libidn2`、`libpng`、`libpsl`、
+`libssh2`、`libusb`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`p11-kit`、`pixman`、`sqlite`、
+`zig`、`swift`、`fzf`、`protobuf`、`z3`、`wimlib`、`ripgrep`、`dotnet`、`freeling`、`boost@1.85`、
+`icu4c@78`、`postgresql@13`、`chisel`、`exiftool`、`opencode`、`jadx`、`xcodegen`、`starship`、
+`bun`、`docker`、`lima`、`mercurial`、`spirv-tools`、`vulkan-loader`、`gnupg`、`libassuan`、
+`libgcrypt`、`libgpg-error`、`libksba`、`npth`、`pinentry` 等）和同名 cask（`zcode`、`lody`、
 `qoder`、`github-copilot-app`、`wireshark`、`checkra1n`、`palera1n`、`antigravity`；
 `blender-5x` 虽不同 token，但同样会装进 `/Applications/Blender.app` 与 core 的 `blender` 冲突）
 装前均须先卸另一方。`fork-*` 是改名包，与 core 不冲突，不需要卸载。

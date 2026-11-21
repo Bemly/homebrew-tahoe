@@ -34,8 +34,8 @@ class Wget < Formula
   depends_on "bemly/tahoe/fork-pkgconf" => :build
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-libidn2"
-  depends_on "bemly/tahoe/fork-libpsl"
+  depends_on "bemly/tahoe/libidn2"
+  depends_on "bemly/tahoe/libpsl"
   depends_on "bemly/tahoe/fork-openssl@4"
   depends_on macos: :tahoe
 

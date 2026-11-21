@@ -22,27 +22,25 @@ class Qemu < Formula
 
   depends_on "bison" => :build # >= 3.0
   depends_on "libtool" => :build
-  depends_on "meson" => :build
-  depends_on "ninja" => :build
+  depends_on "bemly/tahoe/meson" => :build
+  depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
-  depends_on "python-setuptools" => :build
-  depends_on "bemly/tahoe/fork-python@3.14" => :build # keep aligned with meson
-  depends_on "spice-protocol" => :build
+  depends_on "bemly/tahoe/python@3.14" => :build # keep aligned with meson
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/capstone"
   depends_on "bemly/tahoe/dtc"
   depends_on "bemly/tahoe/libslirp"
   depends_on "bemly/tahoe/vde"
-  depends_on "bemly/tahoe/fork-glib"
-  depends_on "bemly/tahoe/fork-gnutls"
-  depends_on "bemly/tahoe/fork-jpeg-turbo"
-  depends_on "bemly/tahoe/fork-libpng"
+  depends_on "bemly/tahoe/glib"
+  depends_on "bemly/tahoe/gnutls"
+  depends_on "bemly/tahoe/jpeg-turbo"
+  depends_on "bemly/tahoe/libpng"
   depends_on "bemly/tahoe/libssh"
-  depends_on "bemly/tahoe/fork-libusb"
-  depends_on "bemly/tahoe/fork-lzo"
+  depends_on "bemly/tahoe/libusb"
+  depends_on "bemly/tahoe/lzo"
   depends_on macos: :tahoe
-  depends_on "bemly/tahoe/fork-ncurses"
-  depends_on "bemly/tahoe/fork-pixman"
+  depends_on "bemly/tahoe/ncurses"
+  depends_on "bemly/tahoe/pixman"
   depends_on "bemly/tahoe/snappy"
   depends_on "bemly/tahoe/fork-zstd"
 
@@ -66,6 +64,9 @@ class Qemu < Formula
   end
 
   def install
+    setuptools_site = Dir[formula_opt_lib("python-setuptools")/"python3*/site-packages"].first
+    ENV.prepend_path "PYTHONPATH", setuptools_site if setuptools_site
+    ENV.prepend_path "PKG_CONFIG_PATH", formula_opt_prefix("spice-protocol")/"share/pkgconfig"
     ENV["LIBTOOL"] = "glibtool"
 
     # Remove wheels unless explicitly permitted. Currently this:
@@ -98,7 +99,7 @@ class Qemu < Formula
     # obtain sensible runtime errors. This will also be compatible with
     # Samba installations from external taps.
     args << "--smbd=#{HOMEBREW_PREFIX}/sbin/samba-dot-org-smbd"
-    args << "--python=#{formula_opt_bin("bemly/tahoe/fork-python@3.14")/"python3.14"}"
+    args << "--python=#{formula_opt_bin("bemly/tahoe/python@3.14")/"python3.14"}"
 
     # The arm64 HVF backend needs the macOS 15 SDK for its EL2 sysregs and vGIC
     args << "--disable-hvf" if OS.mac? && Hardware::CPU.arm? && MacOS.version <= :sonoma

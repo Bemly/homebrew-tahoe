@@ -18,8 +18,8 @@ class Dtc < Formula
     root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any, tahoe: "1b26ad3d3007e17ba90184c7a5bef6c31bc661ab61614895565d815a5f4ca72e"
   end
-  depends_on "meson" => :build
-  depends_on "ninja" => :build
+  depends_on "bemly/tahoe/meson" => :build
+  depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libyaml"

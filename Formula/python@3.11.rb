@@ -23,9 +23,9 @@ class PythonAT311 < Formula
   depends_on "bemly/tahoe/fork-pkgconf" => :build
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-mpdecimal"
+  depends_on "bemly/tahoe/mpdecimal"
   depends_on "bemly/tahoe/fork-openssl@3"
-  depends_on "bemly/tahoe/fork-sqlite"
+  depends_on "bemly/tahoe/sqlite"
   depends_on "bemly/tahoe/fork-xz"
   depends_on macos: :tahoe
 
@@ -192,7 +192,7 @@ class PythonAT311 < Formula
       # See https://github.com/Homebrew/linuxbrew-core/pull/22307#issuecomment-781896552
       # We want our ncurses! Override system ncurses includes!
       inreplace "configure", 'CPPFLAGS="$CPPFLAGS -I/usr/include/ncursesw"',
-                             "CPPFLAGS=\"$CPPFLAGS -I#{formula_opt_include("bemly/tahoe/fork-ncurses")}\""
+                             "CPPFLAGS=\"$CPPFLAGS -I#{formula_opt_include("bemly/tahoe/ncurses")}\""
     end
 
     # Allow python modules to use ctypes.find_library to find homebrew's stuff
