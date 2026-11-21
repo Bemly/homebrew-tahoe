@@ -7,7 +7,7 @@ class Freeling < Formula
   revision 13
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "ee2ffc0a5fa58634e40cf46e2e36066e7a94998c9fc05d1f32efd39117169b02"
+    sha256 cellar: :any, tahoe: "3858669fdf3eb72133366546d06fa632ca07f99b757c7409acb2fbb1ef95995e"
   end
 
   depends_on arch: :x86_64

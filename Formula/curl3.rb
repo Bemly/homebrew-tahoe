@@ -26,7 +26,7 @@ class Curl3 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "be0c59b58624aa422e2c132d5272d52f68fb4f60fad9a447adf9b80b35858148"
+    sha256 cellar: :any, tahoe: "f620307bf674a3cc672f7545730bf9f4a3e53bafec29bde7ea25ee7cda1de105"
   end
 
   head do

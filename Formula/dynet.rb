@@ -6,6 +6,11 @@ class Dynet < Formula
   license "Apache-2.0"
   revision 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "b6402c746ecae2075ce9093cc394da99146cb4f67669630cd6619c7f23edef01"
+  end
+
   deprecate! date: "2026-02-02", because: :unmaintained
 
   disable! date: "2027-02-02", because: :unmaintained

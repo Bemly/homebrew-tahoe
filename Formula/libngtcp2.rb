@@ -10,7 +10,7 @@ class Libngtcp2 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "7a47377161e98625cf99fb031b6f32de7ac372ad684bc5d2b7d7d59382274477"
+    sha256 cellar: :any, tahoe: "af8a388ae528552b9f36e4ee0cabd36542de156f42c450434f5bee8e47945839"
   end
 
 
