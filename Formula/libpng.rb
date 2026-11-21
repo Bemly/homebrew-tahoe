@@ -11,6 +11,11 @@ class Libpng < Formula
     regex(%r{url=.*?/libpng[._-]v?(\d+(?:\.\d+)+)\.t}i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "fb155cfee1427744ac9cae4373811ff87a550db7490f139a92eb029f361d607c"
+  end
+
   head do
     url "https://github.com/pnggroup/libpng.git", branch: "libpng16"
 

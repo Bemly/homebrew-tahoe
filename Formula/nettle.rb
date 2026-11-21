@@ -7,6 +7,11 @@ class Nettle < Formula
   license any_of: ["GPL-2.0-or-later", "LGPL-3.0-or-later"]
   compatibility_version 2
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "b9c802bda3ffd3dcbb9562d1b5c277c8b65120bdaf32814fc71a5c6810276ad8"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-gmp"
   depends_on macos: :tahoe

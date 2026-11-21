@@ -17,6 +17,11 @@ class JpegTurbo < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "78ee661a32bf0a1c086ca5c6e2cff90a051402d96630425d2f7e5a01d76968e6"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

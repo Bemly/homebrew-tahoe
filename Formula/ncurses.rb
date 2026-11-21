@@ -13,6 +13,11 @@ class Ncurses < Formula
     regex(/href=.*?ncurses[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "105a54c1a06a5da4e32f2a312ef10e5aa47b93315108a6ce5ab29daa2c55fb73"
+  end
+
   keg_only :provided_by_macos
 
   depends_on arch: :x86_64

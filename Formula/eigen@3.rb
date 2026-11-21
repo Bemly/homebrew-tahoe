@@ -20,6 +20,11 @@ class EigenAT3 < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "f94f990d9899a39326cec7f0417da6d3196f55bba7cc8cbce02565461c677c8e"
+  end
+
   keg_only :versioned_formula
 
   depends_on arch: :x86_64

@@ -14,6 +14,11 @@ class Libssh2 < Formula
     regex(/href=.*?libssh2[._-]v?(\d+(?:\.\d+)+)\./i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "2345d5350dfd946dd0460083069554c9fb58061dbb7b61b98086a55bfcbd62ee"
+  end
+
   head do
     url "https://github.com/libssh2/libssh2.git", branch: "master"
 

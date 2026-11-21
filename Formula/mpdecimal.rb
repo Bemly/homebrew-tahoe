@@ -11,6 +11,11 @@ class Mpdecimal < Formula
     regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "8acd853c43493213e58808e4d765f5c59c60b9b258288d148e2b5d59de069a55"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

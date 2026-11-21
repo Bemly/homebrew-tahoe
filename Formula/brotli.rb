@@ -15,6 +15,11 @@ class Brotli < Formula
     regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "1becf7c1116328b15d1f78c2640dbb37abdb75946cb49442d8591927df1642cd"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

@@ -8,6 +8,11 @@ class Libpsl < Formula
   license "MIT"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "c3ed5a885c0e35e34f83d5b6357e8350bbd2fd27e04bda452f46e6c91f9244cd"
+  end
+
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe

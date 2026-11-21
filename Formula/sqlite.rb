@@ -15,6 +15,11 @@ class Sqlite < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "e3e0f82bf19e2ea84ba8a463f873a95bba2909987ab3790193e90b97632faa2f"
+  end
+
   keg_only :provided_by_macos
 
   depends_on arch: :x86_64

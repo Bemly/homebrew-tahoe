@@ -11,6 +11,11 @@ class Lzo < Formula
     regex(/href=.*?lzo[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "872051480c3274d981c2267fe30f7fff4af288292e79946bdfac589c595dd4eb"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

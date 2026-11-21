@@ -19,6 +19,11 @@ class Libidn2 < Formula
     regex(/href=.*?libidn2[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "245545097370b2ac46508c0e5c663a806a7838bc7b024d3c86d4729b3405e273"
+  end
+
   head do
     url "https://gitlab.com/libidn/libidn2.git", branch: "master"
 

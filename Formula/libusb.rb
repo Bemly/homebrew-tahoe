@@ -11,6 +11,11 @@ class Libusb < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "080ba9107062b420fcf08f3edcb5c96f42eb32c64ceb7c1598cd409c5897852e"
+  end
+
   head do
     url "https://github.com/libusb/libusb.git", branch: "master"
 

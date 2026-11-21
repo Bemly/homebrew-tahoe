@@ -13,6 +13,11 @@ class CAres < Formula
     regex(/href=.*?c-ares[._-](\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "0ff98462aae2ec784fa715cacda371a036a4b8371e5cbad848a024dea0237117"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
