@@ -49,12 +49,6 @@ brew install --cask bemly/tahoe/doubao-ime
 # quarantine flag after install, so it opens without a Gatekeeper prompt
 # (the re-sign is ad-hoc, so there is no notarization).
 brew install --cask bemly/tahoe/antigravity
-# github-copilot-app is the second patched artifact: the official Intel dmg gets two
-# x86_64 injection dylibs (MIT-licensed Chinese localization + the same in-page
-# companion widget) and a small launcher that sets DYLD_INSERT_LIBRARIES, then the
-# app is re-signed ad-hoc. Its in-app auto-update is NOT disabled — if the UI turns
-# English again after an update, run brew reinstall --cask bemly/tahoe/github-copilot-app
-brew install --cask bemly/tahoe/github-copilot-app
 ```
 
 ## Packages
@@ -113,7 +107,7 @@ brew install --cask bemly/tahoe/github-copilot-app
 | `rustup` | Official static Rust toolchain installer, same name as core (uninstall core's first); ships `rustup` plus core's cargo/rustc proxy shims, toolchains managed via `rustup toolchain install stable` |
 | `wireshark` | Network protocol analyzer, cask from the official Intel dmg (Intel builds stop at 4.4.x); ships `tshark`/`editcap` shims |
 | `git-lfs` | Git extension for versioning large files, upstream Intel build with full man pages (`git-lfs-darwin-amd64-v<ver>.zip`); run `git lfs install` once after install |
-| `github-copilot-app` | GitHub Copilot desktop app, **shipped as a patched artifact**: the official Intel dmg is copied, two x86_64 injection dylibs are added (the MIT-licensed Chinese localization from `shuhuNB515/githubcopilot-desktop-zh-mac` plus this repo's in-page Gemini companion widget with importable characters), the official main binary is renamed `github-real` and a small launcher takes its place to set `DYLD_INSERT_LIBRARIES` with absolute paths, then everything is re-signed ad-hoc with the `disable-library-validation` entitlement and the dmg is mirrored to this repo's releases. Built reproducibly by `Widgets/github-copilot-cn/build.sh` in CI; version tracked from the core cask plus this release's `.sha256` sidecar. The cask clears brew's quarantine flag after install. In-app auto-update is **not** disabled (the Tauri updater lives inside the binary) — if the UI reverts to English, `brew reinstall --cask` restores the patch; the computer-use plugin is kept with its two binaries retaining GitHub's official signatures (the patched ad-hoc host cannot auto-authorize, so the helper shows a one-time Approve/Reject consent dialog on first use — approve once, re-approve after upgrades); shares its token with core's unpatched cask |
+| `github-copilot-app` | GitHub Copilot desktop app, cask mirrored from the official Intel dmg (`GitHub-Copilot-darwin-x64.dmg`); version tracked from the core cask, installed into `/Applications` |
 | `frida-server` | Frida dynamic instrumentation server, upstream bare binary from `frida/frida` releases (Intel only); run with `sudo`, listens on `127.0.0.1:27042` |
 | `afm` | AFM pinyin input method, Apple Silicon only (first exception to the Intel-only rule); user-level install into `~/Library/Input Methods` with automatic input-source enablement; pinned, no update checks |
 | `amd` | AMD lyrics downloader (universal Intel + Apple Silicon, built locally and mirrored); ships the app plus the `obcli` command; pinned, no update checks |
@@ -193,10 +187,9 @@ Other same-name packages (`git` / `bash` / `wget` / `aria2` / `automake` / `abse
 installing this tap's build (and vice versa). The `fork-*` packages are renamed and do
 not conflict with core.
 
-The `antigravity` and `github-copilot-app` casks are special cases: core has casks of the
-same tokens for the same apps, but core's are the unpatched official builds while this
-tap's are the localized/patched artifacts. They share `Caskroom/<token>` and cannot
-coexist either — pick one (`brew uninstall --cask --force <token>` first).
+The `antigravity` cask is a special case: core has a cask of the same token for the same
+app, but core's is the unpatched official build while this tap's is the localized/patched
+artifact. They share `Caskroom/antigravity` and cannot coexist either — pick one.
 
 ## GHCR bottles
 

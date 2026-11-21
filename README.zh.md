@@ -40,10 +40,6 @@ brew install --cask bemly/tahoe/doubao-ime
 # 与伴生挂件，并禁用应用内自动更新（否则补丁会被官方新包覆盖）。
 # 重签是 ad-hoc（无公证）；cask 安装后会清掉隔离属性，正常免 Gatekeeper 弹窗。
 brew install --cask bemly/tahoe/antigravity
-# github-copilot-app 是第二个补丁成品：官方 Intel dmg 里注入两个 x86_64 dylib
-# （MIT 中文插件 + 同款页内伴生挂件）与一个设 DYLD_INSERT_LIBRARIES 的启动器，再 ad-hoc 重签。
-# 它的应用内自更新**没有禁用**——更新后界面变回英文就 brew reinstall --cask bemly/tahoe/github-copilot-app
-brew install --cask bemly/tahoe/github-copilot-app
 ```
 
 ## 收录的软件
@@ -102,7 +98,7 @@ brew install --cask bemly/tahoe/github-copilot-app
 | `rustup` | 官方静态 Rust 工具链安装器，与 core 同名（先卸 core 版）；提供 `rustup` 及 cargo/rustc 代理垫片，工具链走 `rustup toolchain install stable` |
 | `wireshark` | 网络协议分析器，cask 取官方 Intel dmg（Intel 构建停在 4.4 系）；附 `tshark`/`editcap` 命令垫片 |
 | `git-lfs` | Git 大文件扩展，上游 Intel 构建（带全套 man 页）；装完手动跑一次 `git lfs install` |
-| `github-copilot-app` | GitHub Copilot 桌面 app，**分发的是打补丁后的成品**：复制官方 Intel dmg → 注入两个 x86_64 dylib（`shuhuNB515/githubcopilot-desktop-zh-mac` 的 MIT 中文插件 + 本仓页内 Gemini 伴生挂件，可导入自己的图片换立绘）→ 官方主二进制改名 `github-real`、原位置换成设绝对路径 `DYLD_INSERT_LIBRARIES` 的启动器 → 带 `disable-library-validation` entitlement ad-hoc 重签 → 镜像到本仓 Release。构建可复现（`Widgets/github-copilot-cn/build.sh`，CI 跑），版本跟随 core cask + 本 Release 的 `.sha256` sidecar；安装后清掉隔离属性，正常免弹窗。应用内自更新**未禁用**（Tauri updater 在二进制里）：界面变回英文就 `brew reinstall --cask` 恢复补丁；computer-use 插件保留（其 helper/mcp 保持 GitHub 官方签名；补丁宿主首次使用会弹 Approve/Reject 授权框，点 Approve 一次即可，升级后再弹再点）；与 core 的未打补丁同名 cask 不能共存 |
+| `github-copilot-app` | GitHub Copilot 桌面 app，cask 镜像官方 Intel dmg（`GitHub-Copilot-darwin-x64.dmg`）；版本跟 core cask，装进 `/Applications` |
 | `frida-server` | Frida 动态插桩服务端，frida/frida 官方裸二进制（仅 Intel）；需 sudo 运行，默认监听 `127.0.0.1:27042` |
 | `afm` | AFM拼音输入法，仅 Apple Silicon（本 tap 首个破 Intel 门槛的例外）；用户级安装并自动启用输入源；锁定版本不检查更新 |
 | `amd` | AMD 歌词汉化下载器（universal 双架构，本地构建后镜像）；附带 `obcli` 命令行；锁定版本不检查更新 |
@@ -181,9 +177,8 @@ brew install bemly/tahoe/meson
 都与 core 同名同物，装本 tap 版前先 `brew uninstall <name>`（反之亦然）。
 `fork-*` 是改名包，与 core 不冲突，不需要卸载。
 
-`antigravity` 与 `github-copilot-app` 是特例：core 也有同名 cask，装的是未打补丁的官方包，
-本 tap 这两份是汉化 + 挂件的成品；二者共用 `Caskroom/<token>`，同样只能二选一
-（先 `brew uninstall --cask --force <token>`）。
+`antigravity` 是特例：core 也有同名 cask，装的是未打补丁的官方包，本 tap 这份是
+汉化 + 挂件 + 禁自更新的成品；二者共用 `Caskroom/antigravity`，同样只能二选一。
 
 ## GHCR 瓶
 

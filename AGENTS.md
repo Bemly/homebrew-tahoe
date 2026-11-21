@@ -61,18 +61,6 @@ Intel 上缺汉化与挂件能力。约束：构建必须由 `Widgets/antigravit
 上游许可状况（汉化引擎仓库无 LICENSE、原角色形象 CC BY-NC-SA、默认立绘出处待确认）。
 细节与踩坑见 11.61。
 
-**第二例 `github-copilot-app`（2026-11-21 起）**：同一破例口径，但补丁形态不同——
-GitHub Copilot 桌面版是 **Tauri（WKWebView）**，前端资源 brotli 压在 500MB+ 的主二进制里，
-没有 asar 可改，故走**运行时注入**：官方 Intel dmg 复制后塞进两个 x86_64 dylib
-（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`），
-官方主二进制改名 `github-real`、`github` 位置换成自编译的启动器（算 dylib 绝对路径设
-`DYLD_INSERT_LIBRARIES` 再 exec），带 `disable-library-validation` 等 entitlements
-ad-hoc 重签后重打 dmg。
-中文插件是 MIT（`licenses/ZH-MIT.txt` 随仓），但**被注入的 GitHub 专有二进制仍是修改版**，
-破例性质与 antigravity 相同。构建同样一条命令复现
-（`Widgets/github-copilot-cn/build.sh`，CI 跑），官方输入 sha 由脚本实算并缓存
-（core cask 那份是 arm64 包的，不能用来核对 Intel 包）。细节见 11.62。
-
 ## 2. 命名约定
 
 | 项 | 值 | 说明 |
@@ -96,7 +84,6 @@ homebrew-tahoe/
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python / swift 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建：挂件源码 + asar 工具 + build.sh
-├── Widgets/github-copilot-cn/         # github-copilot-app 补丁成品构建：注入 dylib + 启动器 + 宠物 + build.sh
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
@@ -175,7 +162,7 @@ end
 | 版本来源按流分流 | brew 公式 / cask API、GitHub `releases/latest`、源 tap raw、上游自有接口；只有 brew 流走 formulae.brew.sh（**不消耗 GitHub API 限额**），见第 7 节 |
 | sha256 取 `checksums.txt`（~2KB） | 避免下载 15MB 的发布包 |
 | `concurrency` + `timeout-minutes` | 防重复跑、防挂死 |
-| 补丁成品构建与 cask lint 走 CI | `patched.yml`（macos-26-intel，手动）：`build.sh --upload` → 把 sidecar 的 sha 写回工作区 cask → `brew style`/`audit --strict` → 绿了才提交 cask；**开发机只跑轻量取证**（语法/样本串/探针/日志/fetch）。2026-11-21 用户纠正：本地跑 brew lint 与构建把 Intel 开发机卡死 |
+| 补丁成品构建与 cask lint 走 CI | `patched.yml`（macos-26-intel，手动，仅 antigravity）：`build.sh --upload` → 把 sidecar 的 sha 写回工作区 cask → `brew style`/`audit --strict`（含 github-copilot-app 等存量 cask）→ 绿了才提交 cask；**开发机只跑轻量取证**（语法/样本串/探针/日志/fetch）。2026-11-21 用户纠正：本地跑 brew lint 与构建把 Intel 开发机卡死 |
 | 批量制瓶只占一次 runner | `watch-updates.yml` 扫全部（唯一模式），只触发**一次** `bottle.yml`（逗号列表传参）；`bottle.yml` 在单个 `macos-26-intel` 任务里顺序出瓶，绝不逐个触发 |
 | 递归依赖门控 | `bottle.yml` 在 `brew readall` 后展开每批公式的**运行时**依赖闭包（build deps 只在 CI 现编、不影响用户端，故不检查）：本仓依赖必须有瓶块（同批公式由拓扑排序在本轮出瓶，豁免）、core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶则直接失败并列出名单；旧公式确需 compat 时手动勾 `allow_unbottled_core: true` 放行，见 8.1 / 11.59 |
 
@@ -366,7 +353,7 @@ cask 无 bottle 机制：watcher 检测到新版本后下载发布包、上传�
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
 | `doubao-ime` | 1.1.1 | Intel | 输入法；custom API；镜像 |
 | `dsh-gui` | 0.2.1-rc.4 | Intel | nightly feed 判新；镜像 |
-| `github-copilot-app` | 1.4.3-cn1 | Intel | 官方 darwin-x64 dmg + 运行时注入补丁（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`；官方主二进制改名 `github-real`，`github` 位置换成设绝对路径 `DYLD_INSERT_LIBRARIES` 的启动器），带 disable-library-validation entitlements ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-cn<补丁序号>`；**第二个修改版专有二进制破例**（见 11.62）；customRelease 读 core cask API + sidecar，产物由 `Widgets/github-copilot-cn/build.sh` 在 **CI（patched.yml）** 构建；**自更新未禁用**（Tauri updater 在二进制里），caveats 写明变回英文就 reinstall；computer-use 插件保留且其 helper/mcp 保持官方签名，宿主首次使用点一次 Approve（host consent，见 11.62 第 13 条） |
+| `github-copilot-app` | 1.4.3 | Intel | brewCask 判新；Intel dmg 实算；镜像（2026-11-21 曾做中文补丁成品实验，用户叫停回退官方镜像，教训见 11.62） |
 | `grok-bot` | 1.2.3 | Intel | Cursor 下载页锚定；镜像 |
 | `heliport` | 2.0.0-alpha | universal | universal；不检查更新 |
 | `konsole` | 5485 | dual | KDE CI 构建号；双架构；`alwaysUpdate`；每月手动跑 |
@@ -541,7 +528,7 @@ Homebrew 维护的校验和，上游换镜像自动跟随）。模板式（downl
 | `github` | `releases/latest` 跳转的 `Location` tag（HEAD，不耗 API 限额） | 剥 `githubTagPrefix`（默认 `v`）后套 `downloadURL` 模板 | fzf、chisel、brewui、frida-server、交叉工具链 |
 | `brew` 公式-模板式 | `api/formula/<brewName>.json` 的 `versions.stable` | 自己拼 `asset` / `downloadURL` / `checksumsURL` | gh、node 家族、fastfetch |
 | `brew` 公式-全量式 | 同上 | JSON 的 `urls.stable.url` / `.checksum`（随 core 换镜像） | `fork-*`、qemu 链、ripgrep |
-| `brew` cask | `api/cask/<brewName>.json` 的 `.version` | 必须自己给 x64 `downloadURL`（core 那份是 arm64），sha 实算 | zcode、lody |
+| `brew` cask | `api/cask/<brewName>.json` 的 `.version` | 必须自己给 x64 `downloadURL`（core 那份是 arm64），sha 实算 | zcode、lody、github-copilot-app |
 
 5. 版本比较（等价 `sort -V`）：数字段按数值（`2026.8.19` == `2026.08.19`）、预发布 < 正式版；
    本地更新 → `newer-than-brew` 保持不动；`alwaysUpdate` 的包（konsole）版本相同也继续；
@@ -703,7 +690,7 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
    - **brew 流-全量式**（qemu 链 / `fork-*` / ripgrep 这类从 core 拷入、url 模板不好推）：
      只需 `CheckConfig(formula: "<name>", brewName: "<name>")`，url 与 sha256 由核心直取
      JSON 的 `urls.stable.url` / `.checksum`，上游换镜像自动跟随（见 6.2 / 6.3；模板式仍优先）；
-   - **brew cask 流**（软件在 core 里是 cask，如 zcode / lody）：
+   - **brew cask 流**（软件在 core 里是 cask，如 zcode / lody / github-copilot-app）：
      `formulaPath: "Casks"` + `isCask: true` + `brewName: ...` + `brewCask: true`；
      **必须自己给 x64 `downloadURL` 模板**（core 的 url 是 arm64 的），sha 由核心实算；
    - **raw 流**（软件来自其他 tap 仓库，如 `anomalyco/homebrew-tap` 的三包）：
@@ -725,13 +712,13 @@ root_url(org, repo) = "https://ghcr.io/v2/#{org}/#{repo.delete_prefix("homebrew-
      见 11.34）、旧快照自动清理。
      token→key 由核心 `caskArchKey` 显式映射，未知 token 直接 fail。
    - **浮动直链 / 版本号不变的上游**：加 `alwaysUpdate: true`（konsole 是例子）。
-   - **补丁成品 cask**（antigravity / github-copilot-app，破例见 1 节）：产物不是「下载上游
-     再镜像」，而是 `Widgets/<pkg>/build.sh` 在官方 Intel 包上打补丁后重打的 dmg，由
+   - **补丁成品 cask**（仅 antigravity，破例见 1 节）：产物不是「下载上游
+     再镜像」，而是 `Widgets/antigravity-niang/build.sh` 在官方 Intel 包上打补丁后重打的 dmg，由
      **`patched.yml` 在 CI 构建并上传**。检查器走 `customRelease`（core cask API 判新 +
      拼 `-cn<N>`）、sha 取 Release 上的 `.sha256` sidecar、**不开 `uploadRelease`**；
      sidecar 缺失即返回 `sha256: nil` → 核心 HEAD 探测 404 → `upstream-missing` 开 issue
      （= 「该跑构建了」走既有告警通道）。cask 的 sha 可先写占位 `PENDING_CI_SIDECAR`，
-     由 workflow 用本次 sidecar 填实、lint 绿后提交（见 11.61 第 9 条 / 11.62 第 9 条）。
+     由 workflow 用本次 sidecar 填实、lint 绿后提交（见 11.61 第 9 条）。
    ⚠️ **公式与 swift 文件没有 push 进远端之前，CI checkout 拿不到它们**（见 11.7）。
 
 ### 9.4 本地验证
@@ -2320,177 +2307,37 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
     - 计数上报**只在变化时**发 `gy:l10n`（初版每 500ms 重发同值，日志刷屏，cn4 修）。
     替换幂等：译成中文后不再命中拉丁模式，observer 回环自然终止。
 
-### 11.62 github-copilot-app 补丁成品：Tauri 运行时注入全链路（2026-11-21）
+### 11.62 copilot 中文补丁实验：已回退官方镜像，只留可复用教训（2026-11-21）
 
-宿主与 antigravity 完全不同，**没有 asar 可改**，所以走运行时注入。动手前读完 1–4 条，
-第 2 条是本轮最贵的坑（探针几秒就证伪了初版方案，省下一次 CI 空跑）。
+`github-copilot-app` 曾按 antigravity 同款破例做「运行时注入中文插件 + 页内宠物」的补丁成品
+（cn1–cn4，Tauri 宿主无 asar，靠启动器设绝对路径 `DYLD_INSERT_LIBRARIES` + ad-hoc 重签）。
+用户最终叫停（"不折腾他了，就用官方的"），仓库回退到反重力完成提交 `cf964d3` 的官方镜像形态
+（brewCask 判新 + uploadRelease），`Widgets/github-copilot-cn/` 已删、`patched.yml` 只留 antigravity。
+**以下教训与包无关，复用价值高，故保留：**
 
-1. **宿主形态**：GitHub Copilot 桌面版是 **Tauri（WKWebView）**，前端资源 brotli 压在
-   500MB+ 的 `Contents/MacOS/github` 里；bundle id `com.github.githubapp`；另有
-   `Contents/MacOS/git-credential-copilot`、`Contents/Frameworks/*.dylib`（4 个）、
-   `Contents/Resources/plugins/computer-use/`（含嵌套 app 与 mcp 二进制）、
-   `embedded.provisionprofile`。上游中文插件 `shuhuNB515/githubcopilot-desktop-zh-mac`
-   是 **MIT**（`licenses/ZH-MIT.txt` 随仓），手法是 `DYLD_INSERT_LIBRARIES` 注入
-   `CopilotCN.dylib`，swizzle `-[WKWebView initWithFrame:configuration:]` 挂
-   `WKUserScript`，词典/脚本从 `COPILOT_CN_DIR` 读。上游只编 arm64，本仓改 `-arch x86_64`
-   （实测可编，无 arm64-only API）。
-
-2. **`LSEnvironment` + `@executable_path` 会 SIGABRT 掉所有子进程（探针实测，初版方案被证伪）**。
-   初版想「不改 Mach-O、不用启动器」：Info.plist 写
-   `LSEnvironment:DYLD_INSERT_LIBRARIES = @executable_path/../Resources/CopilotCN/*.dylib`。
-   主进程确实注入成功，但 **LaunchServices 设的环境会被所有子进程继承**，而
-   `@executable_path` 在子进程里按**子进程自己的**可执行文件路径展开 → 路径不存在 →
-   dyld 直接 SIGABRT。证据：`/tmp` 造最小 app bundle（`probe` + `libprobe.dylib` +
-   一个普通 ad-hoc 签名的 `child`），`open` 启动后 `main.log` 里 `ctor_marker=present`
-   但 `child_rc=6`、`child.log` 空。Copilot 会大量 spawn git / shell / MCP 子进程，
-   这条路等于把功能全废掉。**改用启动器 + 绝对路径后同一探针 `child_rc=0`、子进程正常输出**
-   （子进程也会载入注入库，但两个库都有主程序判定，非主进程直接 return，无副作用）。
-   方法论：**这种「dyld/签名/环境」假设先用几秒编译的最小探针验证，别拿 500MB 真包赌 CI**。
-
-3. **启动器形态**：官方主二进制改名 `Contents/MacOS/github-real`，`CFBundleExecutable`
-   仍指 `github`——那个位置换成自编译的 `launcher.c`：`_NSGetExecutablePath` + `realpath`
-   拿到自身目录 → 拼两个 dylib 的**绝对路径**（GyWidgetCN 在前）→ `setenv` → `execv`
-   `github-real`（argv[0] 换成真实路径）。**dylib 缺失时照常 exec**（fail-soft：界面回英文
-   但 app 能用，绝不拦启动）。两个注入库的主程序判定都要认 `github-real`：上游
-   `CNIsMainApp` 与本仓 `GyIsMainApp` 都是「exe 后缀 **or** bundle id」，bundle id 兜住了，
-   本仓仍显式加了后缀分支。**不要删 `embedded.provisionprofile`**（上游也不删）。
-
-4. **签名照上游 `src/sign.sh` 逐组件签，不用 `--deep` 一把梭**：`--deep` 会把主程序的
-   entitlements 灌给所有嵌套代码，而上游给 `git-credential-copilot` 用的是另一份
-   `ent-git-credential.plist`（只有 audio/camera），computer-use 两个二进制单独签。
-   顺序：Frameworks 的 dylib（ad-hoc，无 runtime）→ git-credential（runtime + 它自己的 ent）
-   → computer-use-mcp / 嵌套 app（runtime）→ **`github-real`（runtime + 注入 ent）**
-   → app 本体（runtime + 注入 ent，不带 --deep）。
-   **`github-real` 必须显式签**：不带 `--deep` 的 codesign 不会重签嵌套 Mach-O，漏了它
-   dyld 就会剥掉启动器设的 `DYLD_INSERT_LIBRARIES`。
-   **保留 hardened runtime 也能注入**——靠的是 `disable-library-validation` +
-   `allow-dyld-environment-variables` 两条例外 entitlement（ad-hoc 签名同样被承认，探针实证）。
-   这与 11.61 第 4 条「antigravity 必须丢 runtime」不矛盾：那边**压根没传 entitlements**。
-
-5. **运行时文件落用户目录，且每次启动覆盖同步**：`~/Library/Application Support/CopilotCN`
-   （往签名过的 bundle 里写文件会破坏封印）。GyWidgetCN 构造函数 `setenv COPILOT_CN_DIR`
-   并把包内 `runtime/{dict,translator,bridge,collector,menu}.json|js` 与 `gy/pet.js`
-   同步过去——**不是「缺才补」**：否则升级后旧词典/旧宠物会一直留着。用户自己的数据在
-   `dumps/`、`queue/`、`copilot-cn.log` 与宠物的 localStorage 里，不受影响。
-   装载顺序 GyWidgetCN 在前（它负责铺目录与设 env），上游库随后读同一目录。
-
-6. **词典重建**：上游 `tools/build_dict.py` 自己 `chdir` 到仓库根（读 `src/dict-*.tsv`
-   写 `runtime/dict.json`），从任意 CWD 跑都安全；但它对 BAD/DUP 行**只打印不失败**
-   （`DUP: Show the GitHub Copilot icon in the / menu bar` 是上游自带的重复键，正常），
-   所以本仓加了「JSON 可解析 + 条目数下限」自检。**下限要按实测定，别猜**：
-   初版写 `>1000` 把 CI 拦红了——上游 v1.0.1 实际只有 **504 条 / 39KB**，现取 300
-   （只拦「词典几乎为空」的真故障）。质量门宁可宽到只拦真故障，也不要拿臆测的规模当门。
-
-7. **宠物是纯 DOM，没有 Electron 那套 IPC/fs**：WKWebView 里拿不到 `ipcRenderer`，
-   所以 13 个内置角色（base64 data URL，约 3.2MB 原图 → 填充后 4.47MB）+ 45 条语录在
-   **构建期**打进 `gy/pet.js`（`pet-template.js` 的占位符由 node 替换）。
-   **两个实测坑**：① `String.replace` 只换**第一处**——模板头部注释里写了占位符字面量，
-   于是注释被换、真正的 `const PAYLOAD = …` 那行留着没换，CI 被 grep 门拦下
-   （门是对的， bug 是真的）；改用 `replaceAll` + 注释里不许出现占位符字面量，
-   并在填充后再 `node --check` 一次语法。② 导入失败提示**不要用 `alert()`**：
-   WKWebView 的 alert 要宿主实现 UIDelegate，Tauri 未必接，弹不出来等于静默失败；
-   改为写进挂件自己的气泡 DOM。
-   导入自己的图片走隐藏 `<input type=file>` + FileReader + **localStorage**（约 5MB 配额，
-   超了要提示而不是静默失败），设置也存 localStorage。素材与 antigravity 页内挂件同源
-   （`Widgets/antigravity-niang/characters` + `assets/quotes.json`），实现各写一份。
-
-8. **自更新未禁用，且 cask 不能写 `auto_updates true`**：Tauri updater 嵌在二进制里，
-   静态禁用代价过高。上游 `launch.sh` 的做法是每次启动检测签名被还原就重签（1–2 分钟 +
-   依赖用户目录里的脚本），本仓不引入这套——cask 成品应自包含。改为 caveats 明示
-   「一旦自更新，补丁被官方包覆盖、界面回英文 → `brew reinstall --cask`」。
-   连带：`auto_updates true` 会让 `brew upgrade` **跳过**这个 cask，补丁更新就永远送不到，
-   所以必须去掉（本包更新权归 brew）。
-   **自更新真的会跑，本机有实证**：Caskroom 登记还是 1.1.34，`/Applications` 里的 app
-   已经自己升到 1.4.3，且 `codesign --verify --deep` 报
-   `code object is not signed at all`（subcomponent `Frameworks/libfoundry_local.dylib`）
-   ——Tauri updater 换包后连嵌套签名都不补。所以「补丁会被覆盖」不是假想风险。
-   另：官方包的 entitlements 里有 `keychain-access-groups` / `application-identifier`
-   这类**受限 entitlement**（绑 team + provisionprofile），ad-hoc 重签必须丢掉它们
-   （否则 AMFI 校验 profile 与 team 不符直接杀进程），上游 sign.sh 同样只留那 4 条。
-   官方包还有一个上游没签的嵌套 dylib `Resources/oneauth-runtime/libOneAuthInterop.dylib`，
-   保留原签名即可（library validation 已关，加载不受影响），不要顺手 `--deep` 灌 entitlements。
-   **子进程载入注入库是预期行为**：bundle 内的 helper（git-credential-copilot /
-   computer-use 系）的 `mainBundle.bundleIdentifier` 也是 `com.github.githubapp`，
-   会过主程序判定、载入 dylib 并打一行 injected 日志——它们没有 WKWebView，无副作用，
-   上游同款判定同样如此，别当 bug 修。
-
-12. **本机验收证据（1.4.3-cn1，sha `181f96b5…`，CI 构建 + lint 全绿后安装）**：
-    `brew fetch --cask` 出 `✔︎ Cask github-copilot-app (1.4.3-cn1)`；安装后
-    `Contents/MacOS/` 为 32KB 启动器 `github` + 630MB `github-real`；quarantine 全包计数 **0**；
-    `codesign --verify --deep` 通过；`github-real` 的 entitlements 含
-    disable-library-validation + allow-dyld-environment-variables。
-    直接从安装位置起进程：`[gyWidgetCN] injected … pet=4469196 bytes`，
-    用户目录铺齐 runtime 五件 + `gy/pet.js`；上游 `copilot-cn.log` 出
-    `user script attached (46728 bytes)`，DOM dump 里是中文界面
-    （「正在加载 GitHub Copilot」「侧边栏」「拉取请求」「议题」…）；
-    **挂件挂载门实证**：t1500 的落地页 dump 无宠物气泡文本，t5000 的工作台 dump 含
-    「Ciallo～ 今天也请多关照。」——登录/落地页不挂、工作台挂，与 antigravity 同语义。
-    挂件 UI 另在浏览器里用填充后的 `pet.js` + 模拟 textarea 逐项验过
-    （挂载/卸载/回挂、13 角色菜单、缩放与角色跨刷新持久化）。
-
-13. **computer-use 必须保留：保留官方签名 + 一次性 host consent（用户报障→定案推翻「移除」）**。
-    症状：每次会话弹 `computer-use-mcp failed with exit status: 1: … permissions:
-    client is not authorized to use this service`。报错字符串在 helper
-    `Copilot Computer Use.app/Contents/MacOS/Copilot Computer Use` 里（不在 mcp 里），
-    strings 取证拿到它授权宿主的 requirement 模板：
-    `identifier "<id>" and anchor apple generic and (entitlement["com.apple.application-identifier"] = …
-    or entitlement["com.apple.developer.team-identifier"] = …)`，
-    配套日志串 `has no approved signed direct host` / `[peer_auth] could not automatically
-    authorize host pid …` / `retrying with the running Copilot CLI signature`。
-    **初版定案「移除插件」被用户否决（"必须要 computer-use"）**，继续取证找到活路：
-    helper 里有 `src/platform-macos/src/host_consent.rs` + `NSAlert … Approve / Reject`
-    （"The untrusted application '…' is requesting access to Copilot Computer Use."）——
-    自动鉴权失败后走**人工批准**，批准记录按宿主 DR 存（`application bundle changed
-    after approval; request approval again`）。ad-hoc 宿主的 DR 是 identifier 形态、
-    跨重签稳定，所以**点一次 Approve 就能长期生效**。
-    前提：helper 与 mcp **保持 GitHub 官方签名**（`Authority=Developer ID Application:
-    GitHub (VEKTX9H2N7)`，自动鉴权的 anchor/team 才成立；本机无可用 codesigning 身份，
-    「自签 Apple 链证书」路线不可行，`security find-identity` 0 valid）。
-    落地：`build.sh` 校验这两个二进制是官方签名后**原样保留、绝不重签**；app 本体重签
-    **不带 --deep**（不重签嵌套 Mach-O），签完再验一次官方签名完好。
-    实验证据：把官方插件目录拷回已装 app + 仅重签 app 本体后，用户在 UI 里触发
-    computer-use，**授权框真的弹出且 Approve 后功能可用**。
-    caveats / RELEASE-NOTES 写明「首次使用点 Approve，升级后再弹再点」。
-    旁证：本机 `~/Library/Caches/` 里另有 `cursor-computer-use` / `grok-bot-computer-use`
-    ——同一 computer-use 平台被多家 app 共用，别碰别人的状态目录。
-
-14. **主程序判定不能用 bundle id 兜底；覆盖用户目录要原子替换（cn2 实测竞态）**。
-    cn2 日志里 `git-credential-copilot` 子进程也打了 `[gyWidgetCN]` 并去覆盖词典：
-    bundle 内 helper 的 `mainBundle.bundleIdentifier` 同样是 `com.github.githubapp`，
-    「exe 后缀 **or** bundle id」的判定（照抄上游 CNIsMainApp）会把它们误判成主程序，
-    于是与主进程并发 remove+copy 用户目录的 dict.json，报
-    `couldn't be removed` / `already exists`，最坏让正在读词典的进程读到缺失文件。
-    修法两层：① `GyIsMainApp` **只认 exe 后缀** `github` / `github-real`（名字由
-    build.sh 自己改名控制，不依赖上游命名），去掉 bundle id 兜底；
-    ② `GySyncFile` 改「同目录临时文件 + `rename()`」原子替换，去掉 remove+copy 窗口期。
-    上游 CopilotCN 的判定不动（它只 swizzle + 起 poller，helper 里没有 WKWebView，无副作用）。
-
-9. **版本 / 检查器 / CI 顺序**：版本 `<宿主版本>-cn<N>`（宿主版本取 core cask API 的
-   `.version`，无构建号段）；tag `github-copilot-app-<版本>`、资产
-   `GitHub-Copilot-<版本>.dmg` + `.sha256` sidecar；检查器 `customRelease` + sidecar、
-   不开 `uploadRelease`（同 antigravity）。`patched.yml` 的步骤顺序是
-   **构建 → 把 sidecar 的 version/sha 写回工作区 cask → lint → 绿了才提交 cask**：
-   lint 必须在构建之后，才能审到「维护者将要提交的那份文件」；首轮 CI 就是因为
-   lint 在前、审到 main 上那份**资产名无版本的字面 url** 而红（`Use sha256 :no_check
-   when URL is unversioned`，11.43/11.53 的存量漂化）。新收录时 cask 的 sha 可先写
-   `PENDING_CI_SIDECAR`，由 workflow 填实——**占位只在 main 上短暂存在，CI 自愈**。
-   **cask 文本修正后不要重跑构建**：hdiutil 不逐字节可复现，重跑会换 sha、让刚填的 cask 失效；
-   用 `skip_build=true` 只跑 lint + 提交。本轮 lint 唯一的 offense 又是
-   `Cask/ArrayAlphabetization`（zap 里 `CopilotCN` 排在 `com.github.githubapp` 前——
-   cop 按 `strip.downcase` 排，`com…` < `cop…`，11.61 第 13 条的坑原样复发）。
-
-10. **裸 `clang` 在开发机找不到 SDK 头**（`stdio.h file not found`）：一律 `xcrun clang`
-    （CI 上裸 clang 可能可用，但别赌）。`xcrun swiftc` 同理（11.61 同轮踩过）。
-
-11. **`$VAR` 紧跟中文标点会被 bash 吞掉一个字节（CI 首轮 9 秒即红）**：
-    `say "官方包：$APP_VERSION（Intel 直链…"` 在 runner 上报
-    `APP_VERSION\xef: unbound variable`——bash 的变量名合法性判断走 `isalnum()`，
-    **受 locale 影响**，某些 locale 下高位字节（中文全角括号的首字节 0xEF）被当成名字的一部分。
-    开发机 locale 不同，`bash -n` 也查不出来（语法合法，运行才炸）。
-    修法：凡 `$VAR` 后面紧跟非 ASCII 字符，一律写 `${VAR}`。本轮用脚本扫全仓
-    `*.sh` 与 workflow（正则 `\$([A-Za-z_][A-Za-z0-9_]*)(?=[\x80-\xff])`），
-    copilot 6 处 + antigravity 7 处 + patched.yml 1 处全部加花括号。
-    **写含中文提示的 shell 时，变量一律带花括号**，别省。
+1. **dyld/签名/环境类假设先用几秒编译的最小探针验证，别拿 500MB 真包赌 CI**。
+   `/tmp` 造最小 app bundle（主程序 + 注入 dylib + 一个普通 ad-hoc 子进程），`open` 启动看日志：
+   实证 `LSEnvironment` + `@executable_path` 的 `DYLD_INSERT_LIBRARIES` 会让**子进程**按自身路径
+   展开 → 路径不存在 → dyld SIGABRT（`child_rc=6`）；改启动器设绝对路径后 `child_rc=0`。
+2. **`$VAR` 紧跟中文标点会被 bash 吞掉一个字节**：变量名合法性走 `isalnum()`、受 locale 影响，
+   runner 上 `$APP_VERSION（` 报 `APP_VERSION\xef: unbound variable`，`bash -n` 查不出。
+   凡 `$VAR` 后紧跟非 ASCII 一律 `${VAR}`；扫法正则 `\$([A-Za-z_][A-Za-z0-9_]*)(?=[\x80-\xff])`。
+3. **`String.replace` 只换第一处**：模板注释里写了占位符字面量就会抢先被换、真正赋值行留着没换；
+   用 `replaceAll` + 注释不许出现占位符字面量 + 填充后 `node --check`。
+4. **质量门的下限按实测定，别猜**：上游词典实际 504 条，臆测 `>1000` 会把 CI 拦红。
+5. **computer-use 的鉴权边界（若日后再碰）**：helper `Copilot Computer Use` 授权宿主的 requirement 是
+   `identifier "<id>" and anchor apple generic and (entitlement["com.apple.application-identifier"] = …
+   or entitlement["com.apple.developer.team-identifier"] = …)`，ad-hoc 宿主过不了自动鉴权；
+   但 helper 带 `host_consent.rs` 的 NSAlert（Approve/Reject），**点一次 Approve 按宿主 DR 存批准、
+   跨重签稳定**——前提是 helper/mcp 保持 GitHub 官方签名（`Developer ID Application: GitHub
+   (VEKTX9H2N7)`）、app 重签不带 `--deep`。本机 `security find-identity -p codesigning` 0 valid，
+   「自签 Apple 链证书」路线不可行。报错串 `client is not authorized to use this service` 在 helper 里不在 mcp 里。
+6. **bundle 内 helper 的 `mainBundle.bundleIdentifier` 与主程序相同**：注入库的主程序判定若用
+   bundle id 兜底，helper 会误判成主程序并发覆盖用户目录数据（实测竞态）；只认 exe 名 +
+   覆盖走「同目录临时文件 + rename」原子替换。
+7. **hdiutil 不逐字节可复现**：cask 文本修正后不要重跑构建（会换 sha），用 lint-only 模式复核。
+8. **`Cask/ArrayAlphabetization` 按 `strip.downcase` 排**：`com.github…` < `CopilotCN`，
+   大写开头的直觉排序必红（11.61 第 13 条同坑复发）。
 
 ## 12. 待办 / 后续演进
 

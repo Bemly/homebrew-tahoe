@@ -1,6 +1,6 @@
 name: Build patched cask artifacts
 
-# 补丁成品构建（antigravity / github-copilot-app）：官方 Intel 包 + 静态/运行时注入
+# 补丁成品构建（antigravity）：官方 Intel 包 + 静态/运行时注入
 # + ad-hoc 重签 + 重打 dmg + 传本仓 Release。**重活一律在 CI 跑，不在开发机跑**
 # （2026-11-21 用户纠正：本地 brew lint / 构建把 Intel 开发机卡死）。
 #
@@ -19,12 +19,10 @@ on:
       package:
         description: 要构建的补丁包
         required: true
-        default: github-copilot-app
+        default: antigravity
         type: choice
         options:
           - antigravity
-          - github-copilot-app
-          - all
       revision:
         description: 补丁序号 cn<N>（同宿主版本重打补丁时递增）
         required: false
@@ -78,16 +76,6 @@ jobs:
           [[ -n "${{ inputs.cn_ref }}" ]] && args+=(--cn-ref "${{ inputs.cn_ref }}")
           Widgets/antigravity-niang/build.sh "${args[@]}"
 
-      - name: Build github-copilot-app
-        id: copilot
-        if: (!inputs.skip_build) && (inputs.package == 'github-copilot-app' || inputs.package == 'all')
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          args=(--revision "${{ inputs.revision }}" --upload)
-          [[ -n "${{ inputs.version }}" ]] && args+=(--version "${{ inputs.version }}")
-          [[ -n "${{ inputs.cn_ref }}" ]] && args+=(--cn-ref "${{ inputs.cn_ref }}")
-          Widgets/github-copilot-cn/build.sh "${args[@]}"
 
       # 只改工作区（不提交）：把本次产物的版本号与 sha 写进 cask，供下一步 lint
       # 审「将要提交的那份文件」。构建失败/未选中的包没有 sidecar，cask 保持原样。
@@ -117,7 +105,6 @@ jobs:
             echo "== $cask → version $ver / sha256 $sha"
           }
           write_back antigravity-cn     antigravity        Antigravity
-          write_back github-copilot-cn  github-copilot-app GitHub-Copilot
           git --no-pager diff --stat -- Casks/
 
       - name: Lint casks（style + strict audit，CI 跑不占开发机）
@@ -140,14 +127,14 @@ jobs:
             exit 0
           fi
           git --no-pager diff -- Casks/
-          git add Casks/antigravity.rb Casks/github-copilot-app.rb
-          git commit -m "patched: 更新补丁包 cask 的 version/sha256（${{ inputs.package }} cn${{ inputs.revision }}）"
+          git add Casks/antigravity.rb
+          git commit -m "patched: 更新补丁包 cask 的 version/sha256（antigravity cn${{ inputs.revision }}）"
           git push origin HEAD:main
 
       - name: 打印 sidecar 与最终 cask 行
         if: always()
         run: |
-          for f in .build/antigravity-cn/*.dmg.sha256 .build/github-copilot-cn/*.dmg.sha256; do
+          for f in .build/antigravity-cn/*.dmg.sha256; do
             [[ -f "$f" ]] && { echo "== $f"; cat "$f"; }
           done
-          grep -n -E '^  (version|sha256) ' Casks/antigravity.rb Casks/github-copilot-app.rb
+          grep -n -E '^  (version|sha256) ' Casks/antigravity.rb
