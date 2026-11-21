@@ -16,6 +16,9 @@
 #import <objc/runtime.h>
 #import <dlfcn.h>
 #import <mach-o/dyld.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 static NSString *gBundleDir = nil;
 static NSString *gDataDir = nil;
@@ -35,15 +38,19 @@ static BOOL GyIsMainApp(void) {
   uint32_t size = sizeof(buf);
   if (_NSGetExecutablePath(buf, &size) != 0) return NO;
   NSString *exe = [NSString stringWithUTF8String:buf];
-  // 补丁包里官方主二进制被改名为 github-real（github 位置是注入启动器）。
-  if ([exe hasSuffix:@"/Contents/MacOS/github"]) return YES;
-  if ([exe hasSuffix:@"/Contents/MacOS/github-real"]) return YES;
-  return [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.github.githubapp"];
+  // 只认真主进程（补丁包里官方主二进制被改名为 github-real，github 位置是启动器）。
+  // **不要**用 mainBundle.bundleIdentifier 兜底：bundle 内的 helper
+  // （git-credential-copilot 等）bundle id 同样是 com.github.githubapp，会误判成主程序，
+  // 进而与主进程并发覆盖用户目录的词典/宠物（实测 remove/copy 竞态报错）。
+  // 主二进制名字由 build.sh 自己改名控制，不依赖上游命名稳定。
+  return [exe hasSuffix:@"/Contents/MacOS/github"] || [exe hasSuffix:@"/Contents/MacOS/github-real"];
 }
 
 // 每次启动都用包内版本覆盖用户目录的运行时文件：这些是包自带的只读数据
 // （词典/翻译脚本/宠物 payload），升级后必须跟着换，否则旧词典会一直留着。
 // 用户自己的数据在 dumps/queue/日志与宠物的 localStorage 里，不受影响。
+// 覆盖走「同目录临时文件 + rename」原子替换：直接 remove+copy 会有窗口期让
+// 正在读词典的进程读到缺失文件，多实例并发时还会互相踩。
 static void GySyncFile(NSString *src, NSString *dst) {
   NSFileManager *fm = [NSFileManager defaultManager];
   if (![fm fileExistsAtPath:src]) {
@@ -52,13 +59,15 @@ static void GySyncFile(NSString *src, NSString *dst) {
   }
   [fm createDirectoryAtPath:[dst stringByDeletingLastPathComponent]
       withIntermediateDirectories:YES attributes:nil error:NULL];
+  NSString *tmp = [dst stringByAppendingFormat:@".tmp-%d", getpid()];
   NSError *err = nil;
-  if ([fm fileExistsAtPath:dst] && ![fm removeItemAtPath:dst error:&err]) {
-    GyLog(@"remove failed %@: %@", dst, err.localizedDescription);
+  if (![fm copyItemAtPath:src toPath:tmp error:&err]) {
+    GyLog(@"copy failed %@ -> %@: %@", src, tmp, err.localizedDescription);
     return;
   }
-  if (![fm copyItemAtPath:src toPath:dst error:&err]) {
-    GyLog(@"copy failed %@ -> %@: %@", src, dst, err.localizedDescription);
+  if (rename(tmp.fileSystemRepresentation, dst.fileSystemRepresentation) != 0) {
+    GyLog(@"rename failed %@ -> %@: %s", tmp, dst, strerror(errno));
+    [fm removeItemAtPath:tmp error:NULL];
   }
 }
 

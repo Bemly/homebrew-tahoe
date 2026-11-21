@@ -2447,6 +2447,17 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
     旁证：本机 `~/Library/Caches/` 里另有 `cursor-computer-use` / `grok-bot-computer-use`
     ——同一 computer-use 平台被多家 app 共用，移除只影响本包，不碰别人的状态目录。
 
+14. **主程序判定不能用 bundle id 兜底；覆盖用户目录要原子替换（cn2 实测竞态）**。
+    cn2 日志里 `git-credential-copilot` 子进程也打了 `[gyWidgetCN]` 并去覆盖词典：
+    bundle 内 helper 的 `mainBundle.bundleIdentifier` 同样是 `com.github.githubapp`，
+    「exe 后缀 **or** bundle id」的判定（照抄上游 CNIsMainApp）会把它们误判成主程序，
+    于是与主进程并发 remove+copy 用户目录的 dict.json，报
+    `couldn't be removed` / `already exists`，最坏让正在读词典的进程读到缺失文件。
+    修法两层：① `GyIsMainApp` **只认 exe 后缀** `github` / `github-real`（名字由
+    build.sh 自己改名控制，不依赖上游命名），去掉 bundle id 兜底；
+    ② `GySyncFile` 改「同目录临时文件 + `rename()`」原子替换，去掉 remove+copy 窗口期。
+    上游 CopilotCN 的判定不动（它只 swizzle + 起 poller，helper 里没有 WKWebView，无副作用）。
+
 9. **版本 / 检查器 / CI 顺序**：版本 `<宿主版本>-cn<N>`（宿主版本取 core cask API 的
    `.version`，无构建号段）；tag `github-copilot-app-<版本>`、资产
    `GitHub-Copilot-<版本>.dmg` + `.sha256` sidecar；检查器 `customRelease` + sidecar、
