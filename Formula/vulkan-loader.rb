@@ -12,6 +12,11 @@ class VulkanLoader < Formula
     regex(/^vulkan-sdk[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "c37318b783770a38842d314449c2600a5b35eba65f0761b4105ea04510fc6aa6"
+  end
+
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe

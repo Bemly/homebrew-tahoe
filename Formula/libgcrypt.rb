@@ -11,6 +11,11 @@ class Libgcrypt < Formula
     regex(/href=.*?libgcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "b2aeeef16249ae79dc547ff7d1a5da1920b26e04fffb774c5b886a8c85881f71"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libgpg-error"
   depends_on macos: :tahoe

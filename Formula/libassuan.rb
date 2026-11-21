@@ -16,6 +16,11 @@ class Libassuan < Formula
     regex(/href=.*?libassuan[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "01844588c83dbfa43c48e4eac7866261fde0d8509adbbc93129698c121235049"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libgpg-error"
   depends_on macos: :tahoe

@@ -13,6 +13,11 @@ class SpirvTools < Formula
     regex(/^(?:vulkan[._-])?sdk[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "939f523bd6c4e7efb6301cc892452fc918f0aa1ef40c3fe2f18dddfc89b081c9"
+  end
+
   depends_on "spirv-headers" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
