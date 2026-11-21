@@ -1,7 +1,7 @@
 cask "github-copilot-app" do
   # 版本形态：<宿主版本>-cn<补丁序号>，与 antigravity 同约定（AGENTS 11.61 第 9 条）。
-  version "1.4.3-cn1"
-  sha256 "181f96b5cf0b4e8bc74b37a233b6b5d8ef66075b5d8680108d42b5c4afcd4fe8"
+  version "1.4.3-cn2"
+  sha256 "d146770c04ffda2623f0bdae44d9a640c7654943c9af5ccb714aebf17d48eec6"
 
   # 补丁成品整包（破例同 antigravity，AGENTS 1 节）：官方 Intel dmg 复制后注入两个
   # x86_64 dylib（上游 MIT 中文插件 CopilotCN + 本仓挂件 GyWidgetCN），官方主二进制
