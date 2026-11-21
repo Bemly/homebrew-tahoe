@@ -223,7 +223,7 @@ end
 | `pinentry` | 1.3.3 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libassuan`/`libgpg-error` |
 | `pixman` | 0.46.4 | core 同名接管（源码） | meson；qemu 依赖 |
 | `python@3.11` | 3.11.18 | core 拷入（源码） | `mpdecimal`/`sqlite`/fork-openssl@3/fork-xz；与 core 同名 |
-| `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；交叉工具链/qemu 构建依赖 |
+| `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；交叉工具链依赖 |
 | `python@3.15` | 3.15.2 | core 拷入（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；meson 依赖；与 core 同名 |
 | `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；`glib`/`gnutls`/`jpeg-turbo`/`libpng`/`libusb`/`lzo`/`ncurses`/`pixman`/`capstone`/`dtc`/`libslirp`/`vde`/fork-zstd |
 | `ripgrep` | 15.2.0 | core 拷入（源码） | fork-pcre2；opencode 依赖 |

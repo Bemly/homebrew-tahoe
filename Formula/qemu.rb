@@ -25,7 +25,7 @@ class Qemu < Formula
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
-  depends_on "bemly/tahoe/python@3.14" => :build # keep aligned with meson
+  depends_on "bemly/tahoe/python@3.15" => :build # keep aligned with meson
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/capstone"
   depends_on "bemly/tahoe/dtc"
@@ -99,7 +99,7 @@ class Qemu < Formula
     # obtain sensible runtime errors. This will also be compatible with
     # Samba installations from external taps.
     args << "--smbd=#{HOMEBREW_PREFIX}/sbin/samba-dot-org-smbd"
-    args << "--python=#{formula_opt_bin("bemly/tahoe/python@3.14")/"python3.14"}"
+    args << "--python=#{formula_opt_bin("bemly/tahoe/python@3.15")/"python3.15"}"
 
     # The arm64 HVF backend needs the macOS 15 SDK for its EL2 sysregs and vGIC
     args << "--disable-hvf" if OS.mac? && Hardware::CPU.arm? && MacOS.version <= :sonoma
