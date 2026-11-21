@@ -74,6 +74,9 @@ class Qemu < Formula
     # * keeps `pycotap` and `qemu_qmp` which are pure-python "none-any" wheels (allowed in homebrew/core)
     rm(Dir["python/wheels/*"] - Dir["python/wheels/{pycotap,qemu_qmp}-*-none-any.whl"])
 
+    # Python 3.15 no longer bundles `wheel` and setuptools builds wheels without it
+    inreplace "pythondeps.toml", /^"wheel" = .*\n/, ""
+
     args = %W[
       --prefix=#{prefix}
       --cc=#{ENV.cc}
