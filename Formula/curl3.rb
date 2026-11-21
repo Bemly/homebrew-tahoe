@@ -46,7 +46,7 @@ class Curl3 < Formula
   depends_on "bemly/tahoe/brotli"
   depends_on "bemly/tahoe/libpsl"
   depends_on "bemly/tahoe/libssh2"
-  depends_on "bemly/tahoe/fork-openssl@3"
+  depends_on "bemly/tahoe/fork-openssl@4"
   depends_on "bemly/tahoe/fork-zstd"
   depends_on "bemly/tahoe/libnghttp2"
   depends_on "bemly/tahoe/libnghttp3"
@@ -79,7 +79,7 @@ class Curl3 < Formula
       --disable-shared
       --disable-silent-rules
       --enable-proxy-http3
-      --with-ssl=#{formula_opt_prefix("bemly/tahoe/fork-openssl@3")}
+      --with-ssl=#{formula_opt_prefix("bemly/tahoe/fork-openssl@4")}
       --without-ca-bundle
       --without-ca-path
       --with-ca-fallback

@@ -198,7 +198,7 @@ end
 | `libksba` | 1.9.1 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libgpg-error` |
 | `libnghttp2` | 1.71.0 | core 同名接管（源码） | lib-only；curl3/nghttp2 依赖 |
 | `libnghttp3` | 1.19.0 | core 拷入（源码） | cmake；curl3 依赖 |
-| `libngtcp2` | 1.26.0 | core 拷入（源码） | cmake；fork-openssl@3 |
+| `libngtcp2` | 1.26.0 | core 拷入（源码） | cmake；fork-openssl@4 |
 | `libplist` | 2.8.1 | core 拷入（源码） | idevice 栈叶子 |
 | `libpng` | 1.6.59 | core 同名接管（源码） | autotools；qemu 依赖 |
 | `libpsl` | 0.23.3 | core 同名接管（源码） | autotools；curl3/wget 依赖 |
