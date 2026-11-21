@@ -6,6 +6,11 @@ class Lima < Formula
   license "Apache-2.0"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "e1f5a113d163c0d446198630833798f540a68eff63c5e52bd98380d4bfdc89df"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

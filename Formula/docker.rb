@@ -6,6 +6,11 @@ class Docker < Formula
   license "Apache-2.0"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "8cca0e72626a99b507459cae1884418436435435eea1ffadc41b440d1dac7afc"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

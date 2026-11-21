@@ -7,6 +7,11 @@ class Bun < Formula
   license "MIT"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "7246bafc5741696034d8fb48662f88994f298ffdee822b629c52f8e15f19c91e"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
