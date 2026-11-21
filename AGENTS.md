@@ -41,14 +41,14 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 137 个公式（含 39 个 fork-*）
+├── Formula/                           # 146 个公式（含 39 个 fork-*）
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python / swift 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 151 个检查器入口，与 Formula|Casks 一一同名
+│   └── <name>.swift                   # 160 个检查器入口，与 Formula|Casks 一一同名
 └── .github/workflows/
     ├── watch-updates.yml              # 手动触发的批量版本 watcher（ubuntu-latest + Swift）
     ├── bottle.yml                     # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
@@ -100,7 +100,7 @@ end
 
 ## 6. 当前收录
 
-> **137 个公式（含 39 个 `fork-*`）+ 25 个 cask**，`updater/` 共 151 个检查器（另有 `UpdaterCore.swift`）。
+> **146 个公式（含 39 个 `fork-*`）+ 25 个 cask**，`updater/` 共 160 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -176,13 +176,18 @@ end
 | `dtc` | 1.8.1 | core 拷入（源码） | 依赖 `libyaml`；qemu 依赖 |
 | `freeling` | 4.2.1 | core 同名接管（源码） | cmake；解捆自带 dynet/eigen；依赖本 tap `boost@1.85`/`icu4c@78`/`fork-dynet`；`revision` 与 core 同步 |
 | `git` | 2.56.1 | core 拷入（源码） | make；fork-pcre2/gettext/openssl@4；与 core 同名 |
+| `gnupg` | 2.5.24 | core 同名接管（源码） | autotools；依赖本 tap `fork-gnutls`/`fork-libusb`/`fork-readline`/`fork-gettext` + 同名 GnuPG C 库全家桶；`revision` 与 core 同步 |
 | `graphviz` | 16.1.1 | core 拷入（源码） | 零第三方渲染插件；autotools |
 | `guile` | 3.0.11 | core 同名接管（源码） | fork-bdw-gc/gmp/libunistring…；交叉工具链依赖 |
 | `icu4c@78` | 78.3 | core 同名接管（源码） | autotools；`keg_only`；freeling 依赖；`revision` 与 core 同步 |
 | `jemalloc` | 5.4.0 | core 同名接管（源码） | autotools；nghttp2 依赖 |
+| `libassuan` | 3.0.2 | core 同名接管（源码） | autotools；`gnupg`/`pinentry` 依赖；依赖 `libgpg-error` |
 | `libev` | 4.33 | core 同名接管（源码） | autotools；nghttp2 依赖 |
+| `libgcrypt` | 1.12.4 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libgpg-error` |
+| `libgpg-error` | 1.61 | core 同名接管（源码） | autotools；GnuPG 全家桶基础库；依赖 `fork-gettext` |
 | `libimobiledevice` | 1.4.0 | core 拷入（源码） | idevice 栈主包；30+ 工具；全部依赖自瓶化 |
 | `libimobiledevice-glue` | 1.3.3 | core 拷入（源码） | 依赖 `libplist` |
+| `libksba` | 1.9.1 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libgpg-error` |
 | `libnghttp2` | 1.71.0 | core 同名接管（源码） | lib-only；curl3/nghttp2 依赖 |
 | `libnghttp3` | 1.19.0 | core 拷入（源码） | cmake；curl3 依赖 |
 | `libngtcp2` | 1.26.0 | core 拷入（源码） | cmake；fork-openssl@3 |
@@ -197,6 +202,8 @@ end
 | `meson` | 1.12.1 | core 拷入（pip 安装） | 依赖本 tap `ninja` + `python@3.15`；与 core 同名 |
 | `neofetch` | 7.1.0 | GitHub archive tag（纯脚本） | 已归档最后一版；不检查更新 |
 | `nghttp2` | 1.71.0 | core 拷入（源码） | `--enable-app`；fork-c-ares/jemalloc/libev/libnghttp2 |
+| `npth` | 1.8 | core 同名接管（源码） | autotools；`gnupg` 依赖；零运行时依赖 |
+| `pinentry` | 1.3.3 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libassuan`/`libgpg-error` |
 | `python@3.11` | 3.11.18 | core 拷入（源码） | fork-* 依赖；与 core 同名 |
 | `python@3.15` | 3.15.2 | core 拷入（源码） | fork-*；meson 依赖；与 core 同名 |
 | `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；fork-* + capstone/dtc/libslirp/vde |
@@ -204,15 +211,17 @@ end
 | `simdjson` | 5.2.0 | core 同名接管（源码） | cmake |
 | `snappy` | 1.3.1 | core 同名接管（源码） | cmake；fork-pkgconf 构建 |
 | `socat` | 1.8.1.3 | core 拷入（源码） | fork-openssl@3；test 走回环 |
-| `svt-av1` | 4.3.0 | core 拷入（源码） | cmake |
+| `spirv-tools` | 1.4.363.0 | core 同名接管（源码） | cmake；`glslang` 等着色器工具链依赖；零运行时依赖（`spirv-headers` 为纯构建依赖 `all` 瓶） |
+| `svt-av1` | 4.3.0 | core 同名接管（源码） | cmake |
 | `vde` | 2.3.3 | core 拷入（源码） | 2016 旧代码需 `-std=gnu17` |
+| `vulkan-loader` | 1.4.363.0 | core 同名接管（源码） | cmake；Vulkan ICD Loader；运行时仅依赖 core `vulkan-headers`（`all` 瓶） |
 | `wabt` | 1.0.42 | core 拷入（源码） | cmake；fork-openssl@4 |
 | `wget` | 1.25.0 | core 拷入（源码） | fork-libidn2/libpsl/openssl@4/gettext |
 | `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
 
 ### 6.3 `fork-*` 依赖层（39 个）
 
-Homebrew 禁止跨 tap 安装同名包：有 core 依赖方的依赖不能同名接管，因此统一改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；没有 core 依赖方的则直接同名接管（`abseil`、`boost@1.85`、`freeling`、`guile`、`icu4c@78`、`jemalloc`、`libev`、`libnghttp2`、`libssh`、`libyaml`、`simdjson`、`snappy`）。`fork-*` 全部走 brew JSON 全量流，补丁随 `Patches/` 入库。
+Homebrew 禁止跨 tap 安装同名包：有 core 依赖方的依赖不能同名接管，因此统一改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；没有 core 依赖方的则直接同名接管（`abseil`、`boost@1.85`、`freeling`、`guile`、`icu4c@78`、`jemalloc`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libksba`、`libnghttp2`、`libssh`、`libyaml`、`npth`、`pinentry`、`simdjson`、`snappy`、`spirv-tools`）。`fork-*` 全部走 brew JSON 全量流，补丁随 `Patches/` 入库。
 
 | fork 公式 | 对应 core | 版本 | 说明 |
 | --- | --- | --- | --- |
@@ -399,7 +408,7 @@ brew trust bemly/tahoe
 
 ## 12. 后续演进
 
-- [ ] 补齐 11-18 watcher 升级后尚未制瓶的 6 个公式瓶块（`fork-glib`、`fork-gnutls`、`frida-server`、`gh`、`libssh`、`llvm-mingw`）。
+- [ ] 补齐 11-18 watcher 升级后尚未制瓶的 3 个公式瓶块（`frida-server`、`gh`、`llvm-mingw`）。
 - [ ] 在真实多包更新下持续验证 `watch-updates.yml` → 单次 `bottle.yml` 端到端链路稳定性。
 - [ ] 评估接入 `brew livecheck` 作为辅助版本验证手段。
 - [ ] 新增或移除公式 / cask 时，同步保持 `AGENTS.md §6`、`README.md`、`README.zh.md` 与 `updater/` 完全一致。

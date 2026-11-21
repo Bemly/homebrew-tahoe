@@ -9,6 +9,11 @@ class Libssh < Formula
 
   head "https://git.libssh.org/projects/libssh.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "ab438b96d39a92978641ca2b4436f1662e585c56557bf6f9289d952e0e753bbf"
+  end
+
   depends_on "cmake" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-openssl@4"

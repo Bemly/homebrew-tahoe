@@ -81,6 +81,8 @@ jobs:
           mkdir -p "$taps_dir"
           ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe"
           brew tap-info bemly/tahoe
+          # 清理 runner 镜像自带的过期 API 缓存与 core checkout，防止 vulkan-headers 等 core `all` 瓶命中旧版导致编译失配
+          rm -rf "$(brew --cache)/api" "$(brew --repository)/Library/Taps/homebrew/homebrew-core"
 
       # 新版本 Homebrew 要求显式信任 tap，否则会忽略公式、制瓶拿不到公式。
       # 软链进来的 tap 默认不受信任，这里整体信任本 tap。
@@ -254,6 +256,8 @@ jobs:
             for b in 2to3-3.11 idle3.11 pydoc3.11 python3.11 python3.11-config; do
               rm -f "${BREW_PREFIX}/bin/${b}"
             done
+            # 清理 runner 预装的旧版 headers，避免命中旧版 vulkan-headers / spirv-headers
+            brew uninstall --force --ignore-dependencies vulkan-headers spirv-headers >/dev/null 2>&1 || true
 
             # 全名依赖的同名 keg 冲突（2026-10-20 wabt 首例，node@24 预装同型，
             # 见 AGENTS.md 11.10）：macos-26-intel 镜像预装了 core 的 cmake 同名

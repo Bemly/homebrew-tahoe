@@ -331,6 +331,14 @@ func currentVersion(in content: String) -> String? {
         let trimmed = line.drop(while: { $0 == " " || $0 == "\t" })
         guard trimmed.hasPrefix(#"url ""#) else { continue }
         let s = String(trimmed)
+        let urlStr: String = {
+            if let um = firstMatch(#"^url[ \t]+"([^"]+)""#, in: s),
+               let ur = Range(um.range(at: 1), in: s) {
+                return String(s[ur])
+            }
+            return s
+        }()
+        let tail = "/" + (urlStr.split(separator: "/").last.map(String.init) ?? "")
         // url 行回退解析：点分段数字，另带可选的 semver 预发布后缀（-rc.1 / -alpha.2 …）。
         // 后缀只认关键词开头——平台后缀（-darwin / -x86_64 / -macos-amd64）不是版本，
         // 不能吞进来（hyperfine 的 1.20.0-x86_64 仍解析为 1.20.0）；
@@ -338,16 +346,23 @@ func currentVersion(in content: String) -> String? {
         // 新文件名的前缀，替换完变 dsh-0.1.2-rc.1-rc.2.tgz（残 URL，见 fish 同类）。
         // 两处收紧：后续点分组必须含数字（.2 行、.tgz 扩展名不行，否则连扩展名一起吞），
         // 关键词后允许直接跟数字（-rc1 形态）。
-        if let m = firstMatch(#"[^0-9]([0-9]+(?:\.[0-9]+)+(?:-(?:preview|alpha|beta|canary|rc|pre|dev|next)[0-9]*(?:\.(?:[0-9A-Za-z-]*[0-9])[0-9A-Za-z-]*)*)?)"#, in: s),
-           let r = Range(m.range(at: 1), in: s) {
-            return String(s[r])
-        }
-        // 日期版回退（llvm-mingw 首例：tag/文件名均为 20261020，无点分段）：
-        // brew 能从 URL 扫出纯数字日期版（audit 不允许多写 version 行），核心也要认，
-        // 否则 currentVersion 为 nil 直接 fail。只认 20 开头 8 位日期，避免误吞 x64 的 64。
-        if let m = firstMatch(#"[^0-9](20[0-9]{6})(?![0-9])"#, in: s),
-           let r = Range(m.range(at: 1), in: s) {
-            return String(s[r])
+        // 优先从文件名段（最后一个 '/' 之后）匹配，避免 /glib/2.90/glib-2.90.1.tar.xz、
+        // /gnutls/v3.8/gnutls-3.8.13.tar.xz、/files/0.12/libssh-0.12.2.tar.xz 先命中目录段；
+        // 文件名无版本（如 docker-compose-darwin-x86_64）再回退整条 URL。
+        let semverPattern = #"[^0-9]([0-9]+(?:\.[0-9]+)+(?:-(?:preview|alpha|beta|canary|rc|pre|dev|next)[0-9]*(?:\.(?:[0-9A-Za-z-]*[0-9])[0-9A-Za-z-]*)*)?)"#
+        let datePattern = #"[^0-9](20[0-9]{6})(?![0-9])"#
+        for scope in [tail, urlStr] {
+            if let m = firstMatch(semverPattern, in: scope),
+               let r = Range(m.range(at: 1), in: scope) {
+                return String(scope[r])
+            }
+            // 日期版回退（llvm-mingw 首例：tag/文件名均为 20261020，无点分段）：
+            // brew 能从 URL 扫出纯数字日期版（audit 不允许多写 version 行），核心也要认，
+            // 否则 currentVersion 为 nil 直接 fail。只认 20 开头 8 位日期，避免误吞 x64 的 64。
+            if let m = firstMatch(datePattern, in: scope),
+               let r = Range(m.range(at: 1), in: scope) {
+                return String(scope[r])
+            }
         }
     }
     return nil
@@ -502,6 +517,7 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     var bottleStale = false
     var skipping = false
     var urlReplaced = false
+    var shaReplaced = false
     var versionReplaced = false
     var archMatched = Set<String>()
     var inArchSha = false
@@ -554,10 +570,12 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
             } else {
                 inArchSha = false
             }
-        } else if let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
-            // 主 sha256 行（瓶块行是 sha256 cellar: ... 形态，天然不匹配）
+        } else if !shaReplaced, let m = shaLine.firstMatch(in: replaced, range: fullRange(replaced)) {
+            // 主 sha256 行（瓶块行是 sha256 cellar: ... 形态，天然不匹配）；
+            // 只处理第一条（resource / patch 块若有自己的 sha256 不受影响）。
             let indent = (replaced as NSString).substring(with: m.range(at: 1))
             replaced = "\(indent)sha256 \"\(sha)\""
+            shaReplaced = true
         }
         // 只处理第一条 url 定义行（resource 块若有自己的 url 不受影响）
         if !urlReplaced, isURLDefinitionLine(replaced) {

@@ -152,6 +152,9 @@ brew install --cask bemly/tahoe/antigravity
 | `docker` | Docker 命令行客户端，取官方 macOS x86_64 静态二进制（`docker-<ver>.tgz`）并生成补全；与 core 同名 |
 | `lima` | macOS 上的 Linux 虚拟机工具（`limactl`/`lima` 等），取官方 `lima-<ver>-Darwin-x86_64.tar.gz` 预编译包并生成补全；与 core 同名 |
 | `mercurial` | 分布式版本控制系统（`hg` + `chg`），使用本 tap 的 `python@3.11` 源码现编出瓶；与 core 同名 |
+| `spirv-tools` | SPIR-V 着色器优化与校验工具集，core 拷入源码现编出瓶（零运行时依赖）；与 core 同名 |
+| `vulkan-loader` | Vulkan ICD 加载器，core 拷入源码现编出瓶（仅依赖 core 的 `vulkan-headers` `all` 瓶）；与 core 同名 |
+| `gnupg` | GNU Privacy Guard（OpenPGP），core 拷入源码现编出瓶，复用本源 `fork-gnutls`/`fork-libusb`/`fork-readline`/`fork-gettext` 与同名接管的 `libassuan`/`libgcrypt`/`libgpg-error`/`libksba`/`npth`/`pinentry`；与 core 同名 |
 
 ## 注意事项（同名冲突）
 
@@ -187,7 +190,8 @@ brew install bemly/tahoe/meson
 `libev`、`libnghttp2`、`libssh`、`libyaml`、`simdjson`、`snappy`、`zig`、`swift`、`fzf`、
 `protobuf`、`z3`、`wimlib`、`ripgrep`、`dotnet`、`freeling`、`boost@1.85`、`icu4c@78`、
 `postgresql@13`、`chisel`、`exiftool`、`opencode`、`jadx`、`xcodegen`、`starship`、`bun`、
-`docker`、`lima`、`mercurial` 等）和同名 cask（`zcode`、`lody`、
+`docker`、`lima`、`mercurial`、`spirv-tools`、`vulkan-loader`、`gnupg`、`libassuan`、`libgcrypt`、
+`libgpg-error`、`libksba`、`npth`、`pinentry` 等）和同名 cask（`zcode`、`lody`、
 `qoder`、`github-copilot-app`、`wireshark`、`checkra1n`、`palera1n`、`antigravity`；
 `blender-5x` 虽不同 token，但同样会装进 `/Applications/Blender.app` 与 core 的 `blender` 冲突）
 装前均须先卸另一方。`fork-*` 是改名包，与 core 不冲突，不需要卸载。

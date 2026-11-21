@@ -164,6 +164,9 @@ brew install --cask bemly/tahoe/antigravity
 | `docker` | Docker CLI, official macOS x86_64 static binary (`docker-<ver>.tgz`) with generated completions; same-name conflict with core |
 | `lima` | Linux virtual machines (`limactl`/`lima` and friends), official `lima-<ver>-Darwin-x86_64.tar.gz` prebuilt with generated completions; same-name conflict with core |
 | `mercurial` | Distributed version control system (`hg` + `chg`), built from source on Intel with this tap's `python@3.11`; same-name conflict with core |
+| `spirv-tools` | SPIR-V shader optimizer/validator tools, compiled from core sources (zero runtime dependencies); same-name conflict with core |
+| `vulkan-loader` | Vulkan ICD Loader, compiled from core sources (depends only on core's `vulkan-headers` `all` bottle); same-name conflict with core |
+| `gnupg` | GNU Privacy Guard (OpenPGP), compiled from core sources reusing this tap's `fork-gnutls`/`fork-libusb`/`fork-readline`/`fork-gettext` together with same-name `libassuan`, `libgcrypt`, `libgpg-error`, `libksba`, `npth`, and `pinentry`; same-name conflict with core |
 
 ## Switching sources (same-name conflict)
 
@@ -200,7 +203,8 @@ Other same-name formulae (`node`, `node@20`/`22`/`24`, `go`, `cmake`, `git`, `ba
 `jemalloc`, `libev`, `libnghttp2`, `libssh`, `libyaml`, `simdjson`, `snappy`, `zig`,
 `swift`, `fzf`, `protobuf`, `z3`, `wimlib`, `ripgrep`, `dotnet`, `freeling`, `boost@1.85`,
 `icu4c@78`, `postgresql@13`, `chisel`, `exiftool`, `opencode`, `jadx`, `xcodegen`, `starship`,
-`bun`, `docker`, `lima`, `mercurial`, etc.) and same-token casks
+`bun`, `docker`, `lima`, `mercurial`, `spirv-tools`, `vulkan-loader`, `gnupg`, `libassuan`,
+`libgcrypt`, `libgpg-error`, `libksba`, `npth`, `pinentry`, etc.) and same-token casks
 (`zcode`, `lody`, `qoder`, `github-copilot-app`, `wireshark`, `checkra1n`, `palera1n`,
 `antigravity`; `blender-5x` also shares `/Applications/Blender.app` with core's `blender`)
 must likewise be uninstalled before switching taps.
