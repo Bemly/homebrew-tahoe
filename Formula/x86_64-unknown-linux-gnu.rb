@@ -7,16 +7,12 @@ class X8664UnknownLinuxGnu < Formula
   sha256 "d82e9eb461939fe079b47c0a55c9c4130310507eeb55e60f076e65f3d4c6cb1e"
   license "GPL-3.0-or-later" => { with: "GCC-exception-3.1" }
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "9cfb99b36a709b403192e1de6843e9684ac6cf273776793c8f4c3178a1457f84"
-  end
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # 运行时依赖走本源 fork-* 与同名接管瓶（guile），用户端零源码编译。
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-bdw-gc"
   depends_on "bemly/tahoe/fork-python@3.14"
+  depends_on "bemly/tahoe/fork-xz"
   depends_on "bemly/tahoe/fork-zstd"
   depends_on "bemly/tahoe/guile"
   depends_on macos: :tahoe
@@ -41,6 +37,15 @@ class X8664UnknownLinuxGnu < Formula
     # 用 ./* 通配兼容下降与否（照抄上游 install）。
     (prefix/"toolchain").install Dir["./*"]
     Dir.glob(prefix/"toolchain/bin/*") { |file| bin.install_symlink file }
+
+    # 预编译 gdb 硬编码链接了 core 的 python@3.14 与 xz，重指到本源 fork-* 避免拖入 core 依赖
+    gdb = prefix/"toolchain/bin/x86_64-unknown-linux-gnu-gdb"
+    system "install_name_tool",
+           "-change", "/usr/local/opt/python@3.14/Frameworks/Python.framework/Versions/3.14/Python",
+                      "#{Formula["bemly/tahoe/fork-python@3.14"].opt_prefix}/Frameworks/Python.framework/Versions/3.14/Python",
+           "-change", "/usr/local/opt/xz/lib/liblzma.5.dylib",
+                      "#{Formula["bemly/tahoe/fork-xz"].opt_lib}/liblzma.5.dylib",
+           gdb.to_s
 
     # 校验放在 install 尾部：brew 6 已废弃 def post_install（见 11.37），
     # 新公式用声明式 post_install_steps 才过 style，此处直接在 install 内断言。
