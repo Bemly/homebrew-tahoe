@@ -146,6 +146,12 @@ brew install --cask bemly/tahoe/antigravity
 | `wimlib` | 创建 / 解包 / 修改 Windows Imaging（WIM）映像的库与 `wimlib-imagex` 工具集，core 拷入源码现编（autotools，`fork-pkgconf` 构建）；macOS 上零运行时依赖 |
 | `antigravity` | Google Antigravity 智能体 IDE，**分发的是打补丁后的成品**：解包官方 Intel dmg → 静态改写 `app.asar`（中文汉化 + 模型名补充词典：哈基米/氖/氩/克劳德/十四行诗等 + 右下角 Gemini 伴生挂件：额度剩余与重置时间、可导入自己的图片换立绘；同时禁用应用内自动更新，避免补丁被官方新包覆盖）→ ad-hoc 重签名 → 镜像到本仓 Release。构建可复现（`Widgets/antigravity-niang/build.sh`），版本跟随 core cask + 本 Release 的 `.sha256` sidecar。安装后 cask 会清掉 brew 打的隔离属性，正常免 Gatekeeper 弹窗（ad-hoc 重签、无公证）；与 core 的未打补丁同名 cask 不能共存，先卸一方再装 |
 | `jadx` | Dex 转 Java 反编译器（含 `jadx` 与 `jadx-gui`），直接取官方 `jadx-<ver>.zip` 预编译包；依赖本 tap 的 `openjdk`；与 core 同名 |
+| `xcodegen` | 按配置文件生成 Xcode 工程，取官方 universal 预编译包（`xcodegen.zip`，含 `SettingPresets`，零依赖）；与 core 同名 |
+| `starship` | 跨 Shell 提示符工具，取官方 x86_64 预编译包（`starship-x86_64-apple-darwin.tar.gz`）并生成补全；与 core 同名 |
+| `bun` | JS 运行时 / 打包 / 包管理器，取官方 Intel 预编译包（`bun-darwin-x64.zip`，提供 `bun` 与 `bunx` 软链）；与 core 同名 |
+| `docker` | Docker 命令行客户端，取官方 macOS x86_64 静态二进制（`docker-<ver>.tgz`）并生成补全；与 core 同名 |
+| `lima` | macOS 上的 Linux 虚拟机工具（`limactl`/`lima` 等），取官方 `lima-<ver>-Darwin-x86_64.tar.gz` 预编译包并生成补全；与 core 同名 |
+| `mercurial` | 分布式版本控制系统（`hg` + `chg`），使用本 tap 的 `python@3.11` 源码现编出瓶；与 core 同名 |
 
 ## 注意事项（同名冲突）
 
@@ -180,7 +186,8 @@ brew install bemly/tahoe/meson
 `aria2`、`automake`、`abseil`、`svt-av1`、`python@3.11`、`openjdk*`、`guile`、`jemalloc`、
 `libev`、`libnghttp2`、`libssh`、`libyaml`、`simdjson`、`snappy`、`zig`、`swift`、`fzf`、
 `protobuf`、`z3`、`wimlib`、`ripgrep`、`dotnet`、`freeling`、`boost@1.85`、`icu4c@78`、
-`postgresql@13`、`chisel`、`exiftool`、`opencode`、`jadx` 等）和同名 cask（`zcode`、`lody`、
+`postgresql@13`、`chisel`、`exiftool`、`opencode`、`jadx`、`xcodegen`、`starship`、`bun`、
+`docker`、`lima`、`mercurial` 等）和同名 cask（`zcode`、`lody`、
 `qoder`、`github-copilot-app`、`wireshark`、`checkra1n`、`palera1n`、`antigravity`；
 `blender-5x` 虽不同 token，但同样会装进 `/Applications/Blender.app` 与 core 的 `blender` 冲突）
 装前均须先卸另一方。`fork-*` 是改名包，与 core 不冲突，不需要卸载。

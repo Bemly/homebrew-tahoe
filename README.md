@@ -158,6 +158,12 @@ brew install --cask bemly/tahoe/antigravity
 | `wimlib` | Library plus the `wimlib-imagex` tools to create, extract and modify Windows Imaging (WIM) files, built from core sources on Intel (autotools, built with `fork-pkgconf`); no runtime dependencies on macOS |
 | `antigravity` | Google Antigravity agent IDE, **shipped as a patched artifact**: the official Intel dmg is unpacked, `app.asar` is rewritten statically (Chinese localization + an extra model-name dictionary (Gemini→哈基米, element codenames→periodic-table characters, Claude→克劳德…) + an in-page Gemini companion widget showing quota and reset time, with your own images importable as the character; in-app auto-update disabled so the patch cannot be overwritten) and the app is re-signed ad-hoc, then the dmg is mirrored to this repo's releases. Built reproducibly by `Widgets/antigravity-niang/build.sh`; version tracked from the core cask plus this release's `.sha256` sidecar. the cask clears brew's quarantine flag after install so it opens without a Gatekeeper prompt (ad-hoc re-sign, no notarization); shares its token with core's unpatched `antigravity` cask — uninstall one before installing the other |
 | `jadx` | Dex to Java decompiler (`jadx` and `jadx-gui`), repackaged from the official `jadx-<ver>.zip` prebuilt release; depends on this tap's `openjdk`; same-name conflict with core |
+| `xcodegen` | Generate Xcode projects from a spec file, official universal prebuilt (`xcodegen.zip` with `SettingPresets`, zero dependencies); same-name conflict with core |
+| `starship` | Cross-shell prompt, official x86_64 prebuilt (`starship-x86_64-apple-darwin.tar.gz`) with generated shell completions; same-name conflict with core |
+| `bun` | JavaScript runtime/bundler/package manager, official Intel prebuilt (`bun-darwin-x64.zip`, ships `bun` + `bunx` symlink); same-name conflict with core |
+| `docker` | Docker CLI, official macOS x86_64 static binary (`docker-<ver>.tgz`) with generated completions; same-name conflict with core |
+| `lima` | Linux virtual machines (`limactl`/`lima` and friends), official `lima-<ver>-Darwin-x86_64.tar.gz` prebuilt with generated completions; same-name conflict with core |
+| `mercurial` | Distributed version control system (`hg` + `chg`), built from source on Intel with this tap's `python@3.11`; same-name conflict with core |
 
 ## Switching sources (same-name conflict)
 
@@ -193,7 +199,8 @@ Other same-name formulae (`node`, `node@20`/`22`/`24`, `go`, `cmake`, `git`, `ba
 `wget`, `aria2`, `automake`, `abseil`, `svt-av1`, `python@3.11`, `openjdk*`, `guile`,
 `jemalloc`, `libev`, `libnghttp2`, `libssh`, `libyaml`, `simdjson`, `snappy`, `zig`,
 `swift`, `fzf`, `protobuf`, `z3`, `wimlib`, `ripgrep`, `dotnet`, `freeling`, `boost@1.85`,
-`icu4c@78`, `postgresql@13`, `chisel`, `exiftool`, `opencode`, `jadx`, etc.) and same-token casks
+`icu4c@78`, `postgresql@13`, `chisel`, `exiftool`, `opencode`, `jadx`, `xcodegen`, `starship`,
+`bun`, `docker`, `lima`, `mercurial`, etc.) and same-token casks
 (`zcode`, `lody`, `qoder`, `github-copilot-app`, `wireshark`, `checkra1n`, `palera1n`,
 `antigravity`; `blender-5x` also shares `/Applications/Blender.app` with core's `blender`)
 must likewise be uninstalled before switching taps.

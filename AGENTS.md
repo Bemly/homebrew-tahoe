@@ -41,14 +41,14 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 131 个公式（含 39 个 fork-*）
+├── Formula/                           # 137 个公式（含 39 个 fork-*）
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python / swift 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 145 个检查器入口，与 Formula|Casks 一一同名
+│   └── <name>.swift                   # 151 个检查器入口，与 Formula|Casks 一一同名
 └── .github/workflows/
     ├── watch-updates.yml              # 手动触发的批量版本 watcher（ubuntu-latest + Swift）
     ├── bottle.yml                     # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
@@ -100,7 +100,7 @@ end
 
 ## 6. 当前收录
 
-> **131 个公式（含 39 个 `fork-*`）+ 25 个 cask**，`updater/` 共 145 个检查器（另有 `UpdaterCore.swift`）。
+> **137 个公式（含 39 个 `fork-*`）+ 25 个 cask**，`updater/` 共 151 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -109,11 +109,13 @@ end
 | `aarch64-unknown-linux-gnu` | 15.2.0 | messense 交叉工具链 GitHub Releases | 只收 Intel host 段；交叉到 aarch64 Linux；github 流 + `.sha256` sidecar |
 | `antigravity-cli` | 1.5.13 | Google GCS `antigravity-public` 的 `cli_mac_x64.tar.gz`（按构建号分目录） | 扁平裸二进制装成 `agy`；customRelease 跟官方 auto-updater manifest（只给 sha512，核心回退下载实算）；core 无同名公式 |
 | `boost@1.85` | 1.85.0 | MarkusJx/prebuilt-boost GitHub `boost-<ver>-macos-13-clang-static+shared-x86.tar.gz` | 第三方预编译 static+shared；dylib 补 `@rpath` + ad-hoc 重签；与 core 同名；freeling 依赖 |
+| `bun` | 1.4.5 | GitHub `bun-darwin-x64.zip` | 单二进制 + `bunx` 软链；显式 version 行；github 流（tag `bun-v`）+ `SHASUMS256.txt`；与 core 同名 |
 | `caddy` | 2.11.9 | 官方 `caddy_<ver>_mac_amd64.tar.gz` | 扁平包；H2/H3 基线；brew 模板流 |
 | `chisel` | 1.12.0 | GitHub `chisel_<ver>_darwin_amd64.gz` | gzip 裸二进制；github 流；与 core 同名异物 |
 | `cmake` | 4.5.0 | Kitware GitHub `cmake-<ver>-macos-universal.tar.gz` | universal；core 无 Intel 瓶；brew 模板流 |
 | `cmd` | 1.45.0 | npm `command-code` tarball | 纯 JS 装进 libexec；依赖本 tap node；不检查更新 |
 | `deepseek-harness` | 0.2.2-rc.1 | npm `@deepseek-ai/dsh` tarball | 纯 JS；`dsh web`；依赖本 tap node；跟 npm latest |
+| `docker` | 29.10.0 | Docker 官方 `mac/static/stable/x86_64/docker-<ver>.tgz` | Docker 静态 CLI + 自动生成补全；brew 模板流；与 core 同名 |
 | `docker-buildx` | 0.39.0 | GitHub 裸二进制 `buildx-v<ver>.darwin-amd64` | brew 模板流 |
 | `docker-compose` | 5.8.0 | GitHub 裸二进制 `docker-compose-darwin-x86_64` | 文件名无版本；brew 模板流 |
 | `dotnet` | 11.0.100 | 官方 builds.dotnet.microsoft.com `dotnet-sdk-<ver>-osx-x64.tar.gz` | .NET SDK；整包进 prefix + `write_exec_script`；显式 version 行；customRelease 跟 release-metadata API；与 core 同名 |
@@ -133,6 +135,7 @@ end
 | `hyperfine` | 2.0.0 | GitHub `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz` | 带 man/补全；brew 模板流 |
 | `iperf3` | 3.22 | userdocs `iperf3-amd64-osx-15` | 静态零依赖；customRelease 取最大世代 |
 | `jadx` | 1.5.7 | GitHub `jadx-<ver>.zip` | 官方预编译（`jadx` + `jadx-gui`）；依赖本 tap `openjdk`；github 流；与 core 同名 |
+| `lima` | 2.3.0 | GitHub `lima-<ver>-Darwin-x86_64.tar.gz` | 官方预编译全套 bin/libexec/share；github 流 + `SHA256SUMS`；与 core 同名 |
 | `llvm` | 19.1.7 | GitHub `LLVM-19.1.7-macOS-X64.tar.xz` | pinned（20+ 仅 ARM64）；keg-only；`LIBCLANG_PATH` |
 | `llvm-mingw` | 20261117 | mstorsjo/llvm-mingw 预编译 | Intel host 交叉到 Windows；github 流 |
 | `mufetch` | 0.1.1 | GitHub `mufetch_darwin_x86_64.tar.gz` | tar 无顶层目录；sha 走 checksums.txt |
@@ -151,9 +154,11 @@ end
 | `rustup` | 1.29.3 | static.rust-lang.org 裸二进制 | cargo/rustc 垫片；跟 release-stable.toml |
 | `scrcpy` | 5.0.1 | GitHub `scrcpy-macos-x86_64-v<ver>.tar.gz` | 静态；整包进 libexec |
 | `sst` | 4.17.2 | anomalyco raw（Intel 段） | `sst version` 取版本 |
+| `starship` | 1.27.0 | GitHub `starship-x86_64-apple-darwin.tar.gz` | 单二进制 + 生成补全；github 流；与 core 同名 |
 | `swift` | 6.4.2 | swift.org 官方 `swift-<ver>-RELEASE-osx.pkg` | 重打包只暴露 `swift`/`swiftc`；customRelease |
 | `torpedo` | 0.0.13 | anomalyco raw（Intel 段） | 无版本命令，不做版本自检 |
 | `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译（Intel host） | 203MB；`.sha256` sidecar；运行时依赖走本源 `fork-*` 与 `guile` |
+| `xcodegen` | 2.48.0 | GitHub `xcodegen.zip` | 官方 universal 预编译（二进制 + `SettingPresets`）；github 流；与 core 同名 |
 | `yt-dlp` | 2026.10.26 | GitHub `yt-dlp_macos` 单二进制 | universal；零依赖；brew 模板流 |
 | `z3` | 5.3.3 | 官方 `z3-<ver>-x64-osx-13.3.zip` | 预编译；显式 version（URL 会扫成 13.3） |
 | `zig` | 0.17.1 | 官方 `zig-x86_64-macos-<ver>.tar.xz` | 预编译；与 core 同名 |
@@ -188,6 +193,7 @@ end
 | `libusbmuxd` | 2.1.1 | core 拷入（源码） | idevice USB 复用；revision 同步 |
 | `libyaml` | 0.2.5 | core 同名接管（源码） | autotools；dtc 依赖 |
 | `make` | 4.4.1 | core 拷入（源码） | 装成 `gmake`；与 core 同名 |
+| `mercurial` | 7.2.4 | core 拷入（源码） | `pip install` + `contrib/chg`；依赖本 tap `python@3.11`（避开 Python 3.15 反爬补丁）；与 core 同名 |
 | `meson` | 1.12.1 | core 拷入（pip 安装） | 依赖本 tap `ninja` + `python@3.15`；与 core 同名 |
 | `neofetch` | 7.1.0 | GitHub archive tag（纯脚本） | 已归档最后一版；不检查更新 |
 | `nghttp2` | 1.71.0 | core 拷入（源码） | `--enable-app`；fork-c-ares/jemalloc/libev/libnghttp2 |
