@@ -48,7 +48,11 @@ cask "github-copilot-app" do
          数据与词典在 ~/Library/Application Support/CopilotCN；
       3. 注入靠包内启动器（Contents/MacOS/github 是启动器，官方主二进制改名为
          github-real）+ ad-hoc 重签（带 disable-library-validation entitlement），
-         安装后已清隔离属性，正常免弹窗。
+         安装后已清隔离属性，正常免弹窗；
+      4. computer-use 插件已移除：它的 helper 只认 Apple 证书链 + GitHub team
+         entitlement 的宿主签名（anchor apple generic），ad-hoc 重签的补丁包永远
+         过不了鉴权，留着只会反复弹 "client is not authorized to use this service"。
+         需要 computer-use 请装官方未补丁包（core 的 github-copilot-app）。
 
     应用内自动更新**未禁用**（Tauri updater 嵌在二进制里，静态禁用代价过高）：
     一旦它自更新，补丁会被官方包覆盖、界面回到英文。更新一律走本 tap：

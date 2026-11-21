@@ -88,6 +88,23 @@ APP="$WORK/GitHub Copilot.app"
 [[ -f "$APP/Contents/MacOS/github" ]] || die "主二进制不是 Contents/MacOS/github，包结构变了"
 file "$APP/Contents/MacOS/github" | grep -q x86_64 || die "官方包不是 x86_64"
 
+say "移除 computer-use 插件（ad-hoc 重签下它必然鉴权失败）"
+# 它的 helper（Copilot Computer Use）授权宿主用的 requirement 是
+#   identifier "<id>" and anchor apple generic and
+#   (entitlement["com.apple.application-identifier"] = … or
+#    entitlement["com.apple.developer.team-identifier"] = …)
+# anchor apple generic 要求 Apple 证书链 + GitHub team entitlement，ad-hoc 签名
+# 永远过不了（strings 取证，见 AGENTS 11.62）。留着只会每次会话弹
+# "client is not authorized to use this service"。需要 computer-use 请用官方未补丁包。
+CU="$APP/Contents/Resources/plugins/computer-use"
+if [[ -d "$CU" ]]; then
+  rm -rf "$CU"
+  echo "  已移除 Contents/Resources/plugins/computer-use"
+else
+  echo "  官方包已无 computer-use 目录（上游可能自己删了），跳过"
+fi
+[[ ! -e "$CU" ]] || die "computer-use 目录移除失败"
+
 say "取中文插件源码"
 if [[ -z "$CN_REF" ]]; then
   CN_REF="$(git ls-remote --tags "https://github.com/$ZH_REPO" 2>/dev/null \
@@ -210,12 +227,7 @@ done
 if [[ -f "$C/MacOS/git-credential-copilot" ]]; then
   sign_one --options runtime --entitlements "$WORK/ent-git-credential.plist" "$C/MacOS/git-credential-copilot"
 fi
-if [[ -f "$C/Resources/plugins/computer-use/computer-use-mcp" ]]; then
-  sign_one --options runtime "$C/Resources/plugins/computer-use/computer-use-mcp"
-fi
-if [[ -d "$C/Resources/plugins/computer-use/Copilot Computer Use.app" ]]; then
-  sign_one --deep --options runtime "$C/Resources/plugins/computer-use/Copilot Computer Use.app"
-fi
+# computer-use 插件已在前面整体移除（鉴权硬边界），这里不再签它的两个二进制。
 # 真正被注入的是 github-real（启动器 exec 过去的主二进制）：它必须自己带
 # disable-library-validation + allow-dyld-environment-variables，否则 dyld 会剥掉
 # 启动器设的 DYLD_INSERT_LIBRARIES。不带 --deep 的 codesign 不会重签嵌套 Mach-O，
