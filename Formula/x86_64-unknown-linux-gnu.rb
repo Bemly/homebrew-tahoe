@@ -7,6 +7,11 @@ class X8664UnknownLinuxGnu < Formula
   sha256 "d82e9eb461939fe079b47c0a55c9c4130310507eeb55e60f076e65f3d4c6cb1e"
   license "GPL-3.0-or-later" => { with: "GCC-exception-3.1" }
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "9cfb99b36a709b403192e1de6843e9684ac6cf273776793c8f4c3178a1457f84"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # 运行时依赖走本源 fork-* 与同名接管瓶（guile），用户端零源码编译。
   depends_on arch: :x86_64

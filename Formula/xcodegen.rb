@@ -6,6 +6,11 @@ class Xcodegen < Formula
   license "MIT"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "102978fcca524339bd3fae2e86d0a45a3ef7f7dd17fa9752b153b4c90b6da720"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

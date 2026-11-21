@@ -7,6 +7,11 @@ class Mercurial < Formula
   license "GPL-2.0-or-later"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "0de87d24ea05036ae42b4baf129b1b3879b66a047559d742c22e625a64bcbce3"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/python@3.11"
   depends_on macos: :tahoe

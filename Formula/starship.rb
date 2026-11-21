@@ -5,6 +5,11 @@ class Starship < Formula
   sha256 "344e4d38787e0aa86dd522ae5462e6fb6da1227691f81a79ffed480a4563ccb3"
   license "ISC"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any_skip_relocation, tahoe: "5505498847900b397022624dbefee41dce233c514f083b5d4b57d11b9ca01086"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
