@@ -13,9 +13,7 @@ class Aarch64UnknownLinuxGnu < Formula
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
-  # 运行时依赖照抄上游（裸名留 core，枢纽不自瓶，见 AGENTS.md 6 节）：
-  # bdw-gc/guile/python@3.14 在 core 无 x86_64_tahoe 瓶，首次安装由 core 源码构建；
-  # zstd 有 tahoe 瓶秒装。gdb 另链 xz（经 python 传递，无需显式声明）。
+  # 运行时依赖走本源 fork-* 与同名接管瓶（guile），用户端零源码编译。
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-bdw-gc"
   depends_on "bemly/tahoe/fork-python@3.14"

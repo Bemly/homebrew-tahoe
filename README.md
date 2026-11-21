@@ -9,9 +9,11 @@ Starting with macOS 26, Homebrew no longer builds `x86_64` bottles. In practice 
 number of `x86_64_tahoe` bottles in the `homebrew/core` tap is 0, so software like
 `gh` and `node` can only be compiled from source on Intel Macs.
 
-This tap pulls the upstream **official macOS amd64 prebuilt packages** (no recompilation),
-packages them as Homebrew bottles, and distributes them through **GHCR**:
-`ghcr.io/v2/bemly/tahoe`.
+This tap prioritizes upstream **official macOS amd64 prebuilt packages** (no recompilation);
+for source-only software and unbottled runtime dependencies (`fork-*` / same-name takeovers),
+it compiles them once on a `macos-26-intel` CI runner and distributes all bottles via **GHCR**
+(`ghcr.io/v2/bemly/tahoe`) so users never compile locally. Desktop apps and input methods are
+delivered as **casks** mirrored to this repository's GitHub Releases.
 
 ## Requirements
 
@@ -40,8 +42,8 @@ brew install bemly/tahoe/opencode # pulls bemly/tahoe/ripgrep as a dependency
 # workbuddy is a desktop app, delivered as a cask (installed into /Applications,
 # visible in Launchpad/Spotlight)
 brew install --cask bemly/tahoe/workbuddy
-# doubao-ime is an input method, delivered as a cask (auto-runs the official
-# installer into /Library/Input Methods, requires sudo password)
+# doubao-ime is an input method, delivered as a cask (installed into user-level
+# ~/Library/Input Methods without sudo, auto-enables the system input source)
 brew install --cask bemly/tahoe/doubao-ime
 # antigravity is delivered as a cask too, but as a *patched artifact*: Chinese
 # localization and an in-page companion widget are baked into app.asar, and the
@@ -98,7 +100,7 @@ brew install --cask bemly/tahoe/antigravity
 | `socat` | SOcket CAT relay tool, compiled from source |
 | `make` | GNU make (installed as `gmake`), mirrored even though core has a tahoe bottle |
 | `graphviz` | Graph visualization software, compiled from source |
-| `protobuf` | Full build from source: libprotobuf + `protoc` + test suite |
+| `protobuf` | Protocol buffers compiler (`protoc` + headers), official macOS x86_64 prebuilt (`protoc-<ver>-osx-x86_64.zip`); same-name conflict with core |
 | `caddy` | Extensible server platform, Intel static build from upstream (`caddy_<ver>_mac_amd64.tar.gz`); H2/H3 baseline service |
 | `h2spec` | HTTP/2 conformance tester for Phase 2 H2 tests |
 | `hyperfine` | Command-line benchmarking tool for Phase 4 repeated benchmarks |
@@ -117,12 +119,12 @@ brew install --cask bemly/tahoe/antigravity
 | `grok-bot` | Cursor Grok Bot desktop agent (Intel only); mirrored to this repo's releases, version tracked from Cursor's download page |
 | `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero dependencies); core has no Intel bottle and its dependency tree builds from source |
 | `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies); core has no Intel bottle and pulls a Python stack |
-| `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS device communication stack, compiled from source on Intel (core has no Intel bottles); leaf dependencies bottled, hub dependencies (`libtasn1`, `openssl@4`) left to core |
+| `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS device communication stack, compiled from source on Intel (core has no Intel bottles); dependencies use this tap's bottled `fork-libtasn1` and `fork-openssl@4` |
 | `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends), compiled from source on Intel (upstream's macOS asset is arm64-only and core has no Intel Tahoe bottle); cmake build dependency taken from this tap |
-| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps left to core (`bdw-gc`/`guile`/`python@3.14` build from source on first install, `zstd` bottled); version tracked via GitHub releases with `.sha256` sidecar |
+| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's bottled `fork-bdw-gc`, `fork-python@3.14`, `fork-zstd`, and `guile`; version tracked via GitHub releases with `.sha256` sidecar |
 | `mirage-wallpaper` | Mirage native live wallpaper engine, compatible with Wallpaper Engine (Intel-only cask, thin x86_64, notarized); upstream per-arch builds mirrored to this repo's releases, version tracked via custom checker |
 | `llvm` | Next-gen compiler infrastructure, upstream 19.1.7 Intel macOS prebuilt pinned (later versions are ARM64-only; building 23.x from source exceeds the 6h CI limit); thin x86_64, zero dependencies, keg-only like core; point bindgen at it via `LIBCLANG_PATH` |
-| `z3` | Theorem prover, SMT solver and dependency of this tap's llvm (niche reverse dependencies only, no hubs); cmake build dependency taken from this tap |
+| `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
 | `toshllm` | ToshLLM local LLM runner with Metal acceleration for Intel AMD GPUs (Intel-only cask, thin x86_64, notarized, self-updating); upstream dmg mirrored to this repo's releases, version tracked from upstream releases |
 | `lceda-pro` | LCEDA Pro electronic design automation software (Intel x64 only, thin x86_64, notarized); cask mirrored to this repo's releases (zip wraps a dmg, unpacked automatically), version tracked from the official download page's Intel(x64) row |
 | `lceda` | LCEDA Standard electronic design automation software (Intel x64 only, thin x86_64, notarized); cask mirrored to this repo's releases, version tracked from the official download page's Intel(x64) row |
@@ -158,15 +160,22 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Switching sources (same-name conflict)
 
-Our `gh` / `fastfetch` share their Cellar path with `homebrew/core`'s builds, so they
-cannot be linked at the same time. To switch:
+Homebrew forbids installing formulae or casks with the same name/token from two
+different taps at the same time — they share the same `Cellar/<name>` or `Caskroom/<token>`
+directory.
+
+Except for renamed `keg_only` `fork-*` packages (39) and tap-exclusive packages (`curl3`,
+`ffplay`, `ffprobe`, `ffserver`, `antigravity-cli`, `aarch64-unknown-linux-gnu`,
+`x86_64-unknown-linux-gnu`, `llvm-mingw`, `cmd`, `deepseek-harness`, `mufetch`, `sst`,
+`torpedo`, and tap-only casks), **any package sharing a name with `homebrew/core` requires
+uninstalling the other tap's build first** (`brew uninstall <name>` / `brew uninstall --cask <token>`):
 
 ```bash
-# Use this tap's build
+# Switch linked kegs if both are already present in Cellar:
 brew unlink gh && brew link --overwrite bemly/tahoe/gh
 brew unlink fastfetch && brew link --overwrite bemly/tahoe/fastfetch
 
-# Use the core build
+# Revert to core:
 brew unlink bemly/tahoe/gh && brew link gh
 brew unlink bemly/tahoe/fastfetch && brew link fastfetch
 ```
@@ -179,17 +188,20 @@ brew uninstall --ignore-dependencies python@3.15
 brew install bemly/tahoe/meson
 ```
 
-Other same-name packages (`git` / `bash` / `wget` / `aria2` / `automake` / `abseil` /
-`svt-av1` / `python@3.11` / `openjdk` / `openjdk@17` / `openjdk@21` / `openjdk@26` /
-`guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` /
-`snappy` / `zig` / `node@20` / `dotnet` / `freeling` / `boost@1.85` / `icu4c@78` /
-`postgresql@13`) are the same software as core's, so run `brew uninstall <name>` before
-installing this tap's build (and vice versa). The `fork-*` packages are renamed and do
-not conflict with core.
+Other same-name formulae (`node`, `node@20`/`22`/`24`, `go`, `cmake`, `git`, `bash`,
+`wget`, `aria2`, `automake`, `abseil`, `svt-av1`, `python@3.11`, `openjdk*`, `guile`,
+`jemalloc`, `libev`, `libnghttp2`, `libssh`, `libyaml`, `simdjson`, `snappy`, `zig`,
+`swift`, `fzf`, `protobuf`, `z3`, `wimlib`, `ripgrep`, `dotnet`, `freeling`, `boost@1.85`,
+`icu4c@78`, `postgresql@13`, `chisel`, `exiftool`, `opencode`, etc.) and same-token casks
+(`zcode`, `lody`, `qoder`, `github-copilot-app`, `wireshark`, `checkra1n`, `palera1n`,
+`antigravity`; `blender-5x` also shares `/Applications/Blender.app` with core's `blender`)
+must likewise be uninstalled before switching taps.
+The `fork-*` packages are renamed and do not conflict with core.
 
 The `antigravity` cask is a special case: core has a cask of the same token for the same
 app, but core's is the unpatched official build while this tap's is the localized/patched
-artifact. They share `Caskroom/antigravity` and cannot coexist either — pick one.
+artifact. They share `Caskroom/antigravity` and cannot coexist either — run
+`brew uninstall --cask --force antigravity` before installing this tap's build.
 
 ## GHCR bottles
 
@@ -247,12 +259,14 @@ The workflow will: trust the tap → install with `--build-bottle` → run `brew
 
 ## Maintenance
 
-Two workflows, **both manually triggered only** (no scheduled jobs):
+Four workflows, **all manually triggered via `workflow_dispatch` only** (no scheduled jobs):
 
 | Workflow | Purpose | Runner |
 | --- | --- | --- |
-| `watch-updates` | Batch-scans every formula against **homebrew/core** versions (Swift checkers, one file per package in `updater/`); rewrites formulas, commits to `main`, and automatically triggers one bottling run | `ubuntu-latest` |
-| `bottle` | Builds the bottle, pushes to GHCR, writes the bottle block back | `macos-26-intel` |
+| `watch-updates` | Batch-scans all `Formula/*.rb` and `Casks/*.rb` via `updater/*.swift` across 5 upstream streams (brew formula/cask, GitHub releases, raw taps, custom feeds); mirrors updated casks to GitHub Releases, rewrites formulas, commits to `main`, and triggers one `bottle` run | `ubuntu-latest` |
+| `bottle` | Recursively verifies runtime dependency bottle coverage, builds bottles in topological order, pushes to GHCR, and writes `bottle do` blocks back | `macos-26-intel` |
+| `patched` | Builds the patched `antigravity` cask artifact (`build.sh --upload`), fills the `.sha256` sidecar into the cask, runs `brew style` / `brew audit --strict`, and commits to `main` | `macos-26-intel` |
+| `sysroots` | Builds cross-compilation sysroots (`openssl-macos-arm64`, `linux-sysroot-x64/a64`) and publishes them to GitHub Releases | `macos-26` / `ubuntu-22.04` |
 
 Developer conventions: see [AGENTS.md](AGENTS.md).
 

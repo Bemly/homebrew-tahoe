@@ -5,7 +5,6 @@ class Llvm < Formula
   # 版本锁死 19.1.7，不跟检查器（无 updater/llvm.swift，ffserver 同例）：
   # 本仓要的是 bindgen 0.73 运行时的 libclang 9+（16~23 都吃），19 够用且带全后端；
   # 追 core stable（23.x）就得走源码代编译（PGO 三阶段 6 小时起步即超时，见 11.51）。
-  # 版本号由 brew 从 URL 文件名扫描得出，不重复声明 version（否则 audit 判为冗余）。
   url "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/LLVM-19.1.7-macOS-X64.tar.xz"
   version "19.1.7"
   sha256 "49405e75fbe7ad6f8139a33f59ec8c5112b75b3027405c7b92d19f4c6f02c78a"

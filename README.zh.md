@@ -7,8 +7,7 @@
 Homebrew 官方从 macOS 26 起不再为 Intel 构建 bottle。实测 core tap 中 `x86_64_tahoe` 瓶的数量为 0，
 `gh`、`node` 等软件在 Intel Mac 上只能从源码编译。
 
-本 tap 取上游官方的 **macOS amd64 预构建包**（不重新编译），打包成 Homebrew 瓶后
-分发到 **GHCR**：`ghcr.io/v2/bemly/tahoe`。
+本 tap 优先取上游官方的 **macOS amd64 预构建包**制瓶（不重新编译）；对于上游仅发源码的软件及无 Intel 瓶的运行时依赖层（`fork-*` / 同名接管），由 **CI 在 `macos-26-intel` 上一次性代编译成瓶**并分发到 **GHCR**（`ghcr.io/v2/bemly/tahoe`），用户端始终装瓶、不在本地编译；桌面应用与输入法走 **cask** 并镜像到本仓 GitHub Release。
 
 ## 要求
 
@@ -34,7 +33,7 @@ brew install bemly/tahoe/opencode # 会连带装上本 tap 的 ripgrep 依赖
 
 # workbuddy 是桌面 app，走 cask（装进 /Applications，Launchpad/Spotlight 可见）
 brew install --cask bemly/tahoe/workbuddy
-# doubao-ime 是输入法，走 cask（自动跑官方安装器装进 /Library/Input Methods，会弹密码框）
+# doubao-ime 是输入法，走 cask（装进用户级 ~/Library/Input Methods 免 sudo，并自动写入系统输入源启用）
 brew install --cask bemly/tahoe/doubao-ime
 # antigravity 也走 cask，但分发的是「打补丁的成品」：app.asar 里已静态注入中文汉化
 # 与伴生挂件，并禁用应用内自动更新（否则补丁会被官方新包覆盖）。
@@ -89,7 +88,7 @@ brew install --cask bemly/tahoe/antigravity
 | `socat` | SOcket CAT 中继工具，源码现编出瓶 |
 | `make` | GNU make（装成 `gmake`）；core 虽有 tahoe 瓶仍镜像 |
 | `graphviz` | 图形可视化软件，源码现编出瓶 |
-| `protobuf` | 完整版源码现编：libprotobuf + `protoc` + 全套测试 |
+| `protobuf` | Protocol Buffers 编译器（`protoc` + 头文件），官方 macOS x86_64 预编译包（`protoc-<ver>-osx-x86_64.zip`）；与 core 同名 |
 | `caddy` | 可扩展服务平台，上游 Intel 静态构建（`caddy_<ver>_mac_amd64.tar.gz`）；H2/H3 基线服务 |
 | `h2spec` | H2 一致性测试器，Phase 2 用 |
 | `hyperfine` | 命令行基准工具，Phase 4 重复基准用 |
@@ -108,12 +107,12 @@ brew install --cask bemly/tahoe/antigravity
 | `grok-bot` | Cursor Grok Bot 桌面 agent（仅 Intel）；镜像到本仓 Release，版本跟随 Cursor 下载页 |
 | `scrcpy` | 安卓投屏工具，上游 Intel 静态构建（零依赖）；core 无 Intel 瓶且依赖树全源码编 |
 | `yt-dlp` | 音视频下载器，上游 universal macOS 单二进制（零依赖）；core 无 Intel 瓶且拖 Python 栈 |
-| `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS 设备通信栈，Intel 现编出瓶（core 无 Intel 瓶）；叶子依赖自瓶，枢纽依赖（`libtasn1`、`openssl@4`）留 core |
+| `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS 设备通信栈，Intel 现编出瓶（core 无 Intel 瓶）；运行时依赖全部走本 tap 的 `fork-libtasn1` 与 `fork-openssl@4` 瓶 |
 | `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等全套工具）——上游 macOS 资产仅 arm64、core 无 Intel Tahoe 瓶，core 拷入代编译；cmake 构建依赖走本 tap |
-| `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖留 core（`bdw-gc`/`guile`/`python@3.14` 首次需源码编，`zstd` 有瓶）；版本跟随 GitHub release，sha 走 `.sha256` sidecar |
+| `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖全部走本 tap 的 `fork-bdw-gc` / `fork-python@3.14` / `fork-zstd` / `guile` 瓶；版本跟随 GitHub release，sha 走 `.sha256` sidecar |
 | `mirage-wallpaper` | Mirage 原生动态壁纸管理器，兼容 Wallpaper Engine（仅 Intel cask，thin x86_64，公证签名）；上游按架构分包，镜像到本仓 Release，版本由自定义检查器跟踪 |
 | `llvm` | 新一代编译器基础设施——上游 19.1.7 Intel 预编译 pinned（之后只有 ARM64 包；23.x 源码编超 6 小时上限）；thin x86_64，零依赖，keg-only；bindgen 用 `LIBCLANG_PATH` 指过去即用 |
-| `z3` | 高性能定理证明器，本 tap llvm 的求解器依赖（依赖方全小众、无枢纽）；cmake 构建依赖走本 tap |
+| `z3` | 高性能定理证明器，官方 macOS x64 预编译包（`z3-<ver>-x64-osx-13.3.zip`，零依赖）；与 core 同名 |
 | `toshllm` | ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU，Metal 加速；仅 Intel cask，thin x86_64，公证签名，app 自带更新器）；上游 dmg 镜像到本仓 Release，版本跟随上游 releases |
 | `lceda-pro` | 嘉立创EDA专业版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release（zip 内套 dmg 自动解包），版本跟随官网下载页 Intel(x64) 行 |
 | `lceda` | 嘉立创EDA标准版（仅 Intel x64，thin x86_64，公证签名）；cask 镜像到本仓 Release，版本跟随官网下载页 Intel(x64) 行 |
@@ -149,15 +148,21 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 注意事项（同名冲突）
 
-本 tap 的 `gh` / `fastfetch` 与 `homebrew/core` 的同名公式共用 `$(brew --prefix)/Cellar/<name>`，
-不能同时 link。切换来源：
+Homebrew 禁止同时安装来自不同 tap 的同名公式或同 token cask——它们共用同一份
+`Cellar/<name>` 或 `Caskroom/<token>` 目录。
+
+除改名且 `keg_only` 的 `fork-*`（39 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
+`ffserver`、`antigravity-cli`、`aarch64-unknown-linux-gnu`、`x86_64-unknown-linux-gnu`、
+`llvm-mingw`、`cmd`、`deepseek-harness`、`mufetch`、`sst`、`torpedo` 以及本仓独有 cask）外，
+**凡与 `homebrew/core` 同名的软件都必须先卸载另一方**（`brew uninstall <name>` /
+`brew uninstall --cask <token>`）：
 
 ```bash
-# 用本 tap 的版本
+# 同名包在 Cellar 里已有双份时，可切换链接来源：
 brew unlink gh && brew link --overwrite bemly/tahoe/gh
 brew unlink fastfetch && brew link --overwrite bemly/tahoe/fastfetch
 
-# 用 core 的版本
+# 切回 core 版本：
 brew unlink bemly/tahoe/gh && brew link gh
 brew unlink bemly/tahoe/fastfetch && brew link fastfetch
 ```
@@ -170,15 +175,18 @@ brew uninstall --ignore-dependencies python@3.15
 brew install bemly/tahoe/meson
 ```
 
-其余同名包（`git` / `bash` / `wget` / `aria2` / `automake` / `abseil` / `svt-av1` /
-`python@3.11` / `openjdk` / `openjdk@17` / `openjdk@21` / `openjdk@26` / `guile` /
-`jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` / `zig` /
-`node@20` / `dotnet` / `freeling` / `boost@1.85` / `icu4c@78` / `postgresql@13`）
-都与 core 同名同物，装本 tap 版前先 `brew uninstall <name>`（反之亦然）。
-`fork-*` 是改名包，与 core 不冲突，不需要卸载。
+其余与 core 同名的公式（`node`、`node@20`/`22`/`24`、`go`、`cmake`、`git`、`bash`、`wget`、
+`aria2`、`automake`、`abseil`、`svt-av1`、`python@3.11`、`openjdk*`、`guile`、`jemalloc`、
+`libev`、`libnghttp2`、`libssh`、`libyaml`、`simdjson`、`snappy`、`zig`、`swift`、`fzf`、
+`protobuf`、`z3`、`wimlib`、`ripgrep`、`dotnet`、`freeling`、`boost@1.85`、`icu4c@78`、
+`postgresql@13`、`chisel`、`exiftool`、`opencode` 等）和同名 cask（`zcode`、`lody`、
+`qoder`、`github-copilot-app`、`wireshark`、`checkra1n`、`palera1n`、`antigravity`；
+`blender-5x` 虽不同 token，但同样会装进 `/Applications/Blender.app` 与 core 的 `blender` 冲突）
+装前均须先卸另一方。`fork-*` 是改名包，与 core 不冲突，不需要卸载。
 
 `antigravity` 是特例：core 也有同名 cask，装的是未打补丁的官方包，本 tap 这份是
-汉化 + 挂件 + 禁自更新的成品；二者共用 `Caskroom/antigravity`，同样只能二选一。
+汉化 + 挂件 + 禁自更新的成品；二者共用 `Caskroom/antigravity`，同样只能二选一
+（若曾装过 core 版，安装前先执行 `brew uninstall --cask --force antigravity`）。
 
 ## GHCR 瓶
 
@@ -224,12 +232,14 @@ workflow 会：信任 tap → 以 `--build-bottle` 安装 → 跑 `brew bottle` 
 
 ## 维护
 
-两个 workflow，**都只支持手动触发**，不设定时任务：
+四个 workflow，**都只支持 `workflow_dispatch` 手动触发**，不设定时任务：
 
 | Workflow | 作用 | Runner |
 | --- | --- | --- |
-| `watch-updates` | 批量扫描全部公式与 **homebrew/core** 版本（Swift 检查器，`updater/` 每包一个文件）；有更新则改写公式、直接提交 `main` 并自动触发一次制瓶 | `ubuntu-latest` |
-| `bottle` | 制瓶并推 GHCR，把瓶块提回公式 | `macos-26-intel` |
+| `watch-updates` | 批量扫描全部 `Formula/*.rb` 与 `Casks/*.rb`（`updater/*.swift` 覆盖 brew 公式/cask、GitHub Release、源 tap raw、自定义接口 5 类版本流）；cask 自动镜像本仓 Release，公式改写并摘瓶后提交 `main` 并触发一次制瓶 | `ubuntu-latest` |
+| `bottle` | 递归校验运行时依赖瓶覆盖 → 拓扑排序按序制瓶 → 推 GHCR → 把 `bottle do` 块写回公式并提交 | `macos-26-intel` |
+| `patched` | 构建补丁成品 cask（`antigravity`：`build.sh --upload`）→ 回填 sidecar sha256 → CI 跑 `brew style` / `audit --strict` 后提交 | `macos-26-intel` |
+| `sysroots` | 构建交叉编译所需的预编译 sysroot（`openssl-macos-arm64`、`linux-sysroot-x64/a64`）并发布到 GitHub Release | `macos-26` / `ubuntu-22.04` |
 
 开发者约定见 [AGENTS.md](AGENTS.md)。
 
