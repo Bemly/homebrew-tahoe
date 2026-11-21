@@ -22,10 +22,10 @@ GitHub Copilot 桌面版 中文补丁 + Gemini 娘挂件（bemly/tahoe 构建）
   （见 Widgets/antigravity-niang/licenses/）；内置角色图许可见同目录 ASSETS.md；
 - GitHub Copilot 本体为 GitHub 专有软件。**本 Release 分发的是修改后的专有包**，
   是 bemly/tahoe 已记录的显式破例（AGENTS.md 1 节），仅用于 Intel Mac 的 macOS 26；
-- **computer-use 插件已移除**：其 helper 授权宿主的 code requirement 含
-  `anchor apple generic` + GitHub team/application-identifier entitlement，
-  ad-hoc 重签的补丁包不可能满足（上游中文插件同样如此），留着只会反复报
-  "client is not authorized to use this service"。需要该功能请用官方未补丁包；
+- **computer-use 插件保留**：其 helper 与 mcp 保持 GitHub 官方签名（自动鉴权要求
+  `anchor apple generic` + GitHub team entitlement）。补丁宿主为 ad-hoc 签名，
+  首次使用会弹 helper 的 host-consent 授权框（Approve / Reject），点 Approve 一次即可；
+  升级重签后若再弹再点一次。未批准时会报 "client is not authorized to use this service"；
 - 应用内自动更新**未禁用**（Tauri updater 嵌在二进制/前端里，静态禁用代价过高）：
   一旦应用自更新，补丁会被官方包覆盖、界面回到英文。版本更新一律走本 tap：
   `brew upgrade --cask bemly/tahoe/github-copilot-app`；发现变回英文就

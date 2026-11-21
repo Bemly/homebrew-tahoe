@@ -88,22 +88,23 @@ APP="$WORK/GitHub Copilot.app"
 [[ -f "$APP/Contents/MacOS/github" ]] || die "主二进制不是 Contents/MacOS/github，包结构变了"
 file "$APP/Contents/MacOS/github" | grep -q x86_64 || die "官方包不是 x86_64"
 
-say "移除 computer-use 插件（ad-hoc 重签下它必然鉴权失败）"
-# 它的 helper（Copilot Computer Use）授权宿主用的 requirement 是
+say "computer-use 插件：保留官方签名（不重签），宿主走一次性 Approve 授权"
+# 它的 helper 授权宿主用的 requirement 是
 #   identifier "<id>" and anchor apple generic and
 #   (entitlement["com.apple.application-identifier"] = … or
 #    entitlement["com.apple.developer.team-identifier"] = …)
-# anchor apple generic 要求 Apple 证书链 + GitHub team entitlement，ad-hoc 签名
-# 永远过不了（strings 取证，见 AGENTS 11.62）。留着只会每次会话弹
-# "client is not authorized to use this service"。需要 computer-use 请用官方未补丁包。
+# ad-hoc 宿主过不了自动鉴权，但 helper 带 host_consent 流程（NSAlert Approve/Reject，
+# src/platform-macos/src/host_consent.rs）：用户点一次 Approve 即把宿主 DR 存进批准名单。
+# 前提是 helper 与 mcp **保持 GitHub 官方签名**（anchor apple generic + team 才成立），
+# 所以这两个二进制绝不重签；app 本体重签不带 --deep，不会碰它们的签名。
 CU="$APP/Contents/Resources/plugins/computer-use"
-if [[ -d "$CU" ]]; then
-  rm -rf "$CU"
-  echo "  已移除 Contents/Resources/plugins/computer-use"
-else
-  echo "  官方包已无 computer-use 目录（上游可能自己删了），跳过"
-fi
-[[ ! -e "$CU" ]] || die "computer-use 目录移除失败"
+[[ -d "$CU" ]] || die "官方包没有 computer-use 插件目录，包结构变了"
+for b in "$CU/computer-use-mcp" "$CU/Copilot Computer Use.app/Contents/MacOS/Copilot Computer Use"; do
+  [[ -f "$b" ]] || die "缺少 computer-use 二进制：$b"
+  codesign -dvvv "$b" 2>&1 | grep -q "Authority=Developer ID Application: GitHub (VEKTX9H2N7)" \
+    || die "$b 不是 GitHub 官方签名，保留官方签名的前提没了"
+done
+echo "  computer-use 两个二进制均为 GitHub 官方签名，原样保留"
 
 say "取中文插件源码"
 if [[ -z "$CN_REF" ]]; then
@@ -227,7 +228,8 @@ done
 if [[ -f "$C/MacOS/git-credential-copilot" ]]; then
   sign_one --options runtime --entitlements "$WORK/ent-git-credential.plist" "$C/MacOS/git-credential-copilot"
 fi
-# computer-use 插件已在前面整体移除（鉴权硬边界），这里不再签它的两个二进制。
+# computer-use 的两个二进制保持官方签名（前面已校验），这里不签它们；
+# app 本体重签不带 --deep，不会重签嵌套 Mach-O，官方签名得以保留（下面再验一次）。
 # 真正被注入的是 github-real（启动器 exec 过去的主二进制）：它必须自己带
 # disable-library-validation + allow-dyld-environment-variables，否则 dyld 会剥掉
 # 启动器设的 DYLD_INSERT_LIBRARIES。不带 --deep 的 codesign 不会重签嵌套 Mach-O，
@@ -239,7 +241,11 @@ codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q disable-library-valid
 codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q allow-dyld-environment-variables || die "缺 allow-dyld-environment-variables"
 codesign -d --entitlements :- "$C/MacOS/github-real" 2>/dev/null | grep -q allow-dyld-environment-variables \
   || die "github-real 缺 allow-dyld-environment-variables（注入会被 dyld 剥掉）"
-echo "  签名与 entitlements 校验通过"
+for b in "$CU/computer-use-mcp" "$CU/Copilot Computer Use.app/Contents/MacOS/Copilot Computer Use"; do
+  codesign -dvvv "$b" 2>&1 | grep -q "Authority=Developer ID Application: GitHub (VEKTX9H2N7)" \
+    || die "重签 app 后 $b 的官方签名被破坏（computer-use 鉴权会失败）"
+done
+echo "  签名与 entitlements 校验通过（computer-use 官方签名完好）"
 
 say "重打 dmg"
 STAGE="$WORK/stage"

@@ -366,7 +366,7 @@ cask 无 bottle 机制：watcher 检测到新版本后下载发布包、上传�
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
 | `doubao-ime` | 1.1.1 | Intel | 输入法；custom API；镜像 |
 | `dsh-gui` | 0.2.1-rc.4 | Intel | nightly feed 判新；镜像 |
-| `github-copilot-app` | 1.4.3-cn1 | Intel | 官方 darwin-x64 dmg + 运行时注入补丁（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`；官方主二进制改名 `github-real`，`github` 位置换成设绝对路径 `DYLD_INSERT_LIBRARIES` 的启动器），带 disable-library-validation entitlements ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-cn<补丁序号>`；**第二个修改版专有二进制破例**（见 11.62）；customRelease 读 core cask API + sidecar，产物由 `Widgets/github-copilot-cn/build.sh` 在 **CI（patched.yml）** 构建；**自更新未禁用**（Tauri updater 在二进制里），caveats 写明变回英文就 reinstall；computer-use 插件移除（helper 只认 Apple 证书链宿主，ad-hoc 必鉴权失败，见 11.62 第 13 条） |
+| `github-copilot-app` | 1.4.3-cn1 | Intel | 官方 darwin-x64 dmg + 运行时注入补丁（上游 MIT 中文插件 `CopilotCN.dylib` + 本仓页内挂件 `GyWidgetCN.dylib`；官方主二进制改名 `github-real`，`github` 位置换成设绝对路径 `DYLD_INSERT_LIBRARIES` 的启动器），带 disable-library-validation entitlements ad-hoc 重签后重打 dmg 镜像本仓 Release；版本形态 `<宿主版本>-cn<补丁序号>`；**第二个修改版专有二进制破例**（见 11.62）；customRelease 读 core cask API + sidecar，产物由 `Widgets/github-copilot-cn/build.sh` 在 **CI（patched.yml）** 构建；**自更新未禁用**（Tauri updater 在二进制里），caveats 写明变回英文就 reinstall；computer-use 插件保留且其 helper/mcp 保持官方签名，宿主首次使用点一次 Approve（host consent，见 11.62 第 13 条） |
 | `grok-bot` | 1.2.3 | Intel | Cursor 下载页锚定；镜像 |
 | `heliport` | 2.0.0-alpha | universal | universal；不检查更新 |
 | `konsole` | 5485 | dual | KDE CI 构建号；双架构；`alwaysUpdate`；每月手动跑 |
@@ -2428,7 +2428,7 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
     挂件 UI 另在浏览器里用填充后的 `pet.js` + 模拟 textarea 逐项验过
     （挂载/卸载/回挂、13 角色菜单、缩放与角色跨刷新持久化）。
 
-13. **computer-use 插件在补丁包里必须移除（鉴权硬边界，用户报障后取证定案）**。
+13. **computer-use 必须保留：保留官方签名 + 一次性 host consent（用户报障→定案推翻「移除」）**。
     症状：每次会话弹 `computer-use-mcp failed with exit status: 1: … permissions:
     client is not authorized to use this service`。报错字符串在 helper
     `Copilot Computer Use.app/Contents/MacOS/Copilot Computer Use` 里（不在 mcp 里），
@@ -2437,15 +2437,22 @@ AArch64/X86，配 sysroot 可 cross 到 Linux）+ 只链系统库零依赖 + `dl
     or entitlement["com.apple.developer.team-identifier"] = …)`，
     配套日志串 `has no approved signed direct host` / `[peer_auth] could not automatically
     authorize host pid …` / `retrying with the running Copilot CLI signature`。
-    **`anchor apple generic` 要求签名链到 Apple 证书**，ad-hoc 重签永远不满足；
-    team/application-identifier 又是 GitHub 专有身份，我们不可能持有。
-    所以这不是打包姿势问题：上游中文插件同样 ad-hoc 重签，computer-use 在任何
-    补丁包里都活不了。加 entitlement 也救不了（过不了 anchor）。
-    定案：`build.sh` 在复制 app 后整体 `rm -rf Contents/Resources/plugins/computer-use`
-    （带移除后门），签名段不再签它的两个二进制；caveats / RELEASE-NOTES 写明
-    「需要 computer-use 请装官方未补丁包」。cn2 起生效。
+    **初版定案「移除插件」被用户否决（"必须要 computer-use"）**，继续取证找到活路：
+    helper 里有 `src/platform-macos/src/host_consent.rs` + `NSAlert … Approve / Reject`
+    （"The untrusted application '…' is requesting access to Copilot Computer Use."）——
+    自动鉴权失败后走**人工批准**，批准记录按宿主 DR 存（`application bundle changed
+    after approval; request approval again`）。ad-hoc 宿主的 DR 是 identifier 形态、
+    跨重签稳定，所以**点一次 Approve 就能长期生效**。
+    前提：helper 与 mcp **保持 GitHub 官方签名**（`Authority=Developer ID Application:
+    GitHub (VEKTX9H2N7)`，自动鉴权的 anchor/team 才成立；本机无可用 codesigning 身份，
+    「自签 Apple 链证书」路线不可行，`security find-identity` 0 valid）。
+    落地：`build.sh` 校验这两个二进制是官方签名后**原样保留、绝不重签**；app 本体重签
+    **不带 --deep**（不重签嵌套 Mach-O），签完再验一次官方签名完好。
+    实验证据：把官方插件目录拷回已装 app + 仅重签 app 本体后，用户在 UI 里触发
+    computer-use，**授权框真的弹出且 Approve 后功能可用**。
+    caveats / RELEASE-NOTES 写明「首次使用点 Approve，升级后再弹再点」。
     旁证：本机 `~/Library/Caches/` 里另有 `cursor-computer-use` / `grok-bot-computer-use`
-    ——同一 computer-use 平台被多家 app 共用，移除只影响本包，不碰别人的状态目录。
+    ——同一 computer-use 平台被多家 app 共用，别碰别人的状态目录。
 
 14. **主程序判定不能用 bundle id 兜底；覆盖用户目录要原子替换（cn2 实测竞态）**。
     cn2 日志里 `git-credential-copilot` 子进程也打了 `[gyWidgetCN]` 并去覆盖词典：
