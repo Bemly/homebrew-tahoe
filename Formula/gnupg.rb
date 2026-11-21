@@ -18,6 +18,11 @@ class Gnupg < Formula
     regex(/The current version of GnuPG is v?(\d+(?:\.\d+)+)\. /i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "954123798a7f29525c7d252d0c959a32abf36f94d9d6144a96bb55f3ac47a040"
+  end
+
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-gnutls"
