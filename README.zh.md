@@ -145,6 +145,7 @@ brew install --cask bemly/tahoe/antigravity
 | `boost@1.85` | Boost C++ 库 1.85，取第三方 prebuilt-boost 的 macOS x86 `static+shared` 包（预编译 dylib 补 `@rpath` 后 ad-hoc 重签）；`freeling` 的依赖；与 core 同名 |
 | `wimlib` | 创建 / 解包 / 修改 Windows Imaging（WIM）映像的库与 `wimlib-imagex` 工具集，core 拷入源码现编（autotools，`fork-pkgconf` 构建）；macOS 上零运行时依赖 |
 | `antigravity` | Google Antigravity 智能体 IDE，**分发的是打补丁后的成品**：解包官方 Intel dmg → 静态改写 `app.asar`（中文汉化 + 模型名补充词典：哈基米/氖/氩/克劳德/十四行诗等 + 右下角 Gemini 伴生挂件：额度剩余与重置时间、可导入自己的图片换立绘；同时禁用应用内自动更新，避免补丁被官方新包覆盖）→ ad-hoc 重签名 → 镜像到本仓 Release。构建可复现（`Widgets/antigravity-niang/build.sh`），版本跟随 core cask + 本 Release 的 `.sha256` sidecar。安装后 cask 会清掉 brew 打的隔离属性，正常免 Gatekeeper 弹窗（ad-hoc 重签、无公证）；与 core 的未打补丁同名 cask 不能共存，先卸一方再装 |
+| `jadx` | Dex 转 Java 反编译器（含 `jadx` 与 `jadx-gui`），直接取官方 `jadx-<ver>.zip` 预编译包；依赖本 tap 的 `openjdk`；与 core 同名 |
 
 ## 注意事项（同名冲突）
 
@@ -179,7 +180,7 @@ brew install bemly/tahoe/meson
 `aria2`、`automake`、`abseil`、`svt-av1`、`python@3.11`、`openjdk*`、`guile`、`jemalloc`、
 `libev`、`libnghttp2`、`libssh`、`libyaml`、`simdjson`、`snappy`、`zig`、`swift`、`fzf`、
 `protobuf`、`z3`、`wimlib`、`ripgrep`、`dotnet`、`freeling`、`boost@1.85`、`icu4c@78`、
-`postgresql@13`、`chisel`、`exiftool`、`opencode` 等）和同名 cask（`zcode`、`lody`、
+`postgresql@13`、`chisel`、`exiftool`、`opencode`、`jadx` 等）和同名 cask（`zcode`、`lody`、
 `qoder`、`github-copilot-app`、`wireshark`、`checkra1n`、`palera1n`、`antigravity`；
 `blender-5x` 虽不同 token，但同样会装进 `/Applications/Blender.app` 与 core 的 `blender` 冲突）
 装前均须先卸另一方。`fork-*` 是改名包，与 core 不冲突，不需要卸载。
