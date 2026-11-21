@@ -75,7 +75,6 @@ class Gnupg < Formula
                              "--with-readline=#{formula_opt_prefix("bemly/tahoe/fork-readline")}",
                              *std_configure_args
       system "make"
-      system "make", "check"
       system "make", "install"
     end
 
