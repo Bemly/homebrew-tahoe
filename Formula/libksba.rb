@@ -11,6 +11,11 @@ class Libksba < Formula
     regex(/href=.*?libksba[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "6307a10a871e3536117581440b89757835442cef821d061b78d85a470b59233b"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libgpg-error"
   depends_on macos: :tahoe

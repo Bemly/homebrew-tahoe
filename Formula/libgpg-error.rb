@@ -11,6 +11,11 @@ class LibgpgError < Formula
     regex(/href=.*?libgpg-error[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "493b41ca0b7221e2918d2cb11107c470e02891434415dfd06efad582351d2f6e"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

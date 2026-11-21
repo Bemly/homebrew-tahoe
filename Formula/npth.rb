@@ -12,6 +12,11 @@ class Npth < Formula
     regex(/href=.*?npth[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "bbfffc1dbe2b6c896611e841441c8d1e3add3fb22dd063e15f8ce848e7d5ca7b"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
