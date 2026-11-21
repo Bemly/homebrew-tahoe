@@ -12,7 +12,6 @@ class VulkanLoader < Formula
     regex(/^vulkan-sdk[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
-  depends_on "bemly/tahoe/cmake" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
@@ -28,6 +27,7 @@ class VulkanLoader < Formula
   deny_network_access!
 
   def install
+    ENV.prepend_path "PATH", Formula["bemly/tahoe/cmake"].opt_bin
     system "cmake", "-S", ".", "-B", "build",
                     "-DVULKAN_HEADERS_INSTALL_DIR=#{formula_opt_prefix("vulkan-headers")}",
                     "-DCMAKE_INSTALL_INCLUDEDIR=#{formula_opt_include("vulkan-headers")}",

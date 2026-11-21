@@ -13,7 +13,6 @@ class SpirvTools < Formula
     regex(/^(?:vulkan[._-])?sdk[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
-  depends_on "bemly/tahoe/cmake" => :build
   depends_on "spirv-headers" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
@@ -21,6 +20,7 @@ class SpirvTools < Formula
   uses_from_macos "python" => :build
 
   def install
+    ENV.prepend_path "PATH", Formula["bemly/tahoe/cmake"].opt_bin
     system "cmake", "-S", ".", "-B", "build",
                     "-DCMAKE_INSTALL_RPATH=#{rpath}",
                     "-DBUILD_SHARED_LIBS=ON",
