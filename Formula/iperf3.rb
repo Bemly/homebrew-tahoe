@@ -24,6 +24,8 @@ class Iperf3 < Formula
 
     # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     iperf3 = bin/"iperf3"
+    # 裸二进制下载为 0644，Cleaner 仅在 install 结束后补 0555；install 内自检前须显式加执行位
+    chmod 0555, iperf3
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包
     file_out = Utils.safe_popen_read("/usr/bin/file", "-b", iperf3.to_s)
@@ -45,7 +47,7 @@ class Iperf3 < Formula
 
   def caveats
     <<~EOS
-      iperf3 已安装为 Intel(x86_64) 静态二进制（Phase 4 裸网络吞吐基线用），
+      iperf3 已安装为 Intel(x86_64) 静态二进制，
       不依赖 openssl@4，单文件即跑。
 
       与 homebrew/core 的 iperf3 同名，二者不能同时安装。切换来源：

@@ -370,7 +370,7 @@ brew trust bemly/tahoe
 ### 11.1 公式解包、权限与版本扫描
 
 - **解压路径用通配**：brew 解压若只有唯一顶层目录（过滤 `__MACOSX` 后）会自动下降进入；`install` 内用 `Dir["**/bin/foo"]` 或 `Dir["*"]` 兼容下降与否。
-- **可执行位**：`xz` / `gz` 裸二进制与 `write_exec_script` 不会自动带执行位（0444/0644），必须在 `install` 内显式 `chmod 0555`。公式安装勿手动清 `com.apple.quarantine`（`0555` 会 Permission denied，brew 公式层已处理）。
+- **可执行位**：非归档裸二进制（含直下可执行文件、`xz` / `gz` 裸二进制）与 `write_exec_script` 不会在安装时自动带执行位（0444/0644），Homebrew `Cleaner` 仅在 `def install` 结束后才补 `0555`；因此凡在 `def install` 内执行自检（`Utils.safe_popen_read`）或需要执行位的目标，必须先显式 `chmod 0555`。公式安装勿手动清 `com.apple.quarantine`（`0555` 会 Permission denied，brew 公式层已处理）。
 - **`version` 行准则**：与 URL 扫描结果一致时不能写（audit 判冗余）；仅当尾缀数字（`-x64` / `-X64` / `osx-13.3`）、版本目录（`/glib/2.88/`、`/v3.8/`）或无版本扩展名（`.pem`）导致扫错/扫不出时才显式声明。
 - **其他公式约束**：闭源软件不写 `license`；在 core `curl` 递归树内的源码公式须保留至少一条 `http://` `mirror` 行；2016 年前后的旧 C 代码（如 `vde`）在 Xcode 26 Clang 默认 `gnu23` 下会因 `int f()` 语义改变报错，需加 `ENV.append "CFLAGS", "-std=gnu17"`；`brew test` 涉网用例（如 `socat`、`curl3`）须优先走本地回环以免沙箱挂死。
 
