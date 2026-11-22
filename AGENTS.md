@@ -268,7 +268,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | --- | --- | --- | --- |
 | `afm` | 2026.09.15 | arm64 | 输入法；用户级 `~/Library/Input Methods`；arm64 破例；不检查更新 |
 | `amd` | 2026.09.18 | universal | 自有软件；app + `obcli`；本地构建镜像；不检查更新 |
-| `antigravity` | 2.33.0-4731201358004224-cn4 | Intel | 官方 darwin-x64 + 汉化/补充词典/页内 DOM 挂件/禁自更新；`patched.yml` 构建并传 `.sha256` sidecar；customRelease 读 core cask API 判新 |
+| `antigravity` | 2.34.0-5887025308631040-cn1 | Intel | 官方 darwin-x64 + 汉化/补充词典/页内 DOM 挂件/禁自更新；`patched.yml` 构建并传 `.sha256` sidecar；customRelease 读 core cask API 判新 |
 | `blender-5x` | 5.2.2 | Intel | Intel 社区构建；github 流；镜像 |
 | `brewui` | 0.6.0 | universal | universal；github 流；镜像 |
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
