@@ -15,6 +15,11 @@ class Cmake < Formula
   sha256 "e1fb288543e4eb2a410e385ecebc64323bda51f0205782f2b094ccd5d572ca2d"
   license "BSD-3-Clause"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "81b964ca796ebc4ee228eecc2ef7d498ea1b6634c50c3174a5768472e7a7a597"
+  end
+
 
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
