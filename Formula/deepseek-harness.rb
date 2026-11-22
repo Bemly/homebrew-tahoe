@@ -18,6 +18,35 @@ class DeepseekHarness < Formula
     # 标准 npm 公式写法：在解压出的 package 目录内安装到 libexec，
     # 再把 dsh 入口软链进 bin（包内 bin 为 { dsh: lib/bin.js }）。
     system "npm", "install", *std_npm_args
+
+    # @deepseek-ai/libreoffice-kit 附带的 frame-forwarding.node 预编译为 MH_DYLIB 且未带
+    # -headerpad_max_install_names，Homebrew 安装尾部的 fix_dynamic_linkage 改写 dylib ID
+    # 会因头空间不足直接失败：清理非 darwin-x64 预编译件，并用 -Wl,-headerpad_max_install_names
+    # 原地重编 darwin-x64/frame-forwarding.node。
+    ff_dir = libexec/"lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/libreoffice-kit/frame-forwarding"
+    if ff_dir.directory?
+      %w[darwin-arm64 win32-arm64 win32-x64].each do |plat|
+        rm_r(ff_dir/"prebuilds"/plat) if (ff_dir/"prebuilds"/plat).exist?
+      end
+      x64_node = ff_dir/"prebuilds/darwin-x64/frame-forwarding.node"
+      if x64_node.exist?
+        node_include = Formula["bemly/tahoe/node"].opt_libexec/"include/node"
+        cd ff_dir do
+          system ENV.cxx,
+                 "-arch", "x86_64", "-mmacosx-version-min=11.0", "-std=c++17", "-O2", "-fPIC",
+                 "-Iinclude", "-Isrc", "-I#{node_include}",
+                 "-DNAPI_VERSION=8", "-DNODE_GYP_MODULE_NAME=dsh_frame_forwarding",
+                 "-shared", "-undefined", "dynamic_lookup",
+                 "-Wl,-headerpad_max_install_names",
+                 "-Wl,-install_name,@rpath/frame-forwarding.node",
+                 "src/receiver.cc", "src/node-producer.cc", "src/producer.cc", "src/transport.cc",
+                 "-framework", "IOSurface", "-framework", "CoreFoundation", "-lbsm",
+                 "-o", x64_node
+          system "codesign", "--force", "--sign", "-", x64_node
+        end
+      end
+    end
+
     bin.install_symlink libexec/"bin/dsh"
   end
 
