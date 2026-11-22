@@ -11,7 +11,7 @@
 // 版本子串替换一次全换。
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/chisel.swift -o /tmp/check-chisel && /tmp/check-chisel
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致
 //（asset/downloadURL/checksumsURL 在 githubRepo 之前）。
 

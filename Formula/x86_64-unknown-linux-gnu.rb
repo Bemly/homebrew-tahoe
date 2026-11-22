@@ -2,7 +2,7 @@ class X8664UnknownLinuxGnu < Formula
   desc "GCC cross toolchain for x86_64 Linux (Intel host)"
   homepage "https://github.com/messense/homebrew-macos-cross-toolchains"
   # 上游 messense/homebrew-macos-cross-toolchains 的预编译工具链，只留 Intel host 段。
-  # 版本号由 brew 从 URL 路径段 v<ver>/ 扫描得出，不重复声明 version（audit 判冗余，见 11.3）。
+  # 版本号由 brew 从 URL 路径段 v<ver>/ 扫描得出，不重复声明 version（audit 判冗余，见 AGENTS.md §11.1）。
   url "https://github.com/messense/homebrew-macos-cross-toolchains/releases/download/v15.2.0/x86_64-unknown-linux-gnu-x86_64-darwin.tar.gz"
   sha256 "d82e9eb461939fe079b47c0a55c9c4130310507eeb55e60f076e65f3d4c6cb1e"
   license "GPL-3.0-or-later" => { with: "GCC-exception-3.1" }
@@ -22,21 +22,6 @@ class X8664UnknownLinuxGnu < Formula
   depends_on "bemly/tahoe/guile"
   depends_on macos: :tahoe
 
-  def pre_install
-    # 磁盘空间检查：压缩包 203MB，展开后约 1GB，留足余量
-    required_mb = 2048
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 x86_64-unknown-linux-gnu #{version}（Intel x86_64）"
-  end
-
   def install
     # 上游 tar.gz 内是单一顶层目录 x86_64-unknown-linux-gnu/，brew 会自动下降进入；
     # 用 ./* 通配兼容下降与否（照抄上游 install）。
@@ -52,7 +37,7 @@ class X8664UnknownLinuxGnu < Formula
                       "#{Formula["bemly/tahoe/fork-xz"].opt_lib}/liblzma.5.dylib",
            gdb.to_s
 
-    # 校验放在 install 尾部：brew 6 已废弃 def post_install（见 11.37），
+    # 校验放在 install 尾部：brew 6 已废弃 def post_install（见 AGENTS.md §11.1），
     # 新公式用声明式 post_install_steps 才过 style，此处直接在 install 内断言。
     gcc = bin/"x86_64-unknown-linux-gnu-gcc"
     file_out = Utils.safe_popen_read("/usr/bin/file", "-b", gcc.to_s)

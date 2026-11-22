@@ -13,7 +13,6 @@ class Libngtcp2 < Formula
     sha256 cellar: :any, tahoe: "af8a388ae528552b9f36e4ee0cabd36542de156f42c450434f5bee8e47945839"
   end
 
-
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe

@@ -13,30 +13,13 @@ class NodeAT22 < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "7f4e34d4cc2a1f177496969a5ac6a103b0f6ba4988306f7b861c7bc73c5b5458"
   end
 
-
-
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
-  def pre_install
-    required_mb = 512
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 node@22 #{version}（Intel x86_64）"
-  end
-
   def install
-    # staging 已下降进唯一顶层目录 node-v<ver>-darwin-x64（11.1）。
+    # staging 已下降进唯一顶层目录 node-v<ver>-darwin-x64（AGENTS.md §11.1）。
     # 整树进 libexec：cp_r 原样保留 npm/corepack 的 bin 符号链接
     # （../lib/node_modules/... 相对路径），拆开装会破坏 npm 的模块解析。
     libexec.install Dir["bin", "include", "lib", "share"]
@@ -45,9 +28,8 @@ class NodeAT22 < Formula
 
     man_pages = Dir["#{libexec}/share/man/man1/*"]
     man1.install man_pages unless man_pages.empty?
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     node_bin = bin/"node"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

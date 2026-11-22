@@ -12,26 +12,11 @@ class Chisel < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "2c45cf8964b075981f164bbc5aaebe09553e25acddedcee876dd524ce910acb9"
   end
 
-  # bottle do 块不要手填：由 bottle.yml 制瓶后自动写回（见 AGENTS.md 4/8.5）。
+  # bottle do 块不要手填：由 bottle.yml 制瓶后自动写回（见 AGENTS.md §4 / §8）。
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-
-  def pre_install
-    # 磁盘空间检查：二进制约 12MB，留足余量
-    required_mb = 256
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 chisel #{version}（Intel x86_64）"
-  end
 
   def install
     # gzip 内是单文件、无顶层目录；gunzip -N 按头里的原名还原为 chisel。

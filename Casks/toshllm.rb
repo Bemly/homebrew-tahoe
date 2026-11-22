@@ -10,7 +10,7 @@ cask "toshllm" do
   # github 流），有更新时下载、上传 Release、改写本文件（blender-5x 同机制）。
   # 注意：watcher 的镜像流会把 url 整条换成字面版本（无 #{...} 插值），
   # 而 audit 的 unversioned 检查要求 url 行必须含插值——写回后须手动改回
-  # 上面的双插值形态再提交（mirage-wallpaper 同例，见 AGENTS 11.34）。
+  # 上面的双插值形态再提交（mirage-wallpaper 同例，见 AGENTS.md §11.5）。
   url "https://github.com/Bemly/homebrew-tahoe/releases/download/toshllm-0.88.0/ToshLLM-v0.88.0.dmg"
   name "ToshLLM"
   desc "Run local LLMs on Intel hardware with AMD GPU acceleration"

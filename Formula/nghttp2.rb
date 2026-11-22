@@ -10,7 +10,6 @@ class Nghttp2 < Formula
     sha256 cellar: :any, tahoe: "fb8a9a37c67091459be3df5949fd593274d9812908c6f163c20c6e13a544062e"
   end
 
-
   head do
     url "https://github.com/nghttp2/nghttp2.git", branch: "master"
 

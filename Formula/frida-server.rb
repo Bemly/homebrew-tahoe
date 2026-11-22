@@ -8,37 +8,15 @@ class FridaServer < Formula
   # 根 COPYING 是 wxWindows Library Licence 3.1（= LGPL-2.1 + 静态链接例外）。
   license "LGPL-2.1-only" => { with: "WxWindows-exception-3.1" }
 
-
-
-
-
-
-
-
   # brew 解 .xz 的 UnpackStrategy::Xz 硬依赖 xz 公式（unpack_strategy/xz.rb
   # 的 dependencies）：不声明则源码安装时报"需先装 xz"。声明成 build 依赖后
-  # CI/源码装自动补齐（core 的 xz 有 Intel tahoe 瓶，秒倒），用户走 GHCR 瓶
-  # 时 build 依赖被跳过——瓶是 tar.gz，解包根本不经过 xz，零摩擦。
+  # CI/源码装自动补齐，用户走 GHCR 瓶时 build 依赖被跳过（瓶是 tar.gz，
+  # 解包根本不经过 xz，零摩擦）。
   depends_on "xz" => :build
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-
-  def pre_install
-    # 磁盘空间检查：二进制 33MB，留足余量
-    required_mb = 256
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 frida-server #{version}（Intel x86_64）"
-  end
 
   def install
     # xz 解出的单文件名因 brew 缓存命名而异（frida-server-<ver>-macos-x86_64

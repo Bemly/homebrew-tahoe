@@ -1,7 +1,7 @@
 // updater/fish.swift —— 与 Formula/fish.rb 一一同名的检查器入口
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/fish.swift -o /tmp/check-fish && /tmp/check-fish
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 // 注意：swiftc 只允许 main.swift 含顶层代码，所以入口用 @main 而不是裸语句。
 //
 // fish-shell 官方 .app.zip（fish-<ver>.app.zip），release tag 即 fish 版本，

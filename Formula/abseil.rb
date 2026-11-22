@@ -1,11 +1,4 @@
 class Abseil < Formula
-  depends_on arch: :x86_64
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "788243a32e65581b487b25416675886a29ddf01c3831e984aa43797e52d5f00e"
-  end
-  depends_on macos: :tahoe
   desc "C++ Common Libraries"
   homepage "https://abseil.io"
   url "https://github.com/abseil/abseil-cpp/archive/refs/tags/20260817.0.tar.gz"
@@ -14,9 +7,15 @@ class Abseil < Formula
   compatibility_version 3
   head "https://github.com/abseil/abseil-cpp.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "788243a32e65581b487b25416675886a29ddf01c3831e984aa43797e52d5f00e"
+  end
 
   depends_on "cmake" => [:build, :test]
   depends_on "googletest" => :build # For test helpers
+  depends_on arch: :x86_64
+  depends_on macos: :tahoe
 
   deny_network_access!
 

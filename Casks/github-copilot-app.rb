@@ -4,7 +4,7 @@ cask "github-copilot-app" do
   # GitHub-Copilot-darwin-x64.dmg（主二进制 file 实测 x86_64 thin）。
   # Intel 包的 sha256 由检查器下载实算（core 那份属于另一个架构的包，不能用）。
   # 镜像到本仓 Release（tag github-copilot-app-<ver>，资产名沿用上游 basename，
-  # 无空格无需换点）：本 tap 政策是所有 cask 都镜像最新版（AGENTS 11.34）；
+  # 无空格无需换点）：本 tap 政策是所有 cask 都镜像最新版（AGENTS.md §11.5）；
   # url 用 #{version} 插值过 audit 的 unversioned 检查。版本判据走 core cask
   # API（api/cask/github-copilot-app.json 的 .version）；上游另有 floating
   # 短链 gh.io/copilot-app-mac-intel（releases/latest/download/...）——HEAD

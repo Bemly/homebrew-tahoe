@@ -12,25 +12,9 @@ class Zig < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "059b181b28cc29c4e2553c3bc9c84d0477c7d262cd596e54e0c20a8e18140131"
   end
 
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-
-  def pre_install
-    # 磁盘空间检查：压缩包约 59MB，展开后约 300MB，留足余量
-    required_mb = 1024
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 zig #{version}（Intel x86_64 host）"
-  end
 
   def install
     # 上游 tar.xz 内是单一顶层目录 zig-x86_64-macos-<ver>/，brew 会自动下降进入；
@@ -43,7 +27,7 @@ class Zig < Formula
     license = Dir["**/LICENSE"].first
     doc.install license if license
 
-    # 校验放在 install 尾部：brew 6 已废弃 def post_install（见 11.37）。
+    # 校验放在 install 尾部：brew 6 已废弃 def post_install（见 AGENTS.md §11.1）。
     zig = bin/"zig"
     file_out = Utils.safe_popen_read("/usr/bin/file", "-b", zig.to_s)
     unless file_out.include?("x86_64")

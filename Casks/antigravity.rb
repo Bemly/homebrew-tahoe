@@ -12,7 +12,7 @@ cask "antigravity" do
   # 判新：updater/antigravity.swift 读 core cask 版本 + 本包 .sha256 sidecar。
   # url 用 #{version} 插值：手工重打补丁（cn1→cn2）时只动 version/sha256 两行。
   # 注意 watcher 真跑一次更新时，核心对「customRelease 且无 downloadURL 模板」的包
-  # 按全量式**整条替换 url 行**（UpdaterCore 的 replaceURLLine 规则，11.61 第 9 条实测），
+  # 按全量式**整条替换 url 行**（UpdaterCore 的 replaceURLLine 规则，见 AGENTS.md §11.3），
   # 插值会变成含版本号的字面量——版本号仍在 url 里，audit 照样过，需要插值时手工改回。
   url "https://github.com/Bemly/homebrew-tahoe/releases/download/antigravity-#{version}/Antigravity-#{version}.dmg"
   name "Google Antigravity"
@@ -77,7 +77,7 @@ cask "antigravity" do
     quarantine 属性，正常可直接打开。若仍被 Gatekeeper 拦（多为缺「App 管理」权限导致
     清理未生效），二选一：
       在访达里对着 Antigravity.app 右键 →「打开」确认一次；或
-      xattr -dr com.apple.quarantine /Applications/Antigravity.app
+      xattr -d -r -s com.apple.quarantine /Applications/Antigravity.app
 
     core 里也有 cask "antigravity"（未打补丁的官方包），二者同名不能共存：
       先 brew uninstall --cask --force antigravity，再装本 cask。

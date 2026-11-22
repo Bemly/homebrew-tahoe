@@ -4,11 +4,11 @@ class Llvm < Formula
   # 上游最后一个 Intel mac 预编译（20+ 仅 macOS-ARM64，18.x 同样只有 ARM64）。
   # 版本锁死 19.1.7，不跟检查器（无 updater/llvm.swift，ffserver 同例）：
   # 本仓要的是 bindgen 0.73 运行时的 libclang 9+（16~23 都吃），19 够用且带全后端；
-  # 追 core stable（23.x）就得走源码代编译（PGO 三阶段 6 小时起步即超时，见 11.51）。
+  # 追 core stable（23.x）就得走源码代编译（PGO 三阶段 6 小时起步即超时，见 AGENTS.md §6.1）。
   url "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/LLVM-19.1.7-macOS-X64.tar.xz"
   version "19.1.7"
   sha256 "49405e75fbe7ad6f8139a33f59ec8c5112b75b3027405c7b92d19f4c6f02c78a"
-  # 文件名尾部 macOS-X64 会让 brew 扫出 "64"（node/go 同款致盲，见 11.3），
+  # 文件名尾部 macOS-X64 会让 brew 扫出 "64"（node/go 同款致盲，见 AGENTS.md §11.1），
   # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余）。
   license "Apache-2.0" => { with: "LLVM-exception" }
 
@@ -25,21 +25,6 @@ class Llvm < Formula
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
-  def pre_install
-    # 磁盘空间检查：包 1.6GB，解包 8.3GB（bin/ 5.8G 带调试信息 + lib/ 2.4G），留足余量
-    required_mb = 18432
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 llvm #{version}（Intel x86_64 预编译）"
-  end
-
   def install
     # 实测：tar 内是单一顶层目录 LLVM-19.1.7-macOS-X64/，brew 会自动下降进入；
     # 整包进 prefix（bin 相对 lib 的资源定位不能拆，保持上游布局：
@@ -49,7 +34,7 @@ class Llvm < Formula
     license = Dir["LICENSE*"].first
     doc.install license if license
 
-    # 校验放 install 尾部（post_install 已废弃，见 11.37）：file 认 x86_64 + 版本自检。
+    # 校验放 install 尾部（post_install 已废弃，见 AGENTS.md §11.1）：file 认 x86_64 + 版本自检。
     clang = bin/"clang-19"
     file_out = Utils.safe_popen_read("/usr/bin/file", "-b", clang.to_s)
     unless file_out.include?("x86_64")

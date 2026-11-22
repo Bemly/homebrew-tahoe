@@ -7,6 +7,10 @@ import Foundation
 @main
 struct ForkReadlineCheck {
     static func main() {
-        runCheck(CheckConfig(formula: "fork-readline", brewName: "readline"))
+        runCheck(CheckConfig(
+            formula: "fork-readline",
+            brewName: "readline",
+            manualSyncReason: "Formula/fork-readline.rb 通过 patch_checksum_pairs 跟踪小版本补丁，请从 core 同步新增补丁与 version"
+        ))
     }
 }

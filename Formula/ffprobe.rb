@@ -14,32 +14,15 @@ class Ffprobe < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "101a3797bb1f85a9c74cfc818ed2b6b26ae8eb7af13106e546e18695c610beb0"
   end
 
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
-  def pre_install
-    # 磁盘空间检查：本体约 80MB，留足余量
-    required_mb = 512
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 ffprobe #{version}（Intel x86_64 静态版）"
-  end
-
   def install
     # 实测：zip 内无顶层目录，二进制直接解压在 CWD（与 mufetch 同构）。
     bin.install "ffprobe"
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     ffprobe = bin/"ffprobe"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

@@ -2,7 +2,7 @@ class Scrcpy < Formula
   desc "Display and control Android devices over USB or TCP/IP"
   homepage "https://github.com/Genymobile/scrcpy"
   # 上游官方 macOS x86_64 预编译包（thin x86_64，otool 全系统库，SDL/ffmpeg 已静态链入，
-  # 零 brew 依赖；附带 universal adb 与设备端 scrcpy-server；见 AGENTS.md 11.47）。
+  # 零 brew 依赖；附带 universal adb 与设备端 scrcpy-server；见 AGENTS.md §11.1）。
   # 单一顶层目录（scrcpy-macos-x86_64-v<ver>/），brew 会下降进入，故直接用相对路径。
   url "https://github.com/Genymobile/scrcpy/releases/download/v5.0.1/scrcpy-macos-x86_64-v5.0.1.tar.gz"
   sha256 "31a5467a9e907f162b093267cbbab1276b15c6e709c2ea8159566a8d165beb50"
@@ -23,8 +23,8 @@ class Scrcpy < Formula
     libexec.install %w[scrcpy adb scrcpy-server]
     bin.write_exec_script libexec/"scrcpy"
     # write_exec_script 只写文件不给执行位（644），必须手动 chmod（否则 bin/scrcpy
-    # 以 exit 1 静默失败；/tmp 手测因顺手 chmod +x 没暴露，见 11.47）。
-    # frida 的 xz 无执行位是同类问题（见 11.37）。
+    # 以 exit 1 静默失败；/tmp 手测因顺手 chmod +x 没暴露，见 AGENTS.md §11.1）。
+    # frida 的 xz 无执行位是同类问题（见 AGENTS.md §11.1）。
     chmod 0555, bin/"scrcpy"
     man1.install "scrcpy.1"
 

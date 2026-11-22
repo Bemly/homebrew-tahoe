@@ -2,7 +2,7 @@ class YtDlp < Formula
   desc "Feature-rich command-line audio/video downloader"
   homepage "https://github.com/yt-dlp/yt-dlp"
   # 上游官方 macOS 通用预编译单二进制（universal x86_64+arm64，otool 仅系统库，
-  # 零 brew 依赖；此构建无补全参数，不硬凑补全文件；见 AGENTS.md 11.48）。
+  # 零 brew 依赖；此构建无补全参数，不硬凑补全文件；见 AGENTS.md §11.3）。
   # 文件名无版本但路径段是全版本（/download/2026.08.19/），brew 能正确扫出，
   # 故不写 version 行（写了判冗余；cmake 同例，先写后删）。
   url "https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.26/yt-dlp_macos"
@@ -13,8 +13,6 @@ class YtDlp < Formula
     root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 cellar: :any_skip_relocation, tahoe: "a773a8b66a96e5ac152b3b564c606be3b05298469445f5c9c688a9b842b14965"
   end
-
-
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64

@@ -11,10 +11,8 @@ class Fastfetch < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "aaeaf833dfea05d29d2e8a388d2000b27535ec21dec76a7bfac763a0e9dfc12a"
   end
 
-
   # 上游 2.70.0 起 macOS 只发布 universal 包（x86_64 + arm64 fat binary），
   # 安装前由 post_install 强制校验为 x86_64 原生，防止误装纯 arm64。
-
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。
@@ -42,9 +40,8 @@ class Fastfetch < Formula
     fish_completion.install fc if fc
     license = Dir["**/usr/share/licenses/fastfetch/LICENSE"].first
     doc.install license if license
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     ff = bin/"fastfetch"
 
     # 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

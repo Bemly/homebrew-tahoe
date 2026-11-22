@@ -11,7 +11,7 @@ class Curl3 < Formula
   # 同名跨 tap 不能共存，改名后 Cellar/curl3 独立存在，双方互不干扰。
   # 镜像只留点分段格式的 fresh-center 两行：core 的 GitHub 镜像 tag 用下划线
   # （curl-8_22_0），watcher 的版本子串替换够不着，会留旧版本，故不保留；
-  # audit --strict 要求至少一个镜像，见 11.28。
+  # audit --strict 要求至少一个镜像，见 AGENTS.md §11.1。
   url "https://curl.se/download/curl-8.23.0.tar.bz2"
   mirror "http://fresh-center.net/linux/www/curl-8.23.0.tar.bz2"
   mirror "http://fresh-center.net/linux/www/legacy/curl-8.23.0.tar.bz2"

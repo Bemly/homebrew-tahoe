@@ -9,7 +9,7 @@
 // 即 4.4.4），故公式不写 version 行，检查器从 url 行解析本地版本。
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/cmake.swift -o /tmp/check-cmake && /tmp/check-cmake
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致。
 
 import Foundation

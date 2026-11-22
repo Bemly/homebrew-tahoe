@@ -3,7 +3,7 @@ class Torpedo < Formula
   homepage "https://github.com/sst/torpedo"
   # 取自 anomalyco/homebrew-tap 的 torpedo.rb（GoReleaser 产物，只留 Intel mac 段）。
   # 上游是 sst/torpedo 的官方发布包；源文件 desc/homepage 为空，此处按上游补齐。
-  # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 11.3）。
+  # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 AGENTS.md §11.1）。
   url "https://github.com/sst/torpedo/releases/download/v0.0.13/torpedo-mac-x86_64.tar.gz"
   sha256 "6f506cd9875688557a06cd1642ffd26c0ed0af17ac0452fd3e43725d5f87ba46"
   license "MIT"
@@ -17,21 +17,6 @@ class Torpedo < Formula
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
-  def pre_install
-    # 磁盘空间检查：torpedo 本体较小，留足余量
-    required_mb = 256
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 torpedo #{version}（Intel x86_64）"
-  end
-
   def install
     # 上游 tar.gz 内是 torpedo 二进制 + LICENSE/README（无单一顶层目录），
     # 用 ** 通配兼容 brew 是否下降。
@@ -39,9 +24,8 @@ class Torpedo < Formula
 
     license = Dir["**/LICENSE"].first
     doc.install license if license
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     tp = bin/"torpedo"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

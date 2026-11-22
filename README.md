@@ -1,16 +1,18 @@
 # bemly/tahoe
 
+English | [中文说明](README.zh.md)
+
 A third-party Homebrew tap that provides directly installable software for
 **Intel (x86_64) Macs running macOS 26 (Tahoe)**.
 
 ## Why
 
 Starting with macOS 26, Homebrew no longer builds `x86_64` bottles. In practice the
-number of `x86_64_tahoe` bottles in the `homebrew/core` tap is 0, so software like
-`gh` and `node` can only be compiled from source on Intel Macs.
+number of `x86_64_tahoe` bottles in `homebrew/core` is 0, so software like
+`gh` and `node` would otherwise require compiling from source on Intel Macs.
 
 This tap prioritizes upstream **official macOS amd64 prebuilt packages** (no recompilation);
-for source-only software and unbottled runtime dependencies (`fork-*` / same-name takeovers),
+for source-only software and unbottled runtime dependencies (`fork-*` and same-name takeovers),
 it compiles them once on a `macos-26-intel` CI runner and distributes all bottles via **GHCR**
 (`ghcr.io/v2/bemly/tahoe`) so users never compile locally. Desktop apps and input methods are
 delivered as **casks** mirrored to this repository's GitHub Releases.
@@ -20,9 +22,13 @@ delivered as **casks** mirrored to this repository's GitHub Releases.
 - CPU: **Intel (x86_64)** — do NOT use on Apple Silicon (use `homebrew/core` instead).
 - OS: **macOS 26 (Tahoe)** or later.
 
-Each formula enforces this with `depends_on arch: :x86_64` and
-`depends_on macos: :tahoe`; installation is rejected outright if the requirements
-are not met.
+Formulae enforce this with `depends_on arch: :x86_64` and `depends_on macos: :tahoe`;
+installation is rejected outright if requirements are not met.
+
+Explicit exceptions:
+- `opencode` / `ripgrep`: dual-arch formulae (`macos: :tahoe` still enforced; Intel uses GHCR bottles, Apple Silicon uses direct upstream links or source builds).
+- `afm`: Apple Silicon-only (`depends_on arch: :arm64`) own-software input method cask (Intel refuses install).
+- Universal / dual-arch casks (`amd`, `brewui`, `doubao-ime`, `heliport`, `konsole`, `macos-tskmgr`, `palera1n`, `qwen-ime`, `winstart`, `zcode`): support both Intel and Apple Silicon.
 
 ## Installation
 
@@ -55,118 +61,147 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
+> Total: **141 formulae** (56 prebuilt + 71 source-built + 14 `fork-*` dependency forks) and **25 casks**.
+
+### CLI & Developer Tools — Prebuilt Formulae (56)
+
 | Package | Notes |
 | --- | --- |
-| `gh` | GitHub CLI, taken directly from `gh_<ver>_macOS_amd64.zip` |
-| `fastfetch` | Neofetch-like system info tool, taken from `fastfetch-macos-amd64.tar.gz` (release tag has no `v` prefix) |
-| `workbuddy` | Tencent WorkBuddy AI office workspace (Electron desktop app), cask, installed into `/Applications`; not in brew core — version comes from its auto-update feed |
-| `doubao-ime` | Doubao AI input method, cask, installed into `~/Library/Input Methods` (user level, no sudo) and auto-enabled by writing the system input source; not in brew core — version comes from its download API |
-| `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
-| `node@24` | Node.js 24 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
-| `node@22` | Node.js 22 LTS, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
-| `opencode` | AI coding agent, mac builds (`opencode-darwin-x64/arm64.zip`) from `anomalyco/homebrew-tap`'s GoReleaser formula (Intel bottled, ARM via direct link); shares its name with core's npm build — uninstall one before installing the other |
-| `sst` | SST framework, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`sst-mac-x86_64.tar.gz`) |
-| `torpedo` | sst/torpedo VPC database access tool, Intel-only slice of `anomalyco/homebrew-tap`'s GoReleaser formula (`torpedo-mac-x86_64.tar.gz`) |
-| `ripgrep` | Search tool like grep, bottled dependency of `opencode` (from homebrew/core sources) |
-| `mufetch` | System info tool, from the release `mufetch_darwin_x86_64.tar.gz` |
-| `cmd` | Terminal AI coding agent, npm package `command-code` (exposes the `cmd` command only); depends on this tap's node bottle; no update checks |
-| `zcode` | z.ai AI-assisted development environment, cask from the upstream CDN (both x64 and arm64); version follows homebrew/core's cask |
-| `deepseek-harness` | DeepSeek agent harness, npm package `@deepseek-ai/dsh` (exposes the `dsh` command only, `dsh web` serves the browser UI); depends on this tap's node bottle; version tracks the npm `latest` tag |
-| `ffmpeg` | FFmpeg itself, Intel x86_64 static build from evermeet (`ffmpeg-<ver>.zip`); version follows homebrew/core's ffmpeg |
-| `ffprobe` | FFmpeg stream analyzer, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
-| `ffplay` | FFmpeg media player, Intel static build from evermeet, versioned with this tap's ffmpeg; no core counterpart |
-| `ffserver` | Legacy FFmpeg streaming server (last static build 3.4.2, removed upstream in 4.0); no update checks |
-| `fish` | User-friendly shell, unix tree from the official `fish-<ver>.app.zip` (Intel slice of the universal binary); version follows homebrew/core's fish |
-| `docker-buildx` | Docker CLI plugin, official `buildx-v<ver>.darwin-amd64` bare binary; version follows homebrew/core's docker-buildx |
-| `checkra1n` | checkm8 jailbreak app, Intel x86_64 build (core's cask is disabled over Gatekeeper); pinned, no update checks |
-| `palera1n` | checkm8 jailbreak app, universal dmg covering Intel and Apple Silicon with a single download; pinned, no update checks |
-| `macos-tskmgr` | Task manager app, per-arch downloads via the `arch` stanza; pinned, no update checks |
-| `brewui` | Official Homebrew graphical interface, cask from its GitHub release (`Homebrew-<ver>.zip`); version tracked via the release redirect |
-| `winstart` | Metro-style app launcher, cask mirrored to this repo's releases (no public upstream link); pinned, no update checks |
-| `docker-compose` | Docker Compose plugin, official `docker-compose-darwin-x86_64` bare binary; version follows homebrew/core's docker-compose |
-| `go` | Go toolchain, official `go<ver>.darwin-amd64.tar.gz` (self-contained, zero dependencies); version follows homebrew/core's go |
-| `heliport` | Intel Wi-Fi client app, cask from its GitHub release; pinned, no update checks |
-| `konsole` | KDE terminal, dual-arch builds mirrored to this repo's releases; version is the CI build number, checked manually each month |
-| `qemu` | Generic machine emulator and virtualizer, compiled from source on Intel (core has no Intel bottles) |
-| `capstone` | Disassembly framework, bottled dependency of `qemu` |
-| `dtc` | Device tree compiler, bottled dependency of `qemu` |
-| `libslirp` | User-mode networking library, bottled dependency of `qemu` |
-| `vde` | Virtual distributed Ethernet, bottled dependency of `qemu` |
-| `neofetch` | System info script (archived upstream, last release); no update checks |
-| `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl, ships the `curl3` command (system `curl` untouched), client-only static build with no dev files |
-| `libnghttp3` | HTTP/3 C library, bottled dependency of `curl3` |
-| `libngtcp2` | QUIC implementation, bottled dependency of `curl3` |
-| `nghttp2` | H2 clients (`nghttp`/`h2load`/`nghttpx`) with `--enable-app`; H3 flag deferred to Phase 4 |
-| `socat` | SOcket CAT relay tool, compiled from source |
-| `make` | GNU make (installed as `gmake`), mirrored even though core has a tahoe bottle |
-| `graphviz` | Graph visualization software, compiled from source |
-| `protobuf` | Protocol buffers compiler (`protoc` + headers), official macOS x86_64 prebuilt (`protoc-<ver>-osx-x86_64.zip`); same-name conflict with core |
-| `caddy` | Extensible server platform, Intel static build from upstream (`caddy_<ver>_mac_amd64.tar.gz`); H2/H3 baseline service |
-| `h2spec` | HTTP/2 conformance tester for Phase 2 H2 tests |
-| `hyperfine` | Command-line benchmarking tool for Phase 4 repeated benchmarks |
-| `iperf3` | Static build (no `openssl@4` dependency) for Phase 4 bare-metal throughput baselines |
-| `ninja` | Small build system, upstream universal binary (Intel slice) |
-| `rustup` | Official static Rust toolchain installer, same name as core (uninstall core's first); ships `rustup` plus core's cargo/rustc proxy shims, toolchains managed via `rustup toolchain install stable` |
-| `wireshark` | Network protocol analyzer, cask from the official Intel dmg (Intel builds stop at 4.4.x); ships `tshark`/`editcap` shims |
-| `git-lfs` | Git extension for versioning large files, upstream Intel build with full man pages (`git-lfs-darwin-amd64-v<ver>.zip`); run `git lfs install` once after install |
-| `github-copilot-app` | GitHub Copilot desktop app, cask mirrored from the official Intel dmg (`GitHub-Copilot-darwin-x64.dmg`); version tracked from the core cask, installed into `/Applications` |
-| `frida-server` | Frida dynamic instrumentation server, upstream bare binary from `frida/frida` releases (Intel only); run with `sudo`, listens on `127.0.0.1:27042` |
-| `afm` | AFM pinyin input method, Apple Silicon only (first exception to the Intel-only rule); user-level install into `~/Library/Input Methods` with automatic input-source enablement; pinned, no update checks |
-| `amd` | AMD lyrics downloader (universal Intel + Apple Silicon, built locally and mirrored); ships the app plus the `obcli` command; pinned, no update checks |
-| `blender-5x` | Blender 5.x Intel-optimized community build (x86_64 only); mirrored to this repo's releases, version tracked from upstream releases |
-| `dsh-gui` | DeepSeek Harness desktop app (Intel only); version/sha come from upstream nightly feed, versioned dmg mirrored to this repo's releases; checked like other packages |
-| `cmake` | Cross-platform build tool, upstream universal macOS package (Intel slice); core has no Intel bottle, installs in seconds instead of compiling |
-| `grok-bot` | Cursor Grok Bot desktop agent (Intel only); mirrored to this repo's releases, version tracked from Cursor's download page |
-| `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero dependencies); core has no Intel bottle and its dependency tree builds from source |
-| `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies); core has no Intel bottle and pulls a Python stack |
-| `libplist` / `libimobiledevice-glue` / `libtatsu` / `libusbmuxd` / `libimobiledevice` | iOS device communication stack, compiled from source on Intel (core has no Intel bottles); dependencies use this tap's bottled `fork-libtasn1` and `fork-openssl@4` |
-| `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends), compiled from source on Intel (upstream's macOS asset is arm64-only and core has no Intel Tahoe bottle); cmake build dependency taken from this tap |
-| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's bottled `guile`, `python@3.14`, `fork-bdw-gc`, `fork-xz`, and `fork-zstd`; version tracked via GitHub releases with `.sha256` sidecar |
-| `mirage-wallpaper` | Mirage native live wallpaper engine, compatible with Wallpaper Engine (Intel-only cask, thin x86_64, notarized); upstream per-arch builds mirrored to this repo's releases, version tracked via custom checker |
-| `llvm` | Next-gen compiler infrastructure, upstream 19.1.7 Intel macOS prebuilt pinned (later versions are ARM64-only; building 23.x from source exceeds the 6h CI limit); thin x86_64, zero dependencies, keg-only like core; point bindgen at it via `LIBCLANG_PATH` |
-| `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
-| `toshllm` | ToshLLM local LLM runner with Metal acceleration for Intel AMD GPUs (Intel-only cask, thin x86_64, notarized, self-updating); upstream dmg mirrored to this repo's releases, version tracked from upstream releases |
-| `lceda-pro` | LCEDA Pro electronic design automation software (Intel x64 only, thin x86_64, notarized); cask mirrored to this repo's releases (zip wraps a dmg, unpacked automatically), version tracked from the official download page's Intel(x64) row |
-| `lceda` | LCEDA Standard electronic design automation software (Intel x64 only, thin x86_64, notarized); cask mirrored to this repo's releases, version tracked from the official download page's Intel(x64) row |
-| `chisel` | Fast TCP/UDP tunnel over HTTP(S), official Intel bare binary (`chisel_<ver>_darwin_amd64.gz`, zero dependencies); version tracked from GitHub releases; shares its name with core's unrelated LLDB command set — uninstall one before installing the other |
-| `exiftool` | Read/write/edit image metadata, pure Perl with zero compilation; official `Image-ExifTool-<ver>.tar.gz` bottled for Intel Tahoe, version tracked from homebrew/core; core's optional Brotli/LZMA Perl modules are omitted; shares its name with core's formula — uninstall one before installing the other |
-| `python@3.15` | Python 3.15 interpreter, compiled once on Intel (core has no Intel Tahoe bottle); shares its name with core's formula — uninstall core's first; this tap's meson depends on it so meson updates no longer rebuild Python from source |
-| `meson` | Fast build system, shares its name with core's formula — uninstall core's first; depends on this tap's `ninja` and `python@3.15`, bottled for Intel Tahoe so it no longer pulls core's source-built Python |
-| `lody` | Lody desktop app for sharing coding agent sessions across desktop and mobile; cask mirrored from the official Intel dmg (`Lody-<ver>-x64.dmg`), version tracked from the core cask |
-| `qoder` | Qoder CN (China edition) agentic coding platform by Alibaba; cask mirrored from the official Intel dmg (`Qoder-CN-mac-x64.dmg`), version tracked from the qoder.cn changelog; shares its token with core's international `qoder` cask — uninstall one before installing the other |
-| `fork-*` (14) | Dependency layer: runtime deps with no Intel Tahoe bottle in core are taken over under the same name whenever no core dependents remain, or kept renamed as `fork-*` when core dependents still exist (14 remaining: `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`/`@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`); `keg_only`, built from source, and referenced by full name `bemly/tahoe/fork-*` (list in AGENTS.md 6.3) |
-| `openjdk` / `openjdk@26` | OpenJDK 26 GA official macOS x64 prebuilt (`keg_only`); shares its name with core's formula — uninstall core's first |
-| `openjdk@17` / `openjdk@21` | Eclipse Temurin x64 JDKs (versioned via the Adoptium API, `keg_only`); same-name conflict with core |
-| `git` | Git itself, built from core sources on Intel (depends on fork-pcre2/gettext/openssl@4); same-name conflict with core |
-| `bash` | GNU Bash 5.3, built from core sources on Intel (`ncurses`/fork-readline/fork-gettext); same-name conflict with core |
-| `wget` / `aria2` | Download tools, built from core sources on Intel (`libidn2`/`libpsl`/`c-ares`/`libssh2`/`sqlite` + fork-openssl@4 and friends); same-name conflict with core |
-| `automake` / `abseil` / `svt-av1` / `python@3.11` | Build/runtime dependencies built from core sources on Intel (automake, abseil, SVT-AV1, Python 3.11); same-name conflict with core |
-| `guile` / `jemalloc` / `libev` / `libnghttp2` / `libssh` / `libyaml` / `simdjson` / `snappy` (and 20 promoted `fork-*` deps) | Same-name dependency takeovers (keep the core name, uninstall core's build first), built from source and bottled — including `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `jpeg-turbo`, `libidn2`, `libpng`, `libpsl`, `libssh2`, `libusb`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `p11-kit`, `pixman`, `python@3.14`, and `sqlite` |
-| `fzf` | Command-line fuzzy finder, upstream `fzf-<ver>-darwin_amd64.tar.gz` single binary; version tracked from GitHub releases |
-| `zig` | Zig toolchain, official `zig-x86_64-macos-<ver>.tar.xz` (Intel host); same-name conflict with core |
-| `swift` | Official Swift 6.4.2 macOS pkg repackaged, exposing only `swift`/`swiftc` (no collisions with other toolchains); version tracked from swift.org |
-| `llvm-mingw` | LLVM/Clang-based mingw-w64 cross toolchain (Intel host → Windows), version tracked from GitHub releases |
-| `aarch64-unknown-linux-gnu` | GCC cross toolchain targeting aarch64 Linux (Intel host prebuilt); companion to `x86_64-unknown-linux-gnu` |
-| `qwen-ime` | Qwen input method, cask taking the Mac dmg from the upstream download API and mirroring it to this repo's releases |
-| `antigravity-cli` | Google Antigravity CLI (installed as `agy`), repackaged from the official Intel macOS flat binary; version tracked from the official auto-updater manifest |
-| `dotnet` | .NET SDK 11, repackaged from the official macOS x64 tarball (whole tree into the prefix plus a `dotnet` shim); version tracked from Microsoft's release-metadata API; same-name conflict with core |
-| `node@20` | Node.js 20 LTS, taken directly from the official `node-v20.x-darwin-x64.tar.gz`; same-name conflict with core |
-| `postgresql@13` | PostgreSQL 13, repackaged from EDB's official macOS x64 binaries (only bin/include/lib/share — pgAdmin and the other apps are skipped); `keg_only` because the bundled openssl/icu would clash with core, so add `/usr/local/opt/postgresql@13/bin` to PATH to use its commands; same-name conflict with core |
-| `freeling` | Suite of language analyzers (tokenizing, POS tagging, named entities and friends), taken over under the same name and built from core sources; the bundled dynet/eigen copies are unbundled in favour of this tap's `dynet`/`eigen@3`/`boost@1.85`/`icu4c@78`; same-name conflict with core |
-| `icu4c@78` | ICU 78 Unicode / globalization libraries, taken over under the same name and built from source (`keg_only`); dependency of `freeling` |
-| `boost@1.85` | Boost C++ libraries 1.85, from the third-party prebuilt-boost macOS x86 `static+shared` package (prebuilt dylibs get an `@rpath` added and are re-signed ad-hoc); dependency of `freeling`; same-name conflict with core |
-| `wimlib` | Library plus the `wimlib-imagex` tools to create, extract and modify Windows Imaging (WIM) files, built from core sources on Intel (autotools, built with `fork-pkgconf`); no runtime dependencies on macOS |
-| `antigravity` | Google Antigravity agent IDE, **shipped as a patched artifact**: the official Intel dmg is unpacked, `app.asar` is rewritten statically (Chinese localization + an extra model-name dictionary (Gemini→哈基米, element codenames→periodic-table characters, Claude→克劳德…) + an in-page Gemini companion widget showing quota and reset time, with your own images importable as the character; in-app auto-update disabled so the patch cannot be overwritten) and the app is re-signed ad-hoc, then the dmg is mirrored to this repo's releases. Built reproducibly by `Widgets/antigravity-niang/build.sh`; version tracked from the core cask plus this release's `.sha256` sidecar. the cask clears brew's quarantine flag after install so it opens without a Gatekeeper prompt (ad-hoc re-sign, no notarization); shares its token with core's unpatched `antigravity` cask — uninstall one before installing the other |
-| `jadx` | Dex to Java decompiler (`jadx` and `jadx-gui`), repackaged from the official `jadx-<ver>.zip` prebuilt release; depends on this tap's `openjdk`; same-name conflict with core |
-| `xcodegen` | Generate Xcode projects from a spec file, official universal prebuilt (`xcodegen.zip` with `SettingPresets`, zero dependencies); same-name conflict with core |
-| `starship` | Cross-shell prompt, official x86_64 prebuilt (`starship-x86_64-apple-darwin.tar.gz`) with generated shell completions; same-name conflict with core |
+| `aarch64-unknown-linux-gnu` | GCC cross toolchain targeting aarch64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's `guile`, `python@3.14`, `fork-bdw-gc`, `fork-xz`, and `fork-zstd` |
+| `antigravity-cli` | Google Antigravity CLI (`agy`), repackaged from the official Intel macOS flat binary; version tracked from the official auto-updater manifest |
+| `boost@1.85` | Boost C++ 1.85 libraries from third-party `prebuilt-boost` macOS x86 `static+shared` archive (dylibs get `@rpath` patched and re-signed ad-hoc); dependency of `freeling`; same-name conflict with core |
 | `bun` | JavaScript runtime/bundler/package manager, official Intel prebuilt (`bun-darwin-x64.zip`, ships `bun` + `bunx` symlink); same-name conflict with core |
+| `caddy` | Extensible web server with automatic HTTPS, Intel static build from upstream (`caddy_<ver>_mac_amd64.tar.gz`) |
+| `chisel` | Fast TCP/UDP tunnel over HTTP(S), official Intel bare binary (`chisel_<ver>_darwin_amd64.gz`, zero dependencies); shares its name with core's unrelated LLDB command set — uninstall one before installing the other |
+| `cmake` | Cross-platform build tool, upstream universal macOS package (Intel slice); core has no Intel bottle, installs in seconds instead of compiling |
+| `cmd` | Terminal AI coding agent, npm package `command-code` (exposes the `cmd` command only); depends on this tap's `node` bottle; pinned, no update checks |
+| `deepseek-harness` | DeepSeek agent harness, npm package `@deepseek-ai/dsh` (exposes `dsh`, `dsh web` serves the browser UI); depends on this tap's `node` bottle; tracks npm `latest` |
 | `docker` | Docker CLI, official macOS x86_64 static binary (`docker-<ver>.tgz`) with generated completions; same-name conflict with core |
+| `docker-buildx` | Docker Buildx CLI plugin, official `buildx-v<ver>.darwin-amd64` bare binary; version tracks `homebrew/core` |
+| `docker-compose` | Docker Compose plugin, official `docker-compose-darwin-x86_64` bare binary; version tracks `homebrew/core` |
+| `dotnet` | .NET SDK, repackaged from the official macOS x64 tarball (whole tree into prefix plus a `dotnet` shim); tracked via Microsoft's release-metadata API; same-name conflict with core |
+| `exiftool` | Read/write/edit image metadata, pure Perl from official `Image-ExifTool-<ver>.tar.gz` (omits core's optional XS/Brotli/LZMA modules); same-name conflict with core |
+| `fastfetch` | Neofetch-like system info tool, taken from `fastfetch-macos-amd64.tar.gz` (release tag has no `v` prefix) |
+| `ffmpeg` | FFmpeg itself, Intel x86_64 static build from evermeet (`ffmpeg-<ver>.zip`); version tracks `homebrew/core` |
+| `ffplay` | FFmpeg media player, Intel static build from evermeet, versioned with this tap's `ffmpeg`; no core counterpart |
+| `ffprobe` | FFmpeg stream analyzer, Intel static build from evermeet, versioned with this tap's `ffmpeg`; no core counterpart |
+| `ffserver` | Legacy FFmpeg streaming server (last static build 3.4.2, removed upstream in 4.0); pinned, no update checks |
+| `fish` | User-friendly shell, unix tree from the official `fish-<ver>.app.zip` (Intel slice of universal binary); version tracks `homebrew/core` |
+| `frida-server` | Frida dynamic instrumentation server, upstream bare binary from `frida/frida` releases (Intel only); run with `sudo`, listens on `127.0.0.1:27042` |
+| `fzf` | Command-line fuzzy finder, upstream `fzf-<ver>-darwin_amd64.tar.gz` single binary; version tracked from GitHub releases |
+| `gh` | GitHub CLI, taken directly from `gh_<ver>_macOS_amd64.zip` |
+| `git-lfs` | Git extension for versioning large files, upstream Intel build with full man pages (`git-lfs-darwin-amd64-v<ver>.zip`); run `git lfs install` once after install |
+| `go` | Go toolchain, official `go<ver>.darwin-amd64.tar.gz` (self-contained, zero dependencies); version tracks `homebrew/core` |
+| `h2spec` | HTTP/2 specification conformance testing tool, official `h2spec_darwin_amd64.tar.gz` |
+| `hyperfine` | Command-line benchmarking tool, official `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz` with man pages and completions |
+| `iperf3` | Network bandwidth measurement tool, static build (`iperf3-amd64-osx-15`, zero `openssl@4` dependency) |
+| `jadx` | Dex to Java decompiler (`jadx` and `jadx-gui`), official `jadx-<ver>.zip` prebuilt release; depends on this tap's `openjdk`; same-name conflict with core |
 | `lima` | Linux virtual machines (`limactl`/`lima` and friends), official `lima-<ver>-Darwin-x86_64.tar.gz` prebuilt with generated completions; same-name conflict with core |
-| `mercurial` | Distributed version control system (`hg` + `chg`), built from source on Intel with this tap's `python@3.11`; same-name conflict with core |
-| `spirv-tools` | SPIR-V shader optimizer/validator tools, compiled from core sources (zero runtime dependencies); same-name conflict with core |
-| `vulkan-loader` | Vulkan ICD Loader, compiled from core sources (depends only on core's `vulkan-headers` `all` bottle); same-name conflict with core |
-| `gnupg` | GNU Privacy Guard (OpenPGP), compiled from core sources reusing this tap's `fork-readline`/`fork-gettext` together with same-name `gnutls`, `libusb`, `libassuan`, `libgcrypt`, `libgpg-error`, `libksba`, `npth`, and `pinentry`; same-name conflict with core |
+| `llvm` | Compiler infrastructure, upstream 19.1.7 Intel macOS prebuilt pinned (later releases are ARM64-only; building 23.x from source exceeds the 6h CI limit); thin x86_64, zero deps, keg-only; point bindgen at it via `LIBCLANG_PATH` |
+| `llvm-mingw` | LLVM/Clang-based mingw-w64 cross toolchain (Intel host → Windows), version tracked from GitHub releases |
+| `mufetch` | System info tool, from `mufetch_darwin_x86_64.tar.gz` |
+| `ninja` | Small build system, upstream universal binary (Intel slice) |
+| `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
+| `node@20` | Node.js 20 LTS, taken directly from the official `node-v20.x-darwin-x64.tar.gz`; same-name conflict with core |
+| `node@22` | Node.js 22 LTS, taken directly from the official `node-v22.x-darwin-x64.tar.gz` |
+| `node@24` | Node.js 24 LTS, taken directly from the official `node-v24.x-darwin-x64.tar.gz` |
+| `opencode` | AI coding agent, macOS builds (`opencode-darwin-x64/arm64.zip`) from `anomalyco/homebrew-tap` (Intel bottled, ARM direct link); depends on `bemly/tahoe/ripgrep`; shares its name with core's npm build |
+| `openjdk` | OpenJDK 26 GA official macOS x64 prebuilt (`keg_only`); shares its name with core's formula |
+| `openjdk@17` | Eclipse Temurin 17 x64 JDK (tracked via Adoptium API, `keg_only`); same-name conflict with core |
+| `openjdk@21` | Eclipse Temurin 21 x64 JDK (tracked via Adoptium API, `keg_only`); same-name conflict with core |
+| `openjdk@26` | OpenJDK 26 GA official macOS x64 prebuilt (`keg_only`, pinned to line 26); same-name conflict with core |
+| `postgresql@13` | PostgreSQL 13, repackaged from EDB's official macOS x64 binaries (bin/include/lib/share only — pgAdmin skipped); `keg_only` to avoid bundled openssl/icu conflicts; add `opt/postgresql@13/bin` to `PATH` |
+| `protobuf` | Protocol buffers compiler (`protoc` + headers), official macOS x86_64 prebuilt (`protoc-<ver>-osx-x86_64.zip`); same-name conflict with core |
+| `rustup` | Official static Rust toolchain installer, same name as core; ships `rustup` plus cargo/rustc proxy shims, toolchains managed via `rustup toolchain install stable` |
+| `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero runtime dependencies, includes `adb` and `scrcpy-server`) |
+| `sst` | SST framework, Intel-only slice of `anomalyco/homebrew-tap` (`sst-mac-x86_64.tar.gz`) |
+| `starship` | Cross-shell prompt, official x86_64 prebuilt (`starship-x86_64-apple-darwin.tar.gz`) with generated shell completions; same-name conflict with core |
+| `swift` | Official Swift macOS `.pkg` repackaged, exposing only `swift`/`swiftc` (no collisions with other toolchains); tracked from swift.org |
+| `torpedo` | `sst/torpedo` VPC database access tool, Intel-only slice of `anomalyco/homebrew-tap` (`torpedo-mac-x86_64.tar.gz`) |
+| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's `guile`, `python@3.14`, `fork-bdw-gc`, `fork-xz`, and `fork-zstd` |
+| `xcodegen` | Generate Xcode projects from a spec file, official universal prebuilt (`xcodegen.zip` with `SettingPresets`, zero dependencies); same-name conflict with core |
+| `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies; avoids pulling a full Python stack) |
+| `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
+| `zig` | Zig toolchain, official `zig-x86_64-macos-<ver>.tar.xz` (Intel host); same-name conflict with core |
+
+### Source-Built User Formulae (32)
+
+Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources and distributed as GHCR bottles.
+
+| Package | Notes |
+| --- | --- |
+| `aria2` | Multi-protocol download utility (`c-ares`/`libssh2`/`sqlite`/fork-openssl@4/fork-gettext); same-name conflict with core |
+| `automake` | GNU Automake build tool (runtime depends on `autoconf`); same-name conflict with core |
+| `bash` | GNU Bash 5.3 (`ncurses`/fork-readline/fork-gettext); same-name conflict with core |
+| `capstone` | Disassembly framework (`fork-gettext`); bottled dependency of `qemu` |
+| `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl, ships the `curl3` command only |
+| `dtc` | Device tree compiler (`libyaml`); bottled dependency of `qemu` |
+| `freeling` | Language analysis suite (tokenizing, POS tagging, NER); unbundles bundled dynet/eigen in favor of `boost@1.85`, `dynet`, `icu4c@78`; same-name conflict with core |
+| `git` | Distributed version control system (`fork-pcre2`/`fork-gettext` on macOS with CommonCrypto); same-name conflict with core |
+| `gnupg` | GNU Privacy Guard (OpenPGP), compiled from core sources using `gnutls`, `libusb`, `fork-readline`, `fork-gettext`, and the GnuPG C library stack; same-name conflict with core |
+| `graphviz` | Graph visualization software, zero-runtime-dependency build (Quartz and built-in plugins provide PDF/PNG/SVG) |
+| `libimobiledevice` | iOS device communication tools (`idevice*`), compiled with `libimobiledevice-glue`, `libplist`, `libtatsu`, `libusbmuxd`, `fork-libtasn1`, `fork-openssl@4` |
+| `libimobiledevice-glue` | Glue library for the `libimobiledevice` stack (`libplist`); same-name conflict with core |
+| `libnghttp3` | HTTP/3 C library; bottled dependency of `curl3` |
+| `libngtcp2` | QUIC protocol C library (`fork-openssl@4`); bottled dependency of `curl3` |
+| `libplist` | Apple Property List library; base leaf of the `libimobiledevice` stack |
+| `libslirp` | User-mode networking library (`glib`); bottled dependency of `qemu` |
+| `libtatsu` | Apple TSS library for the `libimobiledevice` stack |
+| `libusbmuxd` | USB multiplexor library for iOS devices |
+| `make` | GNU make (installed as `gmake`), mirrored even though core has a tahoe bottle |
+| `mercurial` | Distributed version control system (`hg` + `chg`), built with this tap's `python@3.11`; same-name conflict with core |
+| `meson` | Fast build system, depends on this tap's `ninja` and `python@3.15` so updates never rebuild Python from source; same-name conflict with core |
+| `neofetch` | System info script (archived upstream, last release 7.1.0); pinned, no update checks |
+| `nghttp2` | HTTP/2 tools (`nghttp`/`h2load`/`nghttpx`) built with `--enable-app` (`c-ares`/`jemalloc`/`libev`/`libnghttp2`/`fork-openssl@3`) |
+| `python@3.11` | Python 3.11 interpreter (`mpdecimal`/`sqlite`/`fork-openssl@3`/`fork-xz`); used by `mercurial`; same-name conflict with core |
+| `python@3.15` | Python 3.15 interpreter (`mpdecimal`/`sqlite`/`fork-openssl@4`/`fork-xz`/`fork-zstd`); used by `meson`; same-name conflict with core |
+| `qemu` | Generic machine emulator and virtualizer (68 targets, full tap dependency closure bottled on CI) |
+| `ripgrep` | Fast grep replacement (`fork-pcre2`), bottled dependency of `opencode` |
+| `socat` | SOcket CAT relay tool (`fork-openssl@3`), compiled from source |
+| `vde` | Virtual distributed Ethernet (`-std=gnu17` for Clang 26), bottled dependency of `qemu` |
+| `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends, `fork-openssl@4`; upstream macOS asset is arm64-only) |
+| `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`); same-name conflict with core |
+| `wimlib` | Library and `wimlib-imagex` tools for WIM images (zero macOS runtime dependencies, built with `fork-pkgconf`) |
+
+### Runtime Dependency Layer — Same-Name Takeovers (39 source libraries) & `fork-*` (14)
+
+Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are either taken over under their core name (when no `homebrew/core` dependents remain on a typical setup) or kept renamed as `keg_only` `fork-*` packages:
+
+- **Same-name dependency libraries (39 source-built formulae, totaling 71 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
+  `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `jpeg-turbo`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libusb`, `libyaml`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
+  *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
+- **Renamed `keg_only` `fork-*` packages (14)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
+  `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`, `fork-openssl@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
+
+### Desktop Apps & Input Methods — Casks (25)
+
+| Cask | Arch | Notes |
+| --- | --- | --- |
+| `afm` | arm64 | AFM pinyin input method (Apple Silicon-only exception); installs into `~/Library/Input Methods` and auto-enables input source; pinned |
+| `amd` | universal | AMD lyrics downloader + `obcli` CLI; mirrored to this repo's releases; pinned |
+| `antigravity` | Intel | Google Antigravity IDE, **shipped as a patched artifact**: unpacks official Intel dmg, patches `app.asar` (Chinese localization + extra model-name dictionary + in-page Gemini companion widget; disables auto-update), re-signs ad-hoc, clears quarantine on install; built reproducibly by `Widgets/antigravity-niang/build.sh`; shares token with core's unpatched cask |
+| `blender-5x` | Intel | Blender 5.x Intel-optimized community build; mirrored to this repo's releases; shares `/Applications/Blender.app` with core's `blender` |
+| `brewui` | universal | Official Homebrew graphical interface (`Homebrew-<ver>.zip`); mirrored from GitHub releases |
+| `checkra1n` | Intel | checkm8 jailbreak app (core's cask is disabled over Gatekeeper); mirrored; pinned |
+| `doubao-ime` | universal | Doubao AI input method; installs into `~/Library/Input Methods` (user-level, no sudo) and auto-enables system input source; mirrored |
+| `dsh-gui` | Intel | DeepSeek Harness desktop app; version/sha tracked from upstream nightly feed; mirrored |
+| `github-copilot-app` | Intel | GitHub Copilot desktop app; mirrored from official Intel dmg; version tracks core cask |
+| `grok-bot` | Intel | Cursor Grok Bot desktop agent; mirrored; version tracked from Cursor download page |
+| `heliport` | universal | Intel Wi-Fi client app (`itlwmx`); mirrored; pinned |
+| `konsole` | dual | KDE terminal, dual-arch builds mirrored to this repo's releases; version is CI build number |
+| `lceda` | Intel | LCEDA Standard EDA software; mirrored; version tracked from official download page Intel(x64) row |
+| `lceda-pro` | Intel | LCEDA Pro EDA software (zip wraps a dmg); mirrored; version tracked from official download page Intel(x64) row |
+| `lody` | Intel | Lody desktop app for coding agent sessions; mirrored from official Intel dmg; version tracks core cask |
+| `macos-tskmgr` | dual | macOS Task Manager app, per-arch downloads via `arch` stanza; mirrored; pinned |
+| `mirage-wallpaper` | Intel | Mirage native live wallpaper engine (notarized); mirrored; tracked via custom checker |
+| `palera1n` | universal | checkm8 jailbreak app (universal dmg); mirrored; pinned |
+| `qoder` | Intel | Alibaba Qoder CN (China edition) AI coding platform; mirrored; shares token with core's international `qoder` cask |
+| `qwen-ime` | universal | Qwen AI input method; installs into `~/Library/Input Methods` (user-level, no sudo) and auto-enables system input source; mirrored |
+| `toshllm` | Intel | ToshLLM local LLM runner with Metal acceleration for Intel + AMD GPUs (notarized, self-updating); mirrored |
+| `winstart` | universal | Metro-style app launcher; mirrored to this repo's releases; pinned |
+| `wireshark` | Intel | Network protocol analyzer (official Intel dmg; Intel builds stop at 4.4.x); ships `tshark`/`editcap` shims; mirrored |
+| `workbuddy` | Intel | Tencent WorkBuddy AI office workspace (Electron desktop app); mirrored; tracked via its update feed |
+| `zcode` | dual | z.ai AI-assisted development environment (`arm64` + `x64` via `arch` stanza); mirrored; version tracks core cask |
 
 ## Switching sources (same-name conflict)
 
@@ -176,21 +211,22 @@ directory.
 
 Except for renamed `keg_only` `fork-*` packages (14) and tap-exclusive packages (`curl3`,
 `ffplay`, `ffprobe`, `ffserver`, `antigravity-cli`, `aarch64-unknown-linux-gnu`,
-`x86_64-unknown-linux-gnu`, `llvm-mingw`, `cmd`, `deepseek-harness`, `mufetch`, `sst`,
-`torpedo`, and tap-only casks), **any package sharing a name with `homebrew/core` requires
-uninstalling the other tap's build first** (`brew uninstall <name>` / `brew uninstall --cask <token>`):
+`x86_64-unknown-linux-gnu`, `llvm-mingw`, `cmd`, `deepseek-harness`, `frida-server`,
+`mufetch`, `sst`, `torpedo`, and tap-only casks), **any package sharing a name with
+`homebrew/core` requires uninstalling the other tap's build first** (`brew uninstall <name>`
+/ `brew uninstall --cask <token>`):
 
 ```bash
-# Switch linked kegs if both are already present in Cellar:
-brew unlink gh && brew link --overwrite bemly/tahoe/gh
-brew unlink fastfetch && brew link --overwrite bemly/tahoe/fastfetch
+# Switch a formula from homebrew/core to bemly/tahoe:
+brew uninstall gh
+brew install bemly/tahoe/gh
 
-# Revert to core:
-brew unlink bemly/tahoe/gh && brew link gh
-brew unlink bemly/tahoe/fastfetch && brew link fastfetch
+# Revert back to homebrew/core:
+brew uninstall bemly/tahoe/gh
+brew install gh
 ```
 
-`python@3.15` / `meson` are version-paired and must be switched by uninstalling:
+`python@3.15` / `meson` are version-paired and should be switched together:
 
 ```bash
 brew uninstall meson
@@ -198,89 +234,67 @@ brew uninstall --ignore-dependencies python@3.15
 brew install bemly/tahoe/meson
 ```
 
-Other same-name formulae (`node`, `node@20`/`22`/`24`, `go`, `cmake`, `git`, `bash`,
-`wget`, `aria2`, `automake`, `abseil`, `svt-av1`, `python@3.11`, `python@3.14`, `openjdk*`,
-`guile`, `jemalloc`, `libev`, `libnghttp2`, `libssh`, `libyaml`, `simdjson`, `snappy`,
-`brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `jpeg-turbo`, `libidn2`,
-`libpng`, `libpsl`, `libssh2`, `libusb`, `lzo`, `mpdecimal`, `ncurses`, `nettle`,
-`p11-kit`, `pixman`, `sqlite`, `zig`, `swift`, `fzf`, `protobuf`, `z3`, `wimlib`,
-`ripgrep`, `dotnet`, `freeling`, `boost@1.85`, `icu4c@78`, `postgresql@13`, `chisel`,
-`exiftool`, `opencode`, `jadx`, `xcodegen`, `starship`, `bun`, `docker`, `lima`,
-`mercurial`, `spirv-tools`, `vulkan-loader`, `gnupg`, `libassuan`, `libgcrypt`,
-`libgpg-error`, `libksba`, `npth`, `pinentry`, etc.) and same-token casks
-(`zcode`, `lody`, `qoder`, `github-copilot-app`, `wireshark`, `checkra1n`, `palera1n`,
-`antigravity`; `blender-5x` also shares `/Applications/Blender.app` with core's `blender`)
-must likewise be uninstalled before switching taps.
-The `fork-*` packages are renamed and do not conflict with core.
+`antigravity` shares its token with core's unpatched `antigravity` cask (they share
+`Caskroom/antigravity` and cannot coexist):
 
-The `antigravity` cask is a special case: core has a cask of the same token for the same
-app, but core's is the unpatched official build while this tap's is the localized/patched
-artifact. They share `Caskroom/antigravity` and cannot coexist either — run
-`brew uninstall --cask --force antigravity` before installing this tap's build.
+```bash
+brew uninstall --cask --force antigravity
+brew install --cask bemly/tahoe/antigravity
+```
+
+`blender-5x` uses a different token, but also installs into `/Applications/Blender.app`
+and conflicts with core's `blender` cask. The `fork-*` packages are renamed and `keg_only`,
+so they never conflict with core.
 
 ## GHCR bottles
 
-Packages are distributed from **GHCR**: `ghcr.io/v2/bemly/tahoe`
+Formula bottles are distributed from **GHCR**: `ghcr.io/v2/bemly/tahoe`
 (Homebrew strips the `homebrew-` prefix from the repository name, mirroring the
 structure of `ghcr.io/v2/homebrew/core`).
 
-Bottles are built directly from the upstream prebuilt packages where available.
-Source-only packages (e.g. `qemu`, `python@3.15`, `meson`) are compiled once on the
-same Intel runner — users still install bottles and never compile locally.
-The bottle tag is determined by the build machine's architecture and OS; to produce
-`x86_64_tahoe` the bottling job runs on a `macos-26-intel` runner.
+Bottles are built directly from upstream prebuilt packages where available.
+Source-only packages (e.g. `qemu`, `python@3.15`, `meson`) are compiled once on a
+`macos-26-intel` runner — users still install bottles and never compile locally.
 
-**A GHCR bottle contains only the formula itself, not its dependencies.** If a
-formula needs dependencies, those dependencies must be bottled in this tap too and
-referenced by full name (`bemly/tahoe/<name>`), never left to `homebrew/core`: core
-ships no Intel Tahoe bottles, so a bare dependency falls back to a local source build
-(this is why upgrading `graphviz` once triggered `libpng`/`librsvg`/`rust` builds).
-`bottle.yml` now recursively expands every formula's **runtime** dependency closure
-before building (build dependencies only compile on CI and don't affect users): tap
-dependencies without a bottle (and not being built in the same run) fail the job,
-and core dependencies without a `tahoe`/`x86_64_tahoe`/`all` bottle are listed and
-fail too. For legacy hub dependencies you can explicitly check `allow_unbottled_core`
-when triggering the workflow, but that reintroduces local source compilation and
-should only be a temporary escape hatch. `graphviz` avoids the problem by shipping
-a zero-runtime-dependency build (third-party renderer plugins disabled; Quartz and
-built-in plugins still provide PDF/PNG/SVG).
+**A GHCR bottle contains only the formula itself, not its dependencies.** All runtime
+dependencies are also bottled in this tap and referenced by full name
+(`bemly/tahoe/<name>`). `bottle.yml` recursively verifies runtime dependency bottle
+coverage before starting any build (`allow_unbottled_core: true` exists only as a
+manual escape hatch for maintainers).
 
-| Scenario | Action |
+| Scenario | Behavior |
 | --- | --- |
-| New version | `watch-updates` rewrites the formula and auto-triggers `bottle.yml` (manual triggering also works) |
-| No bottle in GHCR yet (newly added package) | Manually trigger `bottle.yml` to build and push |
-| No update | Keep downloading from GHCR |
-| Upstream asset unavailable | `watch-updates.yml` opens an issue alert |
+| New version | `watch-updates` rewrites the formula and triggers one `bottle.yml` run |
+| No bottle in GHCR yet (brief post-upgrade window) | `brew` falls back to the upstream `url` directly |
+| Upstream asset unavailable / needs manual sync | `watch-updates.yml` opens an `automated-alert` issue |
 
-In the short window after an upgrade lands but before the new bottle is on GHCR,
-brew falls back to the upstream `url` directly.
+## For Maintainers
 
-> GHCR packages are private by default; anonymous `brew install` returns 401.
-> If you hit this, change the package to public in
-> Repository Settings → Packages.
+### Trigger a CI bottle build
 
-## Trigger a CI bottle build (e.g. fastfetch)
-
-After adding or updating a formula, push the bottle to GHCR so installs don't fall
-back to the upstream direct link:
+After adding or updating a formula, push its bottle to GHCR:
 
 1. Open **Actions → Build bottle and publish to GHCR** in the GitHub repository.
 2. Click **Run workflow**.
 3. Enter the formula name (single, comma-separated like `gh,fastfetch`, or `all`) and run it.
 
-The workflow will: trust the tap → install with `--build-bottle` → run `brew bottle`
-→ overwrite the existing GHCR tag → `brew pr-upload` pushes to GHCR and writes the
-`bottle do` block back into the formula → commit and push.
+The workflow trusts the tap, checks recursive runtime dependencies, installs in
+topological order with `--build-bottle`, runs `brew bottle`, recreates the GHCR package
+via `brew pr-upload`, writes the `bottle do` block back, commits, and pushes.
 
-## Maintenance
+> Note: Newly created GHCR packages are private by default (returning `401` to anonymous
+> `brew install`). If the anonymous pull check warns, change the package visibility to
+> Public at `https://github.com/bemly?tab=packages` → **Package settings** → **Danger Zone**.
+
+### Workflows
 
 Four workflows, **all manually triggered via `workflow_dispatch` only** (no scheduled jobs):
 
 | Workflow | Purpose | Runner |
 | --- | --- | --- |
-| `watch-updates` | Batch-scans all `Formula/*.rb` and `Casks/*.rb` via `updater/*.swift` across 5 upstream streams (brew formula/cask, GitHub releases, raw taps, custom feeds); mirrors updated casks to GitHub Releases, rewrites formulas, commits to `main`, and triggers one `bottle` run | `ubuntu-latest` |
-| `bottle` | Recursively verifies runtime dependency bottle coverage, builds bottles in topological order, pushes to GHCR, and writes `bottle do` blocks back | `macos-26-intel` |
-| `patched` | Builds the patched `antigravity` cask artifact (`build.sh --upload`), fills the `.sha256` sidecar into the cask, runs `brew style` / `brew audit --strict`, and commits to `main` | `macos-26-intel` |
+| `watch-updates` | Batch-scans `Formula/*.rb` and `Casks/*.rb` via `updater/*.swift` across 4 upstream stream types (`customRelease`, `raw`, `github`, `brew`); mirrors updated casks to GitHub Releases, rewrites formulae, commits to `main`, and triggers one `bottle` run | `ubuntu-latest` |
+| `bottle` | Recursively verifies runtime dependency bottle coverage, builds bottles in topological order, pushes to GHCR, verifies anonymous pullability, and writes `bottle do` blocks back | `macos-26-intel` |
+| `patched` | Builds the patched `antigravity` cask artifact (`build.sh --upload`), writes the `.sha256` sidecar into the cask, runs `brew style` / `brew audit --strict`, and commits to `main` | `macos-26-intel` |
 | `sysroots` | Builds cross-compilation sysroots (`openssl-macos-arm64`, `linux-sysroot-x64/a64`) and publishes them to GitHub Releases | `macos-26` / `ubuntu-22.04` |
 
 Developer conventions: see [AGENTS.md](AGENTS.md).

@@ -19,7 +19,6 @@ class Qemu < Formula
     sha256 tahoe: "07b11df404f7f13c3eee776741781fc57a431bd1e71860e4e952f39536bcf602"
   end
 
-
   depends_on "bison" => :build # >= 3.0
   depends_on "libtool" => :build
   depends_on "bemly/tahoe/meson" => :build

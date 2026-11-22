@@ -1,14 +1,14 @@
 class Wabt < Formula
   desc "Web Assembly Binary Toolkit"
   homepage "https://github.com/WebAssembly/wabt"
-  # 代编译模式（core 拷入 + 双门槛，规则见 AGENTS.md 6 节 / 11.4 / 11.9）：
+  # 代编译模式（core 拷入 + 双门槛，规则见 AGENTS.md §6 / §11.2）：
   # 上游 GitHub Releases 的 macOS 资产只有 macos-arm64（1.0.38 的 macos-14 包
   # 也是纯 arm64，下载 file 实测）——Intel Mac 上游零预编译可用；core 同样只有
   # arm64_tahoe / x86_64_linux 瓶，无 x86_64_tahoe。url 行即上游源码 release
   # 资产（与 core 同源同 sha）。
   # 文件名 wabt-1.0.42.tar.xz 自带全版本号，brew 扫描正确，不写 version 行（11.3）。
   # audit 的「至少一条 http 镜像」不触发：wabt 不在 core curl 递归依赖树里
-  # （该 problem 仅在 curl_dep? 为真时出现，见 11.28 注释）。
+  # （该 problem 仅在 curl_dep? 为真时出现，见 AGENTS.md §11.1 注释）。
   url "https://github.com/WebAssembly/wabt/releases/download/1.0.42/wabt-1.0.42.tar.xz"
   sha256 "a76cda3c174a43097863a07fc0b0c202f770f53e21806ea2636f167d1ffb1e30"
   license "Apache-2.0"
@@ -41,7 +41,7 @@ class Wabt < Formula
 
   # 以下 install / test 照抄 core 公式（编译行为与官方一致，杜绝手写出错）；
   # install 尾部补拆箱校验（brew 6 起 def post_install 已废弃，校验挪进 install
-  # 尾部，见 11.37）。
+  # 尾部，见 AGENTS.md §11.1）。
   def install
     args = %w[
       -DBUILD_TESTS=OFF

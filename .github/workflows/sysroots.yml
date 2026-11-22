@@ -21,7 +21,7 @@ on:
       openssl_version:
         description: OpenSSL 版本（与本机 openssl@4 对齐）
         required: true
-        default: 4.0.3
+        default: 4.1.0
         type: string
       alsa_version:
         description: alsa-lib 版本（alsa-sys 0.4.x 对应 1.2.x）

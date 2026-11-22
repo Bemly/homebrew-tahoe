@@ -19,38 +19,12 @@ class Ninja < Formula
 
   # 与 homebrew/core 的 ninja 同名，二者共用 #{HOMEBREW_PREFIX}/Cellar/ninja，
   # 不能同时安装。安装后如需切换见 caveats。
-  def pre_install
-    # 磁盘空间检查：本体不足 1MB，留足余量
-    required_mb = 256
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 ninja #{version}（Intel x86_64）"
-
-    # 若已存在其他来源的 ninja，提前告知同名冲突的处理方式
-    other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/ninja/*"].map { |keg| File.basename(keg) }
-                                                      .reject { |v| v == version.to_s }
-    return if other_kegs.empty?
-
-    opoo <<~EOS
-      Cellar 中已存在其他版本的 ninja：#{other_kegs.join(", ")}
-      本 formula 与 homebrew/core 的 ninja 同名，不能同时安装，请先卸载另一方：
-        brew uninstall ninja
-    EOS
-  end
 
   def install
     # zip 内无顶层目录：单个 ninja 二进制直接在 CWD。
     bin.install "ninja"
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     ninja = bin/"ninja"
 
     # 1) 必须含 x86_64 切片（universal 二进制含 arm64+x86_64，防止误装纯 arm64 包）

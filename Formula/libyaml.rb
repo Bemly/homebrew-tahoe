@@ -1,11 +1,4 @@
 class Libyaml < Formula
-  depends_on arch: :x86_64
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "72c3b129545e93a1e6ddb7857ca14b9c490e266f63c4815aad4638a225e2d552"
-  end
-  depends_on macos: :tahoe
   desc "YAML Parser"
   homepage "https://github.com/yaml/libyaml"
   url "https://github.com/yaml/libyaml/archive/refs/tags/0.2.5.tar.gz"
@@ -18,10 +11,16 @@ class Libyaml < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "72c3b129545e93a1e6ddb7857ca14b9c490e266f63c4815aad4638a225e2d552"
+  end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
+  depends_on arch: :x86_64
+  depends_on macos: :tahoe
 
   deny_network_access!
 

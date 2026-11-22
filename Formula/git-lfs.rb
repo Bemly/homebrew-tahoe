@@ -14,42 +14,16 @@ class GitLfs < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "47fe3ad6f7c9b70f3d065d196a8226cd636edc8e5cd9b5f05ee96451854acaef"
   end
 
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
   # 与 homebrew/core 的 git-lfs 同名，二者共用 #{HOMEBREW_PREFIX}/Cellar/git-lfs，
   # 不能同时安装。安装后如需切换见 caveats。
-  def pre_install
-    # 磁盘空间检查：本体约 15MB + man 页，留足余量
-    required_mb = 256
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 git-lfs #{version}（Intel x86_64）"
-
-    # 若已存在其他来源的 git-lfs，提前告知同名冲突的处理方式
-    other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/git-lfs/*"].map { |keg| File.basename(keg) }
-                                                        .reject { |v| v == version.to_s }
-    return if other_kegs.empty?
-
-    opoo <<~EOS
-      Cellar 中已存在其他版本的 git-lfs：#{other_kegs.join(", ")}
-      本 formula 与 homebrew/core 的 git-lfs 同名，不能同时安装，请先卸载另一方：
-        brew uninstall git-lfs
-    EOS
-  end
 
   def install
     # 实测：brew 解压后会下降进 zip 内唯一的顶层目录（git-lfs-<version>/），
-    # 故用 ** 通配定位二进制与 man 页（见 11.1）。
+    # 故用 ** 通配定位二进制与 man 页（见 AGENTS.md §11.1）。
     bin.install Dir["**/git-lfs"].fetch(0)
     man1.install Dir["**/man/man1/*.1"]
     man5.install Dir["**/man/man5/*.5"]
@@ -57,9 +31,8 @@ class GitLfs < Formula
 
     readme = Dir["**/README.md"].first
     doc.install readme if readme
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     git_lfs = bin/"git-lfs"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

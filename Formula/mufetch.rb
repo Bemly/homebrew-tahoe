@@ -21,9 +21,8 @@ class Mufetch < Formula
     bin.install "mufetch"
     doc.install "README.md"
     doc.install "LICENSE"
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     mufetch = bin/"mufetch"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

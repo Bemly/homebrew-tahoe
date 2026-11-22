@@ -11,45 +11,18 @@ class Iperf3 < Formula
   sha256 "497e0a3f2be9f02f87459fac8f0d2904a6dae6025dc80241b722a0114d06db71"
   license "BSD-3-Clause"
 
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
   # 与 homebrew/core 的 iperf3 同名，二者共用 #{HOMEBREW_PREFIX}/Cellar/iperf3，
   # 不能同时安装。安装后如需切换见 caveats。
-  def pre_install
-    # 磁盘空间检查：本体约 1MB，留足余量
-    required_mb = 256
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 iperf3 #{version}（Intel x86_64 静态构建）"
-
-    # 若已存在其他来源的 iperf3，提前告知同名冲突的处理方式
-    other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/iperf3/*"].map { |keg| File.basename(keg) }
-                                                       .reject { |v| v == version.to_s }
-    return if other_kegs.empty?
-
-    opoo <<~EOS
-      Cellar 中已存在其他版本的 iperf3：#{other_kegs.join(", ")}
-      本 formula 与 homebrew/core 的 iperf3 同名，不能同时安装，请先卸载另一方：
-        brew uninstall iperf3
-    EOS
-  end
 
   def install
     # 上游裸二进制（无压缩包）：文件名后缀随构建机变化，通配后改名装进 bin。
     bin.install Dir["iperf3-amd64-osx-*"].fetch(0) => "iperf3"
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     iperf3 = bin/"iperf3"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

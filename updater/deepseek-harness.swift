@@ -1,7 +1,7 @@
 // updater/deepseek-harness.swift —— 与 Formula/deepseek-harness.rb 一一同名的检查器入口
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/deepseek-harness.swift -o /tmp/check-dsh && /tmp/check-dsh
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 // 注意：swiftc 只允许 main.swift 含顶层代码，所以入口用 @main 而不是裸语句。
 //
 // DeepSeek Harness（@deepseek-ai/dsh）不在 brew core，走 customRelease 自定义流。

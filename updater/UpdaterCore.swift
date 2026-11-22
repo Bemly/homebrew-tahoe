@@ -36,7 +36,7 @@
 // （逐个 HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行；url 行不动，
 // 靠 #{version}/#{arch} 插值覆盖新版本）。双产物无 checksums 模板，
 // 有更新时逐个下载实算；镜像（uploadRelease=true，konsole/zcode）下先双包
-// 上传本仓 Release 再改写（url 插值须已指向本仓 Release，见 11.34）。
+// 上传本仓 Release 再改写（url 插值须已指向本仓 Release，见 AGENTS.md §11.5）。
 //
 // 输出契约与旧版 scripts/check-updates.sh 一致（GITHUB_OUTPUT 键名不变）；
 // brew 流查不到软件（API 404）时输出 status=brew-missing 并停（TODO 见 runCheck）。
@@ -108,6 +108,10 @@ struct CheckConfig {
     /// 给浮动直链（dsh-gui 的 dsh-latest-*.dmg）与只留最新快照（konsole）这类
     /// "内容会变但版本号不变" 的上游准备——默认 false，其他包行为逐字节不变。
     let alwaysUpdate: Bool
+    /// 需人工同步原因：非 nil 时检测到新版不自动改写，输出 status=manual-sync
+    /// 由 watch-updates.yml 发 `[需人工同步]` issue 告警（适用于含版本耦合
+    /// resource 或 patch_checksum_pairs 的公式，如 git / bash / fork-readline）。
+    let manualSyncReason: String?
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -125,7 +129,8 @@ struct CheckConfig {
           archArtifacts: [String]? = nil,
           downloadURLForArch: ((String, String) -> String)? = nil,
           rawDualArch: Bool = false,
-          alwaysUpdate: Bool = false) {
+          alwaysUpdate: Bool = false,
+          manualSyncReason: String? = nil) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -143,6 +148,7 @@ struct CheckConfig {
         self.downloadURLForArch = downloadURLForArch
         self.rawDualArch = rawDualArch
         self.alwaysUpdate = alwaysUpdate
+        self.manualSyncReason = manualSyncReason
     }
 }
 
@@ -381,7 +387,7 @@ func compareVersions(_ a: String, _ b: String) -> Int {
         let bv = sb[i]
         if av == bv { continue }
         // 纯数字段按数值比：前导零只影响字面（如 yt-dlp 的 brew 判据 "2026.8.19"
-        // vs GitHub tag "2026.08.19"，数值相等即同一版本；11.48）。
+        // vs GitHub tag "2026.08.19"，数值相等即同一版本；见 AGENTS.md §11.3）。
         // 不这么判则每次都误报更新，重写出 404 URL（brew 侧无零可补）。
         if let ai = Int(av), let bi = Int(bv) {
             if ai != bi { return ai < bi ? -1 : 1 }
@@ -502,6 +508,7 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     let versionLine = try! NSRegularExpression(pattern: #"^([ \t]*)version "[^"]+""#)
     let bottleStart = try! NSRegularExpression(pattern: #"^[ \t]*bottle do[ \t]*$"#)
     let blockEnd = try! NSRegularExpression(pattern: #"^[ \t]*end[ \t]*$"#)
+    let revisionLine = try! NSRegularExpression(pattern: #"^  revision [0-9]+[ \t]*$"#)
     // fails_with 块守卫（与 currentVersion 同套正则）：块内的 version 行是编译器
     // 版本（如 gcc "13"），绝不能当公式版本改写，见下。
     let failsStart = try! NSRegularExpression(pattern: #"^[ \t]*fails_with\b.*\bdo[ \t]*$"#)
@@ -516,6 +523,8 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     var result: [String] = []
     var bottleStale = false
     var skipping = false
+    var justClosedBottle = false
+    var revisionRemoved = false
     var urlReplaced = false
     var shaReplaced = false
     var versionReplaced = false
@@ -526,8 +535,18 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
     for line in content.components(separatedBy: "\n") {
         if skipping {
             // bottle 块内容与 do/end 行都丢掉；遇到块内第一个 end 即结束
-            if blockEnd.firstMatch(in: line, range: fullRange(line)) != nil { skipping = false }
+            if blockEnd.firstMatch(in: line, range: fullRange(line)) != nil {
+                skipping = false
+                justClosedBottle = true
+            }
             continue
+        }
+        if justClosedBottle {
+            justClosedBottle = false
+            if line.trimmingCharacters(in: .whitespaces).isEmpty,
+               result.last?.trimmingCharacters(in: .whitespaces).isEmpty == true {
+                continue
+            }
         }
         if bottleStart.firstMatch(in: line, range: fullRange(line)) != nil {
             skipping = true
@@ -535,7 +554,7 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
             continue
         }
         // fails_with 块深度跟踪：块内 version 行是编译器版本，版本同步必须跳过
-        //（无顶层 version 行的公式如 protobuf，第一命中即块内行——11.29 只守了
+        //（无顶层 version 行的公式如 protobuf，第一命中即块内行——此前只守了
         // 解析侧，改写侧漏网把 gcc "12" 污染成 36.x，2026-10-09 实测）。
         // bare 形态（make 的 `fails_with :clang` 无 do）不进深度，配套 end 照常忽略。
         if failsStart.firstMatch(in: line, range: fullRange(line)) != nil {
@@ -543,6 +562,13 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
         } else if failsDepth > 0,
                   blockEnd.firstMatch(in: line, range: fullRange(line)) != nil {
             failsDepth -= 1
+        }
+
+        // 上游版本升级时清除旧版本的 revision N（core 每次大/小版本升级会归零 revision）
+        if oldVersion != newVersion, !revisionRemoved, failsDepth == 0,
+           revisionLine.firstMatch(in: line, range: fullRange(line)) != nil {
+            revisionRemoved = true
+            continue
         }
 
         var replaced = line
@@ -592,7 +618,7 @@ func rewriteFormula(_ content: String, newURL: String, newVersion: String,
             }
             urlReplaced = true
         }
-        // 镜像行（audit --strict 强制要求至少一个，见 11.28）：永远做版本子串
+        // 镜像行（audit --strict 强制要求至少一个，见 AGENTS.md §11.1）：永远做版本子串
         // 替换，保持可下载。只处理点分段格式（下划线变体如 curl 的
         // curl-8_22_0 不在此列——这类公式只保留点分段镜像，见各公式头注）；
         // cask 无 mirror 行，此分支天然空转。
@@ -701,7 +727,7 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
         }
         var created = false
         for d in dls {
-            // gh 以本地文件名做资产名：改成上游 basename（单包镜像流同例，见 11.16）。
+            // gh 以本地文件名做资产名：改成上游 basename（单包镜像流同例，见 AGENTS.md §11.5）。
             // 空格同步换成点（GitHub 存资产时会这么干，见本文件单包分支注释；
             // %20 先解码，wireshark 的 appcast 直链是编码形态）。
             let rawName = URL(fileURLWithPath: d.url).lastPathComponent
@@ -801,6 +827,7 @@ func rewriteFormulaRawDual(_ content: String,
     var result: [String] = []
     var bottleStale = false
     var skipping = false
+    var justClosedBottle = false
     // nil = 块外，"intel"/"arm" = 块内；附标记行缩进用于出块判定。
     // 槽位规则：arm 块内归 arm，其余（顶层 url/sha、intel 块内）归 intel——
     // 顶层必须是 Intel 段（brew readall 在 Linux 下验公式，顶层无 url 直接
@@ -816,8 +843,18 @@ func rewriteFormulaRawDual(_ content: String,
 
     for line in content.components(separatedBy: "\n") {
         if skipping {
-            if blockEnd.firstMatch(in: line, range: fullRange(line)) != nil { skipping = false }
+            if blockEnd.firstMatch(in: line, range: fullRange(line)) != nil {
+                skipping = false
+                justClosedBottle = true
+            }
             continue
+        }
+        if justClosedBottle {
+            justClosedBottle = false
+            if line.trimmingCharacters(in: .whitespaces).isEmpty,
+               result.last?.trimmingCharacters(in: .whitespaces).isEmpty == true {
+                continue
+            }
         }
         if bottleStart.firstMatch(in: line, range: fullRange(line)) != nil {
             skipping = true
@@ -933,7 +970,7 @@ func runCheck(_ config: CheckConfig) {
     let upstream: UpstreamRelease
     if let custom = config.customRelease {
         // 自定义接口取不到（断网/限流/接口改版）发 check-failed 明示——绝不能静默
-        // 跳过，否则 workflow 会把它当"无需更新"吃掉（github 流同例，11.23）。
+        // 跳过，否则 workflow 会把它当"无需更新"吃掉（github 流同例，见 AGENTS.md §11.3）。
         guard let release = custom() else {
             print("::warning::无法从自定义更新接口获取 \(config.formula) 的版本信息（网络故障或接口变化），跳过")
             emit("status=check-failed")
@@ -1034,7 +1071,7 @@ func runCheck(_ config: CheckConfig) {
                 // TODO(brew-missing)：brew 没有收录且未接 customRelease/raw 流的软件，无法判新。
                 // 需要为该软件适配版本来源（源 tap 仓库 raw 接 rawFormulaURL，见
                 // opencode.swift；或照抄 workbuddy.swift 接上游自有接口），
-                // 适配前先明确报告并停在这里（登记于 AGENTS.md 第 12 节待办）。
+                // 适配前先明确报告并停在这里（登记于 AGENTS.md §12 待办）。
                 print("brew 上没有 \(brewName)（formulae.brew.sh 404），跳过（TODO：适配版本来源）")
                 emit("status=brew-missing")
                 emit("current_version=\(current)")
@@ -1093,7 +1130,7 @@ func runCheck(_ config: CheckConfig) {
         return
     }
     // 数值相等但字面不同（如 yt-dlp 本地 "2026.08.19" vs brew "2026.8.19"）：
-    // 同一版本，不更新——否则每次都误报并写出 404 URL（11.48）。
+    // 同一版本，不更新——否则每次都误报并写出 404 URL（见 AGENTS.md §11.3）。
     // 必触发包不受影响（上式 current == stable 已提前分流，alwaysUpdate 不到此）。
     if current != stable, compareVersions(current, stable) == 0 {
         print("已是最新（数值相等，字面差异：本地 \(current) vs 上游 \(stable)），无需更新。")
@@ -1102,6 +1139,15 @@ func runCheck(_ config: CheckConfig) {
         return
     }
     print("发现新版本 : \(current) -> \(stable)")
+
+    // 需人工同步的公式（版本耦合 resource / patch_checksum_pairs）：仅告警不自动改写
+    if let reason = config.manualSyncReason {
+        print("::warning::\(config.formula) 有新版本 \(current) -> \(stable)，但需人工同步：\(reason)")
+        emit("status=manual-sync")
+        emit("current_version=\(current)")
+        emit("new_version=\(stable)")
+        return
+    }
 
     // 双架构产物（zcode / konsole）：同一版本多份产物，分流处理后返回
     if config.archArtifacts != nil {

@@ -3,7 +3,7 @@ class Sst < Formula
   homepage "https://sst.dev"
   # 取自 anomalyco/homebrew-tap 的 sst.rb（GoReleaser 产物，只留 Intel mac 段）。
   # 上游是 anomalyco/sst 的官方发布包；源文件 desc/homepage 为空，此处按上游补齐。
-  # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 11.3）。
+  # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 AGENTS.md §11.1）。
   url "https://github.com/anomalyco/sst/releases/download/v4.17.2/sst-mac-x86_64.tar.gz"
   sha256 "b337728ad7a185478b6fb80f484ca2338724f0cc7f0c54225ce864f4ad9362b5"
   license "MIT"
@@ -13,25 +13,9 @@ class Sst < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "1488b37e94784dccd8ee17f46eb9846b92f6e4ec0c17d9c3c4955c049833bdcf"
   end
 
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-
-  def pre_install
-    # 磁盘空间检查：sst 本体较小，留足余量
-    required_mb = 256
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 sst #{version}（Intel x86_64）"
-  end
 
   def install
     # 上游 tar.gz 内是 sst 二进制 + LICENSE/README（无单一顶层目录），
@@ -40,9 +24,8 @@ class Sst < Formula
 
     license = Dir["**/LICENSE"].first
     doc.install license if license
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     st = bin/"sst"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

@@ -12,7 +12,6 @@ class Graphviz < Formula
     regex(/href=.*?graphviz[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-
   head do
     url "https://gitlab.com/graphviz/graphviz.git", branch: "main"
 

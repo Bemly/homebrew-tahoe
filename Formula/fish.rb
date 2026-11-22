@@ -23,50 +23,24 @@ class Fish < Formula
 
   # 与 homebrew/core 的 fish 同名，二者共用 #{HOMEBREW_PREFIX}/Cellar/fish，
   # 不能同时安装。安装后如需切换见 caveats。
-  def pre_install
-    # 磁盘空间检查：解压后约 120MB，留足余量
-    required_mb = 512
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 fish #{version}（Intel x86_64）"
-
-    # 若已存在其他来源的 fish，提前告知同名冲突的处理方式
-    other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/fish/*"].map { |keg| File.basename(keg) }
-                                                     .reject { |v| v == version.to_s }
-    return if other_kegs.empty?
-
-    opoo <<~EOS
-      Cellar 中已存在其他版本的 fish：#{other_kegs.join(", ")}
-      本 formula 与 homebrew/core 的 fish 同名，不能同时安装，请先卸载另一方：
-        brew uninstall fish
-    EOS
-  end
 
   def install
     # 实测：brew 解压后会下降进 zip 内唯一的顶层目录（fish-4.9.0.app/），
-    # 故用 ** 通配定位 base/，无论是否下降都能命中（见 11.1）。
+    # 故用 ** 通配定位 base/，无论是否下降都能命中（见 AGENTS.md §11.1）。
     # base/ 即官方 install.sh 要 ditto 的 unix 树，原样装进 prefix；
     # 例外有二：① etc/fish 下 completions/functions/conf.d 三个子目录上游就是
     # 空占位（无文件），整树装会触发 brew 空数组告警——只装 config.fish，
     # 空目录用 mkpath 原样建出（与上游 ditto 落盘布局一致）；
     # ② fish_indent/fish_key_reader 在 4.9.0 包里是纯 arm64（无 x86_64 切片），
     # 在 Intel 上根本跑不起来——只装主 fish（universal，x86_64 切片原生），
-    # 不装这两个坏件（man 页保留，等上游修好再加回；见 11.19）。
+    # 不装这两个坏件（man 页保留，等上游修好再加回；见 AGENTS.md §11.1）。
     base = Dir["**/base"].fetch(0)
     bin.install "#{base}/usr/local/bin/fish"
     (etc/"fish").install "#{base}/usr/local/etc/fish/config.fish"
     %w[functions completions conf.d].each { |d| (etc/"fish"/d).mkpath }
     share.install Dir["#{base}/usr/local/share/*"]
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     fish = bin/"fish"
 
     # 1) 必须含 x86_64 切片（universal 二进制含 arm64+x86_64，防止误装纯 arm64 包）

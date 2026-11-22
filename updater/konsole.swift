@@ -12,7 +12,7 @@
 // 不要把本文件改成直引（2026-09-04 实测：5276 已 404，仅 5277 存活）。
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/konsole.swift -o /tmp/check-konsole && /tmp/check-konsole
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致
 //（customRelease < uploadRelease < archArtifacts < downloadURLForArch < ... < alwaysUpdate，末位追加）。
 // alwaysUpdate：上游只留最新快照，版本号不变也可能换内容——每次检查必走完全链路重验。

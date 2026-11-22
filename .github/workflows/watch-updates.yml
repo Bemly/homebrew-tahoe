@@ -54,12 +54,13 @@ jobs:
           updated=()
           updated_formulae=()
           missing=()
+          manual_sync=()
           failed=()
           for rb in Formula/*.rb Casks/*.rb; do
             f="$(basename "$rb" .rb)"
             dir="$(dirname "$rb")"
             if [[ ! -f "updater/$f.swift" ]]; then
-              echo "::warning::$f 没有对应的 updater/$f.swift（新增软件须按 AGENTS.md 9.3 登记），跳过"
+              echo "::warning::$f 没有对应的 updater/$f.swift（新增软件须按 AGENTS.md §9 登记），跳过"
               continue
             fi
             out="$(mktemp)"
@@ -83,6 +84,10 @@ jobs:
               ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
               missing+=("${f}:${ver}")
               echo "  -> $f 上游资源不可下载（${ver}），跳过更新"
+            elif [[ "$status" == "manual-sync" ]]; then
+              ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
+              manual_sync+=("${f}:${ver}")
+              echo "  -> $f 需人工同步上游变更（${ver}），跳过自动改写"
             elif [[ "$status" == "check-failed" ]]; then
               failed+=("$f")
               echo "::warning::$f 检查失败（限流或网络故障），跳过（绝不当成无需更新）"
@@ -104,9 +109,12 @@ jobs:
           if [[ ${#updated_formulae[@]} -gt 0 ]]; then
             echo "updated_formulae=$(IFS=,; echo "${updated_formulae[*]}")" >> "$GITHUB_OUTPUT"
           fi
-          # 上游缺失清单交给后续步骤逐个开告警 issue
+          # 上游缺失与需人工同步清单交给后续步骤逐个开告警 issue
           if [[ ${#missing[@]} -gt 0 ]]; then
             echo "missing=$(IFS=,; echo "${missing[*]}")" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ ${#manual_sync[@]} -gt 0 ]]; then
+            echo "manual_sync=$(IFS=,; echo "${manual_sync[*]}")" >> "$GITHUB_OUTPUT"
           fi
           if [[ ${#updated[@]} -eq 0 ]]; then
             echo "没有软件需要更新。"
@@ -210,28 +218,30 @@ jobs:
             echo "已提交更新（仅 cask，无需制瓶）"
           fi
 
-      - name: 上游资源不可用时开 issue 告警
-        if: steps.batch.outputs.missing != ''
+      - name: 上游资源不可用或需人工同步时开 issue 告警
+        if: steps.batch.outputs.missing != '' || steps.batch.outputs.manual_sync != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MISSING: ${{ steps.batch.outputs.missing }}
+          MANUAL_SYNC: ${{ steps.batch.outputs.manual_sync }}
         run: |
           set -euo pipefail
-          gh label create "automated-alert" --color "d93f0b" \
+          gh label create "automated-alert" --force --color "d93f0b" \
             --description "自动告警" \
             || { echo "::error::automated-alert label 创建失败（检查 issues 权限），本次放弃告警"; exit 1; }
-          IFS=',' read -ra ITEMS <<< "$MISSING"
-          for item in "${ITEMS[@]}"; do
-            f="${item%%:*}"
-            ver="${item##*:}"
-            title="[告警] ${f} ${ver} 的上游资源不可下载"
-            if gh issue list --state open --label "automated-alert" \
-                 --json title --jq '.[].title' | grep -qxF "$title"; then
-              echo "告警 issue 已存在，跳过：${title}"
-              continue
-            fi
-            # heredoc 结束符必须顶格（脚本列 0），因此正文比 create 行少一层缩进
-            gh issue create --title "$title" --label "automated-alert" --body "$(cat <<EOF
+          if [[ -n "${MISSING:-}" ]]; then
+            IFS=',' read -ra ITEMS <<< "$MISSING"
+            for item in "${ITEMS[@]}"; do
+              f="${item%%:*}"
+              ver="${item##*:}"
+              title="[告警] ${f} ${ver} 的上游资源不可下载"
+              if gh issue list --state open --label "automated-alert" \
+                   --json title --jq '.[].title' | grep -qxF "$title"; then
+                echo "告警 issue 已存在，跳过：${title}"
+                continue
+              fi
+              # heredoc 结束符必须顶格（脚本列 0），因此正文比 create 行少一层缩进
+              gh issue create --title "$title" --label "automated-alert" --body "$(cat <<EOF
           \`watch-updates\` 发现 brew 上游已到 \`${ver}\`，但对应的上游预构建包无法下载。
 
           - 软件：\`${f}\`
@@ -241,8 +251,32 @@ jobs:
           影响：公式无法升级，\`bottle.yml\` 也无法制瓶。
           请确认上游发布资产是否改名或被删除，或暂时保持当前版本。
           EOF
-            )"
-          done
+              )"
+            done
+          fi
+          if [[ -n "${MANUAL_SYNC:-}" ]]; then
+            IFS=',' read -ra SYNC_ITEMS <<< "$MANUAL_SYNC"
+            for item in "${SYNC_ITEMS[@]}"; do
+              f="${item%%:*}"
+              ver="${item##*:}"
+              title="[需人工同步] ${f} ${ver}"
+              if gh issue list --state open --label "automated-alert" \
+                   --json title --jq '.[].title' | grep -qxF "$title"; then
+                echo "告警 issue 已存在，跳过：${title}"
+                continue
+              fi
+              gh issue create --title "$title" --label "automated-alert" --body "$(cat <<EOF
+          \`watch-updates\` 发现 \`homebrew/core\` 中 \`${f}\` 已更新至 \`${ver}\`。
+
+          - 软件：\`${f}\`
+          - 上游版本：\`${ver}\`
+
+          该公式包含与主版本强耦合的 \`resource\` 或 \`patch_checksum_pairs\`，watcher 已故意跳过自动改写。
+          请对照 \`homebrew/core\` 人工同步 \`Formula/${f}.rb\` 的资源块、补丁列表与版本号后再触发 \`bottle.yml\` 制瓶。
+          EOF
+              )"
+            done
+          fi
 
       - name: 输出结论
         if: always()
@@ -252,6 +286,7 @@ jobs:
             echo ""
             echo "- 需要更新：\`${{ steps.batch.outputs.updated || '无' }}\`"
             echo "- 上游资源不可下载：\`${{ steps.batch.outputs.missing || '无' }}\`"
+            echo "- 需人工同步：\`${{ steps.batch.outputs.manual_sync || '无' }}\`"
             echo "- 检查失败（下次自动恢复）：\`${{ steps.batch.outputs.failed || '无' }}\`"
             echo "- dry_run：\`${{ inputs.dry_run }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -25,11 +25,11 @@ cask "macos-tskmgr" do
   # 残留 quarantine 会被 Gatekeeper 判"已损坏"且右键也绕不过；
   # brew 不清 cask 产物的隔离属性，此处手动清除（包体 sha256 已校验过，
   # 完整性不依赖 Gatekeeper）。只清 quarantine，不碰其他属性。
-  postflight do
-    system_command "/usr/bin/xattr",
-                   args:         ["-d", "-r", "com.apple.quarantine",
-                                  Dir["#{appdir}/MacOSTSKMGR-*.app"].fetch(0)],
-                   print_stderr: false
+  postflight_steps do
+    run "/usr/bin/xattr",
+        args:           ["-d", "-r", "-s", "com.apple.quarantine", "{{appdir}}/MacOSTSKMGR-{{arch}}.app"],
+        writable_paths: ["{{appdir}}/MacOSTSKMGR-{{arch}}.app"],
+        must_succeed:   false
   end
 
   uninstall quit: "com.linqin.MacOSTSKMGR"

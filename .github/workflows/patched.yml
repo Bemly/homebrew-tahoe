@@ -12,7 +12,7 @@ name: Build patched cask artifacts
 #     新收录时 cask 里的 sha 可以先写占位串 PENDING_CI_SIDECAR，由本 workflow 填实。
 #   * lint 绿了才提交，main 上的 cask 不会指向不存在的资产或错 sha。
 #   * dmg 不是逐字节可复现的（hdiutil 内嵌卷时间戳），所以 sha 只能取「本次上传的
-#     那份产物」的 sidecar，不能拿另一次构建的顶（AGENTS 11.61 第 10 条）。
+#     那份产物」的 sidecar，不能拿另一次构建的顶（见 AGENTS.md §11.6）。
 on:
   workflow_dispatch:
     inputs:
@@ -30,6 +30,16 @@ on:
         type: string
       version:
         description: 显式锁宿主版本（留空 = 跟 core cask API；上游汉化引擎未跟上时用它锁旧宿主）
+        required: false
+        default: ""
+        type: string
+      build:
+        description: 锁定旧宿主版本时配套的构建号（如 4731201358004224）
+        required: false
+        default: ""
+        type: string
+      official_sha:
+        description: 锁定旧宿主版本时官方 darwin-x64 dmg 的 64 位 sha256
         required: false
         default: ""
         type: string
@@ -61,18 +71,20 @@ jobs:
     runs-on: macos-26-intel
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
       - name: Build antigravity
         id: ag
-        if: (!inputs.skip_build) && (inputs.package == 'antigravity' || inputs.package == 'all')
+        if: (!inputs.skip_build) && inputs.package == 'antigravity'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           args=(--revision "${{ inputs.revision }}" --upload)
           [[ -n "${{ inputs.version }}" ]] && args+=(--version "${{ inputs.version }}")
+          [[ -n "${{ inputs.build }}" ]] && args+=(--build "${{ inputs.build }}")
+          [[ -n "${{ inputs.official_sha }}" ]] && args+=(--official-sha "${{ inputs.official_sha }}")
           [[ -n "${{ inputs.cn_ref }}" ]] && args+=(--cn-ref "${{ inputs.cn_ref }}")
           Widgets/antigravity-niang/build.sh "${args[@]}"
 
@@ -112,9 +124,8 @@ jobs:
         run: |
           brew tap bemly/tahoe "$GITHUB_WORKSPACE"
           brew trust bemly/tahoe
-          brew style --cask bemly/tahoe/antigravity bemly/tahoe/github-copilot-app
+          brew style --cask bemly/tahoe/antigravity
           brew audit --strict --cask bemly/tahoe/antigravity
-          brew audit --strict --cask bemly/tahoe/github-copilot-app
 
       # lint 绿 + 构建成功才提交（success() 已含「前面没有失败步骤」）。
       - name: 提交 cask 的 version/sha256

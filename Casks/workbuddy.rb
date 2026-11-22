@@ -14,6 +14,7 @@ cask "workbuddy" do
   auto_updates true
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # Homebrew 官方不为 Tahoe 构建 x86_64 bottle，这里直接引用上游官方发布包。
+  depends_on arch: :x86_64
   depends_on macos: :tahoe
 
   app "WorkBuddy.app"

@@ -1,11 +1,4 @@
 class Guile < Formula
-  depends_on arch: :x86_64
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "78fe73dd65594db9b901ebbd8e4a741791d311a012f608e4e7a4a89c5f0b1784"
-  end
-  depends_on macos: :tahoe
   desc "GNU Ubiquitous Intelligent Language for Extensions"
   homepage "https://www.gnu.org/software/guile/"
   url "https://ftpmirror.gnu.org/guile/guile-3.0.11.tar.xz"
@@ -14,6 +7,10 @@ class Guile < Formula
   license "LGPL-3.0-or-later"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 tahoe: "78fe73dd65594db9b901ebbd8e4a741791d311a012f608e4e7a4a89c5f0b1784"
+  end
 
   head do
     url "https://git.savannah.gnu.org/git/guile.git", branch: "main"
@@ -35,6 +32,8 @@ class Guile < Formula
   depends_on "bemly/tahoe/fork-libunistring"
   depends_on "bemly/tahoe/fork-pkgconf" # guile-config is a wrapper around pkg-config.
   depends_on "bemly/tahoe/fork-readline"
+  depends_on arch: :x86_64
+  depends_on macos: :tahoe
 
   uses_from_macos "gperf"
   uses_from_macos "libffi"

@@ -9,7 +9,7 @@
 // 按版本判新，只有 feed 版本更新时才下载实算 sha、镜像到本仓 Release 并改写 cask。
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/dsh-gui.swift -o /tmp/check-dsh-gui && /tmp/check-dsh-gui
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 
 import Foundation
 

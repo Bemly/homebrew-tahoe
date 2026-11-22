@@ -1,11 +1,4 @@
 class Libev < Formula
-  depends_on arch: :x86_64
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "1795d5fa5992739d8e76f9d279863c01285a586f8b35f6444ea7696ef5a2b0f2"
-  end
-  depends_on macos: :tahoe
   desc "Asynchronous event library"
   homepage "https://software.schmorp.de/pkg/libev.html"
   url "https://dist.schmorp.de/libev/Attic/libev-4.33.tar.gz"
@@ -19,6 +12,13 @@ class Libev < Formula
     regex(/href=.*?libev[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "1795d5fa5992739d8e76f9d279863c01285a586f8b35f6444ea7696ef5a2b0f2"
+  end
+
+  depends_on arch: :x86_64
+  depends_on macos: :tahoe
 
   # Fix -flat_namespace being used on Big Sur and later.
   patch do

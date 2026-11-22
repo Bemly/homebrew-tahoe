@@ -9,7 +9,7 @@ class Rustup < Formula
   # 公式名与 core 同名 rustup（本 tap 是 x64 备用源，命名与上游保持一致）：
   # 与 core 版共用 Cellar，不能共存，装前须先卸 core 版（见 caveats）。
   # 曾用名 rustup-init：撞 core 改名别名（rustup-init→rustup，全局生效），
-  # 任何 tap 再叫它都会报 migrate 错，故废弃（见 11.32）。
+  # 任何 tap 再叫它都会报 migrate 错，故废弃（见 AGENTS.md §11.2）。
   # 版本在路径段（/archive/1.29.1/），brew 可扫描，无需 version 行（compose 同例）。
   url "https://static.rust-lang.org/rustup/archive/1.29.3/x86_64-apple-darwin/rustup-init"
   sha256 "bc107f1fb0228de7fa32413c89c1b305cea9cd256e94b01150cd054128145429"
@@ -20,26 +20,9 @@ class Rustup < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "138d8e528f324b8420b23373238edc4d18a30c521158025aabd38921b84789fb"
   end
 
-
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-
-  def pre_install
-    # 磁盘空间检查：本体约 30MB，留足余量
-    required_mb = 512
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 rustup #{version}（Intel x86_64，官方静态构建）"
-  end
 
   def install
     # 上游发布物就叫 rustup-init：装成 rustup（与 core 行为一致），
@@ -50,9 +33,8 @@ class Rustup < Formula
        rust-gdb rust-gdbgui rust-lldb rustc rustdoc rustfmt].each do |name|
       bin.install_symlink bin/"rustup" => name
     end
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     rustup = bin/"rustup"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

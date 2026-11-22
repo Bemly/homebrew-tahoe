@@ -6,7 +6,7 @@ class Opencode < Formula
   # 主 url/sha 是 Intel 段（放顶层：brew readall 会在 Linux 下验公式，
   # 顶层无 url 直接报 requires at least a URL；on_macos 包不住 Linux）。
   # ARM 段在 on_macos 内覆盖（结构照源文件）。
-  # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 11.3）。
+  # 版本号由 brew 从 URL 扫描得出，不重复声明 version（否则 audit 判为冗余，见 AGENTS.md §11.1）。
   # 实测本系列 URL（v 前缀 + darwin-x64/mac-x86_64 尾部）能正确扫出版本，与 node 的 x64 坑不同。
   url "https://github.com/anomalyco/opencode/releases/download/v1.19.6/opencode-darwin-x64.zip"
   sha256 "39aabb10005059f80f007a119a33405dcd46325300993eb6cbcc961c7243dd31"
@@ -17,18 +17,10 @@ class Opencode < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "5f1e88f37a03ef607922f1f5acd89bb77e7b16c3a3758c989e3cdef416a9601f"
   end
 
-
-
-
-
-
-
-
-
   # 瓶是 x86_64 的（macos-26-intel 制出）；ARM 安装回退到上游直链（同版本 arm64 包）。
 
   # 本 tap 只收录 macOS 26(Tahoe) 及以上可用的二进制。
-  # arch 门槛已摘（opencode 双架构，Intel/ARM 各取各的包；摘门槛是例外，见 11.27）。
+  # arch 门槛已摘（opencode 双架构，Intel/ARM 各取各的包；摘门槛是例外，见 AGENTS.md §4）。
   # ripgrep 走本 tap 的瓶（Intel 上是 GHCR 瓶；ARM 上 core 无瓶则源码编译，
   # ripgrep 同样摘了 arch 门槛，否则 ARM 装 opencode 会被依赖挡住）。
   depends_on "bemly/tahoe/ripgrep"
@@ -43,38 +35,12 @@ class Opencode < Formula
 
   # 与 homebrew/core 的 opencode 同名（core 是 npm 版），二者共用 Cellar/opencode，
   # 不能同时安装。安装后如需切换见 caveats。
-  def pre_install
-    # 磁盘空间检查：opencode 本体约 150MB，留足余量
-    required_mb = 512
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 opencode #{version}（#{Hardware::CPU.arch}）"
-
-    # 若已存在其他来源的 opencode，提前告知同名冲突的处理方式
-    other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/opencode/*"].map { |keg| File.basename(keg) }
-                                                         .reject { |v| v == version.to_s }
-    return if other_kegs.empty?
-
-    opoo <<~EOS
-      Cellar 中已存在其他版本的 opencode：#{other_kegs.join(", ")}
-      本 formula 与 homebrew/core 的 opencode 同名，不能同时安装，请先卸载另一方：
-        brew uninstall opencode
-    EOS
-  end
 
   def install
     # 上游 zip 内是单个 opencode 二进制（无顶层目录），用 ** 通配兼容 brew 是否下降。
     bin.install Dir["**/opencode"].fetch(0)
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     oc = bin/"opencode"
 
     # 1) 必须是本机架构原生二进制（Intel 取 x64 段，ARM 取 arm64 段）

@@ -5,7 +5,7 @@ cask "grok-bot" do
   # 镜像到本仓 Release（tag grok-bot-<ver>，资产名沿用上游 basename）：
   # 本 tap 政策是所有 cask 都镜像最新版；url 用 #{version} 双插值（tag 与资产名
   # 都带版本），否则 audit 会因"URL 无版本"要求 sha256 :no_check（文件名尾部的
-  # _x64 同 darwin-amd64 一样会致盲版本检测，见 11.42）。
+  # _x64 同 darwin-amd64 一样会致盲版本检测，见 AGENTS.md §11.1）。
   # 版本更新由 updater/grok-bot.swift 跟 cursor 下载页（customRelease 抓取），
   # 有更新时下载、上传 Release、改写本文件。
   url "https://github.com/Bemly/homebrew-tahoe/releases/download/grok-bot-1.2.3/Grok_Bot_1.2.3_x64.dmg"

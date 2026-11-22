@@ -10,7 +10,7 @@ cask "zcode" do
   # 有更新时 updater/zcode.swift 下载双包、上传 Release、改写 sha 行
   # （url 行插值已覆盖新版本，不动）。
   # 注：dmg 内含 Applications -> /Applications 符号链接，公式的 DmgUnpackStrategy
-  # 会崩（AGENTS 11.8），cask 走自己的挂载流程不受影响——这也是它做成 cask 的原因。
+  # 会崩（AGENTS.md §11.5），cask 走自己的挂载流程不受影响——这也是它做成 cask 的原因。
   sha256 arm:   "83dc6f4569119432bdc4520477ff8a626d1c17b0c9c00fa03aed4b8ab728fc02",
          intel: "f8062a01eeb07543ccab613ad7b6aec2298ea1b84a50e12f0f6decf7cf2d6edd"
 

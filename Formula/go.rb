@@ -6,7 +6,7 @@ class Go < Formula
   # 不用同版本 .pkg：pkg 安装器要写 /usr/local/go、必须 root 权限，
   # 公式无 sudo 不可用；tar.gz 是 brew 原生路线（node 同例）。
   # brew 从 URL 尾部 darwin-amd64 只能扫出 "64"，与真实版本不符，
-  # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余；node 同款坑，见 11.3）。
+  # 必须显式声明（audit 仅在声明与扫描值相同时才判冗余；node 同款坑，见 AGENTS.md §11.1）。
   url "https://go.dev/dl/go1.27.4.darwin-amd64.tar.gz"
   version "1.27.4"
   sha256 "2b799377704ef12db39bd254995d5c348c9cc8d86562ca817724390e56c38f43"
@@ -17,49 +17,20 @@ class Go < Formula
     sha256 cellar: :any_skip_relocation, tahoe: "c8755edfe6f5fbf1747b64ddd21e3090456b8282c777c34836c48f3ac326e72a"
   end
 
-
-
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
   # 与 homebrew/core 的 go 同名，二者共用 #{HOMEBREW_PREFIX}/Cellar/go，
   # 不能同时安装。安装后如需切换见 caveats。
-  def pre_install
-    # 磁盘空间检查：展开后约 280MB，留足余量
-    required_mb = 1024
-    df_line = Utils.safe_popen_read("/bin/df", "-m", HOMEBREW_PREFIX.to_s).lines.last.to_s
-    available_mb = df_line.split[3].to_i
-
-    if available_mb.positive? && available_mb < required_mb
-      odie <<~EOS
-        磁盘空间不足：#{HOMEBREW_PREFIX} 仅剩 #{available_mb}MB，至少需要 #{required_mb}MB。
-      EOS
-    end
-
-    ohai "安装 go #{version}（Intel x86_64）"
-
-    # 若已存在其他来源的 go，提前告知同名冲突的处理方式
-    other_kegs = Dir[HOMEBREW_PREFIX/"Cellar/go/*"].map { |keg| File.basename(keg) }
-                                                   .reject { |v| v == version.to_s }
-    return if other_kegs.empty?
-
-    opoo <<~EOS
-      Cellar 中已存在其他版本的 go：#{other_kegs.join(", ")}
-      本 formula 与 homebrew/core 的 go 同名，不能同时安装，请先卸载另一方：
-        brew uninstall go
-    EOS
-  end
 
   def install
     # 实测：brew 解压后会下降进 tar 内唯一的顶层目录（go/）。
     # 整树原样装进 prefix（bin/go 是真文件非软链）：go 按二进制路径
     # 自动定位 GOROOT，拆开装反而会找不到 pkg/src。
     prefix.install Dir["*"]
-  end
 
-  def post_install
+    # 安装后架构与版本自检（放在 install 尾部，brew 6+ 已废弃 def post_install）
     go = bin/"go"
 
     # 1) 必须是 Intel x86_64 原生二进制，防止误装 arm64 包

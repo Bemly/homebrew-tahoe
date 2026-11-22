@@ -2,6 +2,7 @@
 # Antigravity 中文补丁版成品构建（本 tap 破例：分发修改并重签过的专有包）
 #
 #   Widgets/antigravity-niang/build.sh [--version 2.33.0] [--build 4731201358004224]
+#                                      [--official-sha <sha256>]
 #                                      [--revision 1] [--cn-ref <tag|commit>]
 #                                      [--upload] [--keep-work]
 #
@@ -24,6 +25,7 @@ CN_REF=""
 
 APP_VERSION=""
 APP_BUILD=""
+OFFICIAL_SHA=""
 REVISION="1"
 UPLOAD=false
 KEEP_WORK=false
@@ -32,6 +34,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) APP_VERSION="$2"; shift 2 ;;
     --build) APP_BUILD="$2"; shift 2 ;;
+    --official-sha) OFFICIAL_SHA="$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]')"; shift 2 ;;
     --revision) REVISION="$2"; shift 2 ;;
     --cn-ref) CN_REF="$2"; shift 2 ;;
     --cn-pin) CN_REF="$2"; shift 2 ;;   # 旧名，等价 --cn-ref
@@ -41,34 +44,56 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# 版本与官方 sha 都取自 homebrew/core 的 cask API：它按 macOS 版本给出 darwin-x64
-# 的直链与校验和，比抓官网下载页更稳，且能与 Homebrew 的收录节奏对齐。
-CORE_JSON="$(mktemp)"
-curl -fsS "https://formulae.brew.sh/api/cask/antigravity.json" -o "$CORE_JSON"
-if [[ -z "$APP_VERSION" || -z "$APP_BUILD" ]]; then
-  CORE_VERSION="$(python3 -c "import json;print(json.load(open('$CORE_JSON'))['version'])")"
-  APP_VERSION="${CORE_VERSION%%,*}"
-  APP_BUILD="${CORE_VERSION##*,}"
+# 支持 --version 2.33.0,4731201358004224 简写
+if [[ "$APP_VERSION" == *,* && -z "$APP_BUILD" ]]; then
+  APP_BUILD="${APP_VERSION##*,}"
+  APP_VERSION="${APP_VERSION%%,*}"
 fi
-OFFICIAL_URL="$(python3 -c "
+
+say() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
+die() { printf '\033[31m[失败] %s\033[0m\n' "$1" >&2; exit 1; }
+
+# 版本与官方 sha 默认取自 homebrew/core 的 cask API：它按 macOS 版本给出 darwin-x64
+# 的直链与校验和，比抓官网下载页更稳，且能与 Homebrew 的收录节奏对齐。
+# 若显式传入旧宿主版本，则必须同时提供 --build 与 --official-sha，绝不回退覆盖。
+CORE_JSON="$(mktemp)"
+trap 'rm -f "$CORE_JSON"' EXIT
+curl -fsS "https://formulae.brew.sh/api/cask/antigravity.json" -o "$CORE_JSON"
+CORE_VERSION="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['version'])" "$CORE_JSON")"
+CORE_APP_VERSION="${CORE_VERSION%%,*}"
+CORE_APP_BUILD="${CORE_VERSION##*,}"
+CORE_URL="$(python3 -c "
 import json,sys
 d=json.load(open(sys.argv[1]))
 v=d['variations'].get('tahoe') or {}
 if not v.get('url'): sys.exit('core cask 没有 tahoe 变体，拿不到 darwin-x64 直链')
 print(v['url'])
 " "$CORE_JSON")"
-OFFICIAL_SHA="$(python3 -c "
+CORE_SHA="$(python3 -c "
 import json,sys
 print(json.load(open(sys.argv[1]))['variations']['tahoe']['sha256'])
 " "$CORE_JSON")"
+
+if [[ -z "$APP_VERSION" && -z "$APP_BUILD" ]]; then
+  APP_VERSION="$CORE_APP_VERSION"
+  APP_BUILD="$CORE_APP_BUILD"
+  OFFICIAL_URL="$CORE_URL"
+  OFFICIAL_SHA="${OFFICIAL_SHA:-$CORE_SHA}"
+elif [[ "$APP_VERSION" == "$CORE_APP_VERSION" ]] && [[ -z "$APP_BUILD" || "$APP_BUILD" == "$CORE_APP_BUILD" ]]; then
+  APP_BUILD="$CORE_APP_BUILD"
+  OFFICIAL_URL="$CORE_URL"
+  OFFICIAL_SHA="${OFFICIAL_SHA:-$CORE_SHA}"
+else
+  [[ -n "$APP_VERSION" ]] || die "指定 --build 时必须同时传入 --version"
+  [[ -n "$APP_BUILD" ]] || die "锁定非最新宿主版本 ${APP_VERSION} 时必须同时传入 --build <构建号>（或使用 --version <版本>,<构建号>）"
+  [[ "$OFFICIAL_SHA" =~ ^[0-9a-f]{64}$ ]] || die "锁定非最新宿主版本 ${APP_VERSION}-${APP_BUILD} 时必须传入合法的 64 位 --official-sha <sha256>（见 AGENTS.md §1 硬校验约束）"
+  OFFICIAL_URL="https://storage.googleapis.com/antigravity-public/antigravity-hub/${APP_VERSION}-${APP_BUILD}/darwin-x64/Antigravity.dmg"
+fi
 
 PATCHED_VERSION="${APP_VERSION}-${APP_BUILD}-cn${REVISION}"
 WORK="${REPO_DIR}/.build/antigravity-cn/${PATCHED_VERSION}"
 DMG_NAME="Antigravity-${PATCHED_VERSION}.dmg"
 OUT_DMG="${REPO_DIR}/.build/antigravity-cn/${DMG_NAME}"
-
-say() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
-die() { printf '\033[31m[失败] %s\033[0m\n' "$1" >&2; exit 1; }
 
 for tool in node curl git hdiutil codesign python3 shasum; do
   command -v "$tool" >/dev/null 2>&1 || die "缺少命令：$tool"
@@ -98,7 +123,7 @@ fi
 ACTUAL_SHA="$(shasum -a 256 "$WORK/official.dmg" | awk '{print $1}')"
 if [[ "$ACTUAL_SHA" != "$OFFICIAL_SHA" ]]; then
   rm -f "$WORK/official.dmg"
-  die "下载校验失败：实算 $ACTUAL_SHA ≠ core ${OFFICIAL_SHA}（上游可能重切了同版本包，按 AGENTS 11.24 三方核对后再构建）"
+  die "下载校验失败：实算 $ACTUAL_SHA ≠ 官方预期 ${OFFICIAL_SHA}（上游可能重切了同版本包，请按 AGENTS.md §11.6 核对后再构建）"
 fi
 echo "  sha256 一致 $ACTUAL_SHA"
 if [[ ! -f "$CACHE" ]]; then
@@ -208,7 +233,7 @@ if [[ "$UPLOAD" == true ]]; then
     gh release create "$TAG" --repo bemly/homebrew-tahoe --title "$TAG" --notes-file "$WIDGET_DIR/RELEASE-NOTES.template" \
       "$OUT_DMG#$DMG_NAME" "$OUT_DMG.sha256#$(basename "$OUT_DMG").sha256"
   fi
-  # 本仓 cask 政策：每个 cask 的 Release 只留最新一个（11.34.3）。本包的产物由
+  # 本仓 cask 政策：每个 cask 的 Release 只留最新一个（见 AGENTS.md §11.5）。本包的产物由
   # 脚本构建、不走 updater 的 deleteOldCaskReleases，所以这里自己清同前缀旧 tag。
   # 只认「antigravity- 后接数字」，避免误删别的前缀同名 release。
   say "清理旧 release（只保留 ${TAG}）"

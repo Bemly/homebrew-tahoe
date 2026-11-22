@@ -17,8 +17,6 @@ class Libslirp < Formula
     sha256 cellar: :any, tahoe: "449919f73bef8bbe6a950e375a37a0253b8ac6abc7edb55c90423ae013a4fd78"
   end
 
-
-
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build

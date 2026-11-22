@@ -4,7 +4,7 @@
 // 版本取 formulae.brew.sh 的 cask API（.version），走 UpdaterCore 的 brewCask 分支。
 // core cask 默认 URL 是 arm64；本 tap 的 downloadURL 模板固定取 Intel x64 dmg
 // （Lody-<ver>-x64.dmg，sha 回退下载实算）。
-// 镜像：uploadRelease=true（全 cask 镜像政策，AGENTS 11.34）——有更新时上传
+// 镜像：uploadRelease=true（全 cask 镜像政策，AGENTS.md §11.5）——有更新时上传
 // 本仓 Release（tag lody-<ver>，资产名沿用上游 basename；旧 release 自动清理），
 // cask url 指 Release。cask 无 bottle 机制，watcher 更新后不触发 bottle.yml。
 //

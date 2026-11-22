@@ -5,7 +5,7 @@ name: Build bottle and publish to GHCR
 # 仅手动触发。构建环境必须是 Intel + macOS 26 才能产出 x86_64_tahoe 标签的瓶，
 # GitHub 托管 runner 对应的 label 是 macos-26-intel。
 #
-# formula 入参支持三种写法（见 AGENTS.md 9.6 / 9.8）：
+# formula 入参支持三种写法（见 AGENTS.md §5 / §8）：
 #   - 单个：  gh
 #   - 多个：  gh,fastfetch   （逗号分隔，只针对这批软件出瓶，最省 runner）
 #   - 全部：  all            （遍历 Formula/*.rb）
@@ -89,12 +89,12 @@ jobs:
 
       # 秒级体检：开编之前先把 tap 内所有公式过一遍 brew readall。
       # 代编译模式一次构建可达数小时，公式若有语法/引用/门禁问题，
-      # 必须在这里就红掉，而不是编译几小时后才发现（见 AGENTS.md 11.10）。
+      # 必须在这里就红掉，而不是编译几小时后才发现（见 AGENTS.md §8）。
       - name: 公式体检（防白跑）
         run: brew readall bemly/tahoe
 
       # GHCR 瓶只含本体；依赖必须一并入本源、写全名引用，否则 core 依赖会在用户端
-      # 现场源码编译（graphviz 16.1.1 实测，见 AGENTS.md 11.59）。这里递归展开每批
+      # 现场源码编译（见 AGENTS.md §5 / §11.2）。这里递归展开每批
       # 公式的依赖闭包，开编前就红掉，而不是等用户装瓶时才发现要编译几十分钟。
       - name: 递归检查依赖瓶覆盖
         env:
@@ -164,7 +164,7 @@ jobs:
           rm -rf "$(brew --cache)/api" "$(brew --repository)/Library/Taps/homebrew/homebrew-core"
 
       # 一次任务内顺序处理所有软件：build-bottle 安装 → 制瓶 → 删旧标签 → 推 GHCR。
-      # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md 5）。
+      # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md §5）。
       # pr-upload 会把瓶块写进 Formula/*.rb（--no-commit 只是不 git 提交），
       # 该改动由后面的「提交瓶块」步骤入库。若循环中途失败，前面的瓶块改动
       # 会随 runner 丢弃（2026-09-03 实测：capstone/dtc/libslirp 的瓶已推上 GHCR
@@ -246,7 +246,7 @@ jobs:
             #   "Target /usr/local/bin/node is a symlink belonging to node@24"
             # brew unlink 对预装但登记不全的 keg 会静默失败（链接仍在），
             # 所以再兜底直接删掉冲突符号链接——CI 是一次性环境，安全。
-            for variant in node node@24 node@22; do
+            for variant in node node@24 node@22 node@20; do
               brew uninstall --force --ignore-dependencies "$variant" >/dev/null 2>&1 || true
             done
             for b in node npm npx corepack; do
@@ -255,9 +255,10 @@ jobs:
             rm -f "${BREW_PREFIX}/share/man/man1/node.1"
 
             # macOS 自带/官网 Python 在 /usr/local/bin 留下的链接会阻塞
-            # 本 tap python@3.11 / python@3.14（作为本体或依赖安装时）的 link 步骤（runner 一次性环境）。
+            # 本 tap python@3.11 / python@3.14 / python@3.15（作为本体或依赖安装时）的 link 步骤（runner 一次性环境）。
             for b in 2to3-3.11 idle3.11 pydoc3.11 python3.11 python3.11-config \
-                     2to3-3.14 idle3.14 pydoc3.14 python3.14 python3.14-config pip3.14 wheel3.14; do
+                     2to3-3.14 idle3.14 pydoc3.14 python3.14 python3.14-config pip3.14 wheel3.14 \
+                     2to3-3.15 idle3.15 pydoc3.15 python3.15 python3.15-config pip3.15 wheel3.15; do
               rm -f "${BREW_PREFIX}/bin/${b}"
             done
             # 清理 runner 预装的旧版 headers，避免命中旧版 vulkan-headers / spirv-headers
@@ -281,7 +282,7 @@ jobs:
             # 加 --ignore-dependencies 是因为 brew 会以「被其它已装包依赖」为由拒绝卸载
             # （如镜像预装的 ca-certificates）；runner 是一次性环境，强卸安全。
             brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
-            # 构建工具走 PATH（llvm/z3，见 AGENTS.md 11.2）：公式里用 system "cmake"
+            # 构建工具走 PATH（llvm/z3，见 AGENTS.md §11.2）：公式里用 system "cmake"
             # 但刻意不声明 cmake 依赖——树里已有 python/zstd 拖入的裸 cmake，再挂全名会让
             # 同一 Cellar 名以两个 full_name 进锁数组，macOS flock 同进程双开自锁。
             # 这里预装本 tap cmake 瓶（幂等，已装即 no-op），构建走 PATH 即可。
@@ -333,7 +334,7 @@ jobs:
             #      secrets.GITHUB_TOKEN 注入环境，不传则完全无凭据、stdout 为空，
             #      清理静默失效（本机测不出：gh 会回落 keyring 的个人 token）；
             #   4. 判断「有无旧瓶」只看带标签的版本；无标签版本是 image index
-            #      引用的子清单，不是孤儿（见 8.5），不参与判断、也无需清理。
+            #      引用的子清单，不是孤儿（见 AGENTS.md §8），不参与判断、也无需清理。
             owner="${GITHUB_REPOSITORY_OWNER}"
             pkg_encoded="tahoe%2F${ghcr_name//\//%2F}"
             tagged_vids=""
@@ -427,7 +428,7 @@ jobs:
         if: steps.bottle_loop.outcome == 'failure'
         run: |
           echo "::error::循环制瓶存在失败项（详见上文日志）。已成功部分的瓶块已提交入库；"
-          echo "请先单独重跑失败的公式（bottle.yml 支持逗号列表），再重跑 qemu。"
+          echo "请先单独重跑失败的公式（bottle.yml 支持逗号列表），再重跑依赖它们的上层公式。"
           exit 1
 
       - name: 输出结论

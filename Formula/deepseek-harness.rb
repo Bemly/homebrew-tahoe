@@ -7,12 +7,6 @@ class DeepseekHarness < Formula
   sha256 "67da5a3c458f46cd278e0eec6ad0e3a44e99fd13087c6f11a1b362268900a52c"
   license "MIT"
 
-
-
-
-
-
-
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/node"
   depends_on macos: :tahoe

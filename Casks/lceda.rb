@@ -8,7 +8,7 @@ cask "lceda" do
   # 版本更新由 updater/lceda.swift 跟嘉立创下载页（customRelease 抓 Intel 行）——
   # 有更新时下载、上传 Release、改写本文件。注意：镜像流会把 url 整条换成字面
   # 版本，写回后须手动改回 #{version} 插值再提交，否则 audit 判 URL 无版本
-  # （mirage-wallpaper 同例，见 AGENTS 11.26）。
+  # （mirage-wallpaper 同例，见 AGENTS.md §11.5）。
   url "https://github.com/Bemly/homebrew-tahoe/releases/download/lceda-#{version}/lceda-mac-x64-#{version}.zip"
   name "嘉立创EDA标准版"
   desc "Electronic design automation software (standard edition)"

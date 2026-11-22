@@ -7,7 +7,7 @@
 // 改写：文件名含版本，版本子串替换；公式无 version 行（brew 从 URL 扫描正确）。
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/zig.swift -o /tmp/check-zig && /tmp/check-zig
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致.
 
 import Foundation

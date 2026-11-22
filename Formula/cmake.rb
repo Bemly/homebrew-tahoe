@@ -20,16 +20,10 @@ class Cmake < Formula
     sha256 cellar: :any, tahoe: "81b964ca796ebc4ee228eecc2ef7d498ea1b6634c50c3174a5768472e7a7a597"
   end
 
-
-
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # 上游 universal 包内含 x86_64 切片，满足 Intel 要求。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-
-  def pre_install
-    ohai "预检 cmake 安装环境（系统门槛由 depends_on 强制）"
-  end
 
   # 上游 tar.gz 是单一顶层目录（cmake-<ver>-macos-universal/），brew 会下降进入，
   # 故直接用 CMake.app 相对路径（gh 同例，不加顶层前缀）。
@@ -43,7 +37,7 @@ class Cmake < Formula
     man1.install Dir[prefix/"CMake.app/Contents/man/man1/{cmake,ccmake,cpack,ctest}.1"]
     bash_completion.install Dir[prefix/"CMake.app/Contents/share/bash-completion/completions/{cmake,cpack,ctest}"]
 
-    # 拆箱校验（brew 6 起 post_install 已废弃，校验挪进 install 尾部，见 11.37）：
+    # 拆箱校验（brew 6 起 post_install 已废弃，校验挪进 install 尾部，见 AGENTS.md §11.1）：
     # file 认 x86_64 + --version 自检，走最终交付的 bin 软链。
     arch = Utils.safe_popen_read("file", "-b", (bin/"cmake").to_s)
     odie "期望 x86_64，实际：#{arch}" unless arch.include?("x86_64")

@@ -8,10 +8,10 @@
 //
 // 注意文件名无版本：brew 从路径段（/download/<ver>/）正确扫出全版本，
 // 故公式不写 version 行（写了判冗余）；检查器从 url 行解析本地版本（补零形态），
-// 与 brew 的去零形态按数值判等（UpdaterCore compareVersions，见 11.48）。
+// 与 brew 的去零形态按数值判等（UpdaterCore compareVersions，见 AGENTS.md §11.3）。
 //
 // 运行：swiftc updater/UpdaterCore.swift updater/yt-dlp.swift -o /tmp/check-yt-dlp && /tmp/check-yt-dlp
-// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md 9.3）
+// （须在仓库根目录执行；新增软件照抄本文件改配置即可，见 AGENTS.md §9）
 // 注意：Swift 要求实参顺序与 CheckConfig.init 的形参声明一致。
 
 import Foundation
