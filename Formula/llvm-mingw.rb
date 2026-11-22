@@ -8,6 +8,11 @@ class LlvmMingw < Formula
   sha256 "98d340bbb8d46b09ad6886ffba88bd9d5415e131c316de48e6bd7647377446aa"
   license "Apache-2.0" => { with: "LLVM-exception" }
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    sha256 cellar: :any, tahoe: "f01fd81bc3cfec0ac4695e37a4fc2f2edcbeca8b5156b97518d4051ec11a127a"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
