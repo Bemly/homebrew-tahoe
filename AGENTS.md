@@ -406,7 +406,6 @@ brew trust bemly/tahoe
 
 ## 12. 后续演进
 
-- [ ] 补齐当前 watcher 升级后尚未制瓶的 6 个公式瓶块（`docker-buildx`、`frida-server`、`gh`、`graphviz`、`iperf3`、`llvm-mingw`）。
 - [ ] 在真实多包更新下持续验证 `watch-updates.yml` → 单次 `bottle.yml` 端到端链路稳定性。
 - [ ] 评估接入 `brew livecheck` 作为辅助版本验证手段。
 - [ ] 新增或移除公式 / cask 时，同步保持 `AGENTS.md §6`、`README.md`、`README.zh.md` 与 `updater/` 完全一致。
