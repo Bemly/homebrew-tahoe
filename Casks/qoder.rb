@@ -1,6 +1,6 @@
 cask "qoder" do
-  version "0.5.14"
-  sha256 "6f8a19d2c746249b1e44e1935ec4a84586624d3cd1012d29286bec97ff232b42"
+  version "0.5.17"
+  sha256 "3bf9613051b86f8521d2194db08d2e504bc82e90010447094df577b4f246a21d"
 
   # 镜像到本仓 Release（tag qoder-<ver>，资产名沿用上游 basename）：
   # 本 tap 政策是所有 cask 都镜像最新版；url 用 #{version} 插值（版本只在 tag
@@ -16,7 +16,7 @@ cask "qoder" do
   # 注意：core 里的 cask "qoder" 是国际版（qoder.com，装 Qoder.app），本 tap 的
   # 同名 cask 是 Qoder CN（装 Qoder CN.app），二者共用 Caskroom/qoder，先卸一方
   # 再装另一方（同 rustup/chisel 的跨 tap 同名规则）。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/qoder-0.5.14/Qoder-CN-mac-x64.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/qoder-0.5.17/Qoder-CN-mac-x64.dmg"
   name "Qoder CN"
   desc "Agentic coding platform (China edition)"
   homepage "https://qoder.cn/"
