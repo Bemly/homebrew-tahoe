@@ -59,7 +59,11 @@ const updaterPatches = [
       `function checkForUpdatesOriginal(isManual = false) {\n    isManualCheck = isManual;`,
   },
   { label: 'autoDownload', from: 'autoUpdater.autoDownload = true;', to: 'autoUpdater.autoDownload = false;' },
-  { label: 'autoInstallOnAppQuit', from: 'autoUpdater.autoInstallOnAppQuit = electron_1.app.isPackaged;', to: 'autoUpdater.autoInstallOnAppQuit = false;' },
+  {
+    label: 'autoInstallOnAppQuit',
+    from: /autoUpdater\.autoInstallOnAppQuit\s*=\s*[^;]+;/,
+    to: 'autoUpdater.autoInstallOnAppQuit = false;',
+  },
 ];
 
 const parsed = parseAsar(asarPath);
@@ -142,7 +146,7 @@ const widgetMainText = readEntry(verify, 'dist/gyWidgetMain.js').toString('utf8'
 const checks = [
   ['main.js 含挂件注入块', mainText.includes(WIDGET_MARK) && mainText.includes("require('./gyWidgetMain.js')")],
   ['main.js 仍含汉化注入块', mainText.includes(CN_MARK)],
-  ['updater.js 已禁自更新', updaterText.includes(UPDATE_DISABLED_MARK) && updaterText.includes('autoDownload = false')],
+  ['updater.js 已禁自更新', updaterText.includes(UPDATE_DISABLED_MARK) && updaterText.includes('autoDownload = false') && updaterText.includes('autoInstallOnAppQuit = false')],
   ['preload.js 含页内挂件块', preloadText.includes(PAGE_MARK) && preloadText.includes('agent-input-box')],
   ['preload.js 含补充词典块', preloadText.includes(L10N_MARK) && preloadText.includes('哈基米')],
   ['主进程模块不再开独立窗口', !widgetMainText.includes('new BrowserWindow') && !widgetMainText.includes('new BaseWindow')],

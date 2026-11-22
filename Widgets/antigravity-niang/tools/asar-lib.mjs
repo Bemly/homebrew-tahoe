@@ -119,11 +119,21 @@ export function replaceText(entries, entryPath, from, to, label) {
   const entry = entries.get(entryPath);
   if (!entry || entry.unpacked) throw new Error(`无法改写 ${entryPath}（条目不存在或为 unpacked）`);
   const text = entry.content.toString('utf8');
+  if (from instanceof RegExp) {
+    const flags = from.flags.includes('g') ? from.flags : `${from.flags}g`;
+    const re = new RegExp(from.source, flags);
+    const matches = [...text.matchAll(re)];
+    if (matches.length !== 1) {
+      throw new Error(`锚点 ${label || ''} 在 ${entryPath} 中出现 ${matches.length} 次（期望 1 次），拒绝打包`);
+    }
+    entry.content = Buffer.from(text.replace(re, () => to), 'utf8');
+    return;
+  }
   const count = text.split(from).length - 1;
   if (count !== 1) {
     throw new Error(`锚点 ${label || ''} 在 ${entryPath} 中出现 ${count} 次（期望 1 次），拒绝打包`);
   }
-  entry.content = Buffer.from(text.replace(from, to), 'utf8');
+  entry.content = Buffer.from(text.replace(from, () => to), 'utf8');
 }
 
 export function writeAsar(entries, outPath) {
