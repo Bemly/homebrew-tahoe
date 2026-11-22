@@ -72,6 +72,18 @@ jobs:
           printf '%s\n' "${FORMULAS[@]}" | sed '/^$/d' | sort -u > /tmp/formulas.txt
           echo "本次制瓶软件：$(paste -sd, /tmp/formulas.txt)"
 
+      - name: 安装 skopeo 并更新 Homebrew
+        run: |
+          set -euo pipefail
+          # skopeo 安装须先利用 runner 镜像自带 API 缓存中的 sonoma 瓶（最新 core 1.25.2 已撤回 x86_64 瓶）
+          brew install skopeo
+          # 安装完 skopeo 后再清理过期 API 缓存与 core checkout，并更新 Homebrew 本体：
+          # 最新 core 公式已引入 manifest_sha256 等新 DSL，若只清 API 缓存不更新 brew，
+          # 解析 core 构建依赖（xz/bison/pkgconf 等）时会报 undefined method 'manifest_sha256'。
+          # 放在软链 bemly/tahoe 之前执行，确保 brew update 不会触碰工作区。
+          rm -rf "$(brew --cache)/api" "$(brew --repository)/Library/Taps/homebrew/homebrew-core"
+          brew update
+
       # brew tap 默认是 clone，改动会落在克隆副本上导致提交丢失。
       # 用软链接指回工作区，brew bottle --merge --write 才能改到待提交的文件。
       - name: 把本仓软链进 Taps 目录
@@ -154,14 +166,6 @@ jobs:
             echo "::warning::allow_unbottled_core=true，已放行上述 core 依赖"
           fi
           echo "递归依赖检查通过：${#FORMULAS[@]} 个公式"
-
-      - name: 安装 skopeo（推 GHCR 的依赖）
-        run: |
-          set -euo pipefail
-          # skopeo 安装须先利用 runner 镜像自带 API 缓存中的 sonoma 瓶（最新 core 1.25.2 已撤回 x86_64 瓶）
-          brew install skopeo
-          # 安装完 skopeo 后再清理过期 API 缓存与 core checkout，使后续 vulkan-headers / spirv-headers 等 `all` 瓶拉取最新版
-          rm -rf "$(brew --cache)/api" "$(brew --repository)/Library/Taps/homebrew/homebrew-core"
 
       # 一次任务内顺序处理所有软件：build-bottle 安装 → 制瓶 → 删旧标签 → 推 GHCR。
       # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md §5）。
