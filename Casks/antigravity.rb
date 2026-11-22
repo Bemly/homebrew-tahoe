@@ -2,8 +2,8 @@ cask "antigravity" do
   # 版本形态：<宿主版本>-<宿主构建号>-cn<补丁序号>。补丁序号由
   # Widgets/antigravity-niang/build.sh 的 --revision 决定，宿主升版时回到 1；
   # 同一宿主版本重打补丁时人工提到 cn2 并同步改这里的 version/sha256。
-  version "2.33.0-4731201358004224-cn4"
-  sha256 "f9ab637d72c61916c243f2fa246a77bf8ca8c5ca61eb23cb2a55f6371e703627"
+  version "2.34.0-5887025308631040-cn1"
+  sha256 "902ff67575aa6a83c7157cc26936dae0ddbb3ab013ac655a92e309337baa4346"
 
   # 本包是「打过补丁的成品整包」，不是上游直引：官方 darwin-x64 dmg 解包后
   # 静态改写 app.asar（注入中文汉化 + 页内 Gemini 伴生挂件 + 禁用自更新）再 ad-hoc
