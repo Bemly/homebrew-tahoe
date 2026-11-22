@@ -53,6 +53,8 @@ jobs:
           set -euo pipefail
           updated=()
           updated_formulae=()
+          patched_packages=()
+          waiting=()
           missing=()
           manual_sync=()
           failed=()
@@ -80,6 +82,14 @@ jobs:
               git checkout -- "$rb" 2>/dev/null || true
               failed+=("$f")
               echo "::warning::$f 无状态输出（自检 fail 或崩溃），已还原文件并跳过（绝不当成无需更新）"
+            elif [[ "$status" == "needs-patched-build" ]]; then
+              ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
+              patched_packages+=("$f")
+              echo "  -> $f 上游已就绪（${ver}），待触发 patched.yml 构建发布"
+            elif [[ "$status" == "waiting-upstream" ]]; then
+              ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
+              waiting+=("${f}:${ver}")
+              echo "  -> $f 等待上游适配（${ver}），暂缓触发构建"
             elif [[ "$status" == "upstream-missing" ]]; then
               ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
               missing+=("${f}:${ver}")
@@ -109,7 +119,13 @@ jobs:
           if [[ ${#updated_formulae[@]} -gt 0 ]]; then
             echo "updated_formulae=$(IFS=,; echo "${updated_formulae[*]}")" >> "$GITHUB_OUTPUT"
           fi
-          # 上游缺失与需人工同步清单交给后续步骤逐个开告警 issue
+          # 上游缺失、需人工同步、补丁成品触发与等待适配清单落盘到 GITHUB_OUTPUT
+          if [[ ${#patched_packages[@]} -gt 0 ]]; then
+            echo "patched=$(IFS=,; echo "${patched_packages[*]}")" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ ${#waiting[@]} -gt 0 ]]; then
+            echo "waiting=$(IFS=,; echo "${waiting[*]}")" >> "$GITHUB_OUTPUT"
+          fi
           if [[ ${#missing[@]} -gt 0 ]]; then
             echo "missing=$(IFS=,; echo "${missing[*]}")" >> "$GITHUB_OUTPUT"
           fi
@@ -153,12 +169,11 @@ jobs:
             echo "failed=$(IFS=,; echo "${failed[*]}")" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # brew 7 起未信任的 tap 公式会被拒绝加载（fetch 报 "Refusing to load
-          # formula ... from untrusted tap"），导致所有公式更新被误判为 fetch 失败。
-          # 先 tap 本仓并 trust，再逐个 fetch。
-          if ! brew tap bemly/tahoe "$GITHUB_WORKSPACE" >/dev/null 2>&1; then
-            echo "::warning::brew tap bemly/tahoe 失败（可能已存在），继续"
-          fi
+          # 直接将 $GITHUB_WORKSPACE 软链进 Taps 目录（brew tap 默认 clone 只读到旧 HEAD，
+          # 读不到本步骤刚刚就地改写好的公式）。
+          taps_dir="$(brew --repository)/Library/Taps/bemly"
+          mkdir -p "$taps_dir"
+          ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe"
           brew trust bemly/tahoe
           for f in "${updated_formulae[@]}"; do
             # linuxbrew：tap 本仓后 fetch 只验直链（瓶块已摘、无 GHCR 可走），
@@ -217,6 +232,23 @@ jobs:
           else
             echo "已提交更新（仅 cask，无需制瓶）"
           fi
+
+      - name: 触发补丁成品构建（patched.yml）
+        if: (!inputs.dry_run) && steps.batch.outputs.patched != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PATCHED: ${{ steps.batch.outputs.patched }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra PKGS <<< "$PATCHED"
+          for pkg in "${PKGS[@]}"; do
+            [[ -n "$pkg" ]] || continue
+            echo "触发 patched.yml 构建发布：package=${pkg} revision=1"
+            gh workflow run "Build patched cask artifacts" \
+              --repo bemly/homebrew-tahoe \
+              -f package="$pkg" \
+              -f revision=1
+          done
 
       - name: 上游资源不可用或需人工同步时开 issue 告警
         if: steps.batch.outputs.missing != '' || steps.batch.outputs.manual_sync != ''
@@ -285,6 +317,8 @@ jobs:
             echo "## 上游版本批量扫描结果"
             echo ""
             echo "- 需要更新：\`${{ steps.batch.outputs.updated || '无' }}\`"
+            echo "- 触发补丁成品构建：\`${{ steps.batch.outputs.patched || '无' }}\`"
+            echo "- 等待上游适配：\`${{ steps.batch.outputs.waiting || '无' }}\`"
             echo "- 上游资源不可下载：\`${{ steps.batch.outputs.missing || '无' }}\`"
             echo "- 需人工同步：\`${{ steps.batch.outputs.manual_sync || '无' }}\`"
             echo "- 检查失败（下次自动恢复）：\`${{ steps.batch.outputs.failed || '无' }}\`"

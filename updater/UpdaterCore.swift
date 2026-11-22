@@ -57,6 +57,13 @@ struct UpstreamRelease {
     let sha256: String?
 }
 
+/// 补丁成品依赖就绪状态（如 antigravity 需等汉化引擎仓库发布对应版本 tag）
+enum PatchedBuildReadiness {
+    case ready
+    case waiting(String)
+    case checkFailed(String)
+}
+
 struct CheckConfig {
     /// 对应 Formula/<formula>.rb 或 Casks/<formula>.rb
     let formula: String
@@ -112,6 +119,9 @@ struct CheckConfig {
     /// 由 watch-updates.yml 发 `[需人工同步]` issue 告警（适用于含版本耦合
     /// resource 或 patch_checksum_pairs 的公式，如 git / bash / fork-readline）。
     let manualSyncReason: String?
+    /// 补丁成品依赖就绪检查：当产物（如本仓 patched Release）尚未发布时，检查上游补丁依赖
+    /// 是否就绪，决定触发 `patched.yml`（status=needs-patched-build）还是暂缓等待（waiting-upstream）。
+    let patchedReadinessCheck: ((String) -> PatchedBuildReadiness)?
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -130,7 +140,8 @@ struct CheckConfig {
           downloadURLForArch: ((String, String) -> String)? = nil,
           rawDualArch: Bool = false,
           alwaysUpdate: Bool = false,
-          manualSyncReason: String? = nil) {
+          manualSyncReason: String? = nil,
+          patchedReadinessCheck: ((String) -> PatchedBuildReadiness)? = nil) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -149,6 +160,7 @@ struct CheckConfig {
         self.rawDualArch = rawDualArch
         self.alwaysUpdate = alwaysUpdate
         self.manualSyncReason = manualSyncReason
+        self.patchedReadinessCheck = patchedReadinessCheck
     }
 }
 
@@ -275,6 +287,27 @@ private func githubLatestTag(repo: String) -> String? {
     }
     print("::warning::githubLatestTag(\(repo)) 3 次均失败（curl exit=\(lastStatus)，末次输出 \(lastBytes)B）")
     return nil
+}
+
+/// 列出 GitHub 仓库的所有 tag 名（走 `git ls-remote --tags`，不消耗 GitHub API 限额）
+func gitRemoteTags(repo: String) -> [String]? {
+    guard let git = which("git") else { return nil }
+    let (status, out) = run(git, ["ls-remote", "--tags", "https://github.com/\(repo)"])
+    guard status == 0 else { return nil }
+    var seen = Set<String>()
+    var tags: [String] = []
+    for line in out.components(separatedBy: CharacterSet.newlines) {
+        let fields = line.split(whereSeparator: { $0.isWhitespace })
+        guard fields.count >= 2 else { continue }
+        var ref = String(fields[1])
+        guard ref.hasPrefix("refs/tags/") else { continue }
+        ref.removeFirst("refs/tags/".count)
+        if ref.hasSuffix("^{}") { ref.removeLast(3) }
+        if !ref.isEmpty && seen.insert(ref).inserted {
+            tags.append(ref)
+        }
+    }
+    return tags
 }
 
 /// 下载到临时文件（发布包可能几百 MB，走文件不走管道）
@@ -1159,6 +1192,27 @@ func runCheck(_ config: CheckConfig) {
     // 4. HEAD 探测新版本资源是否可下载（几乎不产生流量）
     let downloadURL = upstream.downloadURL
     if !curlHeadOK(downloadURL) {
+        if let checkReadiness = config.patchedReadinessCheck {
+            switch checkReadiness(stable) {
+            case .ready:
+                print("上游宿主与补丁依赖均已就绪（\(stable)），交由 patched.yml 构建发布")
+                emit("status=needs-patched-build")
+                emit("current_version=\(current)")
+                emit("new_version=\(stable)")
+                return
+            case .waiting(let reason):
+                print("暂缓触发 patched.yml（\(stable)）：\(reason)")
+                emit("status=waiting-upstream")
+                emit("current_version=\(current)")
+                emit("new_version=\(stable)")
+                return
+            case .checkFailed(let reason):
+                print("::warning::检查补丁依赖状态失败（\(stable)）：\(reason)")
+                emit("status=check-failed")
+                emit("current_version=\(current)")
+                return
+            }
+        }
         print("::warning::新版本资源不可下载：\(downloadURL)")
         emit("status=upstream-missing")
         emit("current_version=\(current)")

@@ -122,7 +122,9 @@ jobs:
       - name: Lint casks（style + strict audit，CI 跑不占开发机）
         id: lint
         run: |
-          brew tap bemly/tahoe "$GITHUB_WORKSPACE"
+          taps_dir="$(brew --repository)/Library/Taps/bemly"
+          mkdir -p "$taps_dir"
+          ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe"
           brew trust bemly/tahoe
           brew style --cask bemly/tahoe/antigravity
           brew audit --strict --cask bemly/tahoe/antigravity
@@ -140,6 +142,7 @@ jobs:
           git --no-pager diff -- Casks/
           git add Casks/antigravity.rb
           git commit -m "patched: 更新补丁包 cask 的 version/sha256（antigravity cn${{ inputs.revision }}）"
+          git pull --rebase origin main
           git push origin HEAD:main
 
       - name: 打印 sidecar 与最终 cask 行

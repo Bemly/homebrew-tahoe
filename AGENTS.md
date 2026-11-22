@@ -92,7 +92,7 @@ end
 | 约定 | 实现 |
 | --- | --- |
 | 检查与制瓶分离 | 版本检查用 `ubuntu-latest`（Swift 检查器用 `swiftc -O` 编译运行，禁用解释器模式）；制瓶必须跑在 `macos-26-intel` 才产出 `x86_64_tahoe` 标签 |
-| 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名） |
+| 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名）；遇到依赖外部补丁构建的成品 cask（`antigravity`）且上下游都已就绪时自动触发一次 `patched.yml` |
 | 递归依赖门控 | `bottle.yml` 在 `brew readall` 后递归展开每批公式的**运行时**依赖闭包：本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断（`allow_unbottled_core: true` 仅作临时放行开关） |
 | 重型任务走 CI | `patched.yml` 在 `macos-26-intel` 执行 `antigravity` 构建上传、写回 sidecar sha 并跑 `brew style`/`audit --strict`；开发机只跑轻量验证，避免卡死 |
 | 交叉 sysroot 构建 | `sysroots.yml` 在 `macos-26` / `ubuntu-22.04` 构建 `openssl-macos-arm64` 与 `linux-sysroot-x64/a64` 并发布到 GitHub Release（目标端头库不进 `Formula/` 或 GHCR），默认 `openssl_version` 与 `fork-openssl@4` 对齐 |
@@ -310,17 +310,19 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | `brew` 全量式 | 同上 | JSON 的 `urls.stable.url` / `.checksum` | `fork-*`、qemu 链、ripgrep、python 家族 |
 | `brew` cask | `api/cask/<brewName>.json` | 自给 x64 `downloadURL` 模板，sha 实算 | zcode、lody、github-copilot-app |
 
-5. 版本按数值段比较（含预发布后缀 < 正式版；`alwaysUpdate` 例外）；设置了 `manualSyncReason` 的包（`git` / `bash` / `fork-readline`）检测到新版时不自动改写，输出 `status=manual-sync` 触发 issue 告警；`HEAD` 探测不可达则发 `status=upstream-missing` 并开 `automated-alert` issue。
+5. 版本按数值段比较（含预发布后缀 < 正式版；`alwaysUpdate` 例外）；设置了 `manualSyncReason` 的包（`git` / `bash` / `fork-readline`）检测到新版时不自动改写，输出 `status=manual-sync` 触发 issue 告警；设置了 `patchedReadinessCheck` 的补丁成品 cask（`antigravity`）在 Release 尚未产出时检测上游依赖 tag，已就绪则发 `status=needs-patched-build` 自动触发 `patched.yml`，未就绪则发 `status=waiting-upstream` 暂缓等待；`HEAD` 探测不可达则发 `status=upstream-missing` 并开 `automated-alert` issue。
 6. 改写前先在内存通过自检再落盘：同步 `url`、`mirror`（含 `vX.Y/` 段）、顶层 `version`、`sha256`，摘除公式旧 `bottle do` 块并折叠相邻多余空行，并在版本升级时清掉旧的 `revision N`；`uploadRelease: true` 的 cask 同步上传本仓 Release 并清掉该 cask 的旧 Release。
 
 ### 7.1 workflow 复核、提交与状态契约
 
-- 改写文件统一过 `ruby -c`；公式先 `brew tap` + `brew trust` 再跑 `brew fetch --force`，失败则还原该文件并记入 `failed`，不污染其它包。
-- 非 `dry_run` 时一次性提交到 `main`，若有公式更新则用**一次** `gh workflow run` 触发 `bottle.yml`（只传公式列表）。
+- 改写文件统一过 `ruby -c`；公式先将工作区软链进 Taps 目录并 `brew trust` 再跑 `brew fetch --force`，失败则还原该文件并记入 `failed`，不污染其它包。
+- 非 `dry_run` 时一次性提交到 `main`，若有公式更新则用**一次** `gh workflow run` 触发 `bottle.yml`（只传公式列表），若有 `needs-patched-build` 则触发 `patched.yml`。
 
 | status | 含义 | workflow 处理 |
 | --- | --- | --- |
 | `updated` | 已改写 | 语法 / fetch 复核后提交 |
+| `needs-patched-build` | 补丁成品依赖已就绪 | 自动触发 `patched.yml` 构建发布 |
+| `waiting-upstream` | 补丁上游尚未适配 | 暂缓跳过（不开告警 issue） |
 | `up-to-date` / `newer-than-brew` | 无需更新 / 本地更新 | 跳过 |
 | `brew-missing` | 未接入来源 | 跳过 |
 | `manual-sync` | 含版本耦合资源 / 补丁列表 | 跳过改写 + 开 `[需人工同步]` issue |
