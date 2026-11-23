@@ -277,7 +277,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | `github-copilot-app` | 1.4.3 | Intel | brewCask 判新；Intel dmg 实算；镜像 |
 | `grok-bot` | 1.2.3 | Intel | Cursor 下载页锚定；镜像 |
 | `heliport` | 2.0.0-alpha | universal | universal；不检查更新 |
-| `konsole` | 5493 | dual | KDE CI 构建号；双架构；`alwaysUpdate`；每月手动跑 |
+| `konsole` | 5493/5493 | dual | KDE CI 构建号；ARM/Intel 独立判版、各自镜像 |
 | `lceda-pro` | 4.1.105 | Intel | 官网下载页 Intel 行；zip 套 dmg；镜像 |
 | `lceda` | 6.5.61 | Intel | 官网下载页 Intel 行；镜像 |
 | `lody` | 0.113.1 | Intel | brewCask 判新；镜像 |
@@ -310,7 +310,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | `brew` 全量式 | 同上 | JSON 的 `urls.stable.url` / `.checksum` | `fork-*`、qemu 链、ripgrep、python 家族 |
 | `brew` cask | `api/cask/<brewName>.json` | 自给 x64 `downloadURL` 模板，sha 实算 | zcode、lody、github-copilot-app |
 
-5. 版本按数值段比较（含预发布后缀 < 正式版；`alwaysUpdate` 例外）；设置了 `manualSyncReason` 的包（`git` / `bash` / `fork-readline`）检测到新版时不自动改写，输出 `status=manual-sync` 触发 issue 告警；设置了 `patchedReadinessCheck` 的补丁成品 cask（`antigravity`）在 Release 尚未产出时检测上游依赖 tag，已就绪则发 `status=needs-patched-build` 自动触发 `patched.yml`，未就绪则发 `status=waiting-upstream` 暂缓等待；`HEAD` 探测不可达则发 `status=upstream-missing` 并开 `automated-alert` issue。
+5. 版本按数值段比较（含预发布后缀 < 正式版；`alwaysUpdate` 例外）；设置了 `manualSyncReason` 的包（`git` / `bash` / `fork-readline`）检测到新版时不自动改写，输出 `status=manual-sync` 触发 issue 告警；设置了 `patchedReadinessCheck` 的补丁成品 cask（`antigravity`）在 Release 尚未产出时检测上游依赖 tag，已就绪则发 `status=needs-patched-build` 自动触发 `patched.yml`，未就绪则发 `status=waiting-upstream` 暂缓等待；`HEAD` 探测失败时先用 1 字节 Range GET 复验，两者均不可达才发 `status=upstream-missing` 并开 `automated-alert` issue。
 6. 改写前先在内存通过自检再落盘：同步 `url`、`mirror`（含 `vX.Y/` 段）、顶层 `version`、`sha256`，摘除公式旧 `bottle do` 块并折叠相邻多余空行，并在版本升级时清掉旧的 `revision N`；`uploadRelease: true` 的 cask 同步上传本仓 Release 并清掉该 cask 的旧 Release。
 
 ### 7.1 workflow 复核、提交与状态契约
@@ -394,7 +394,7 @@ brew trust bemly/tahoe
 
 ### 11.5 Cask 镜像与声明式 Steps
 
-- **全 cask 镜像策略**：所有 cask 均镜像最新版至本仓 Release（tag `<name>-<ver>`，空格与 `%20` 替换成 `.`），`deleteOldCaskReleases` 只删「`<name>-` 后紧跟数字」的旧 tag（防误删 `lceda-` 下的 `lceda-pro-*`）。
+- **全 cask 镜像策略**：所有 cask 均镜像最新版至本仓 Release（tag `<name>-<ver>`，空格与 `%20` 替换成 `.`），`deleteOldCaskReleases` 只删「`<name>-` 后紧跟数字」的旧 tag（防误删 `lceda-` 下的 `lceda-pro-*`）；`konsole` 两架构版本独立，清理时保留 ARM/Intel 各自的当前 tag。
 - **容器与命名**：zip 内含多文件套 dmg 时用 `container nested: "<name>.dmg"`；`Cask/ArrayAlphabetization` 按 `line.strip.downcase` 排序（如 `com.*` 排在大写开头的目录名之前）。
 - **声明式 steps 与输入法**：brew 7 禁止命令式 `preflight`/`postflight`，统一用 `preflight_steps` / `postflight_steps`（内部使用 `{{staged_path}}` / `{{appdir}}` token，写家目录配置需声明 `writable_paths` + `writable_base: :home`）。输入法直接解出真身装到 `~/Library/Input Methods`（免 sudo）、`set_permissions` 加 `u+w`、幂等写入 `AppleEnabledInputSources` 并重启 `cfprefsd` / `TextInputMenuAgent` / `SystemUIServer`。
 

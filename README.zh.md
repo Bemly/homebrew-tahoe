@@ -177,7 +177,7 @@ brew install --cask bemly/tahoe/antigravity
 | `github-copilot-app` | Intel | GitHub Copilot 桌面 app；镜像官方 Intel dmg；版本跟 core cask |
 | `grok-bot` | Intel | Cursor Grok Bot 桌面 agent；镜像；版本跟随 Cursor 下载页 |
 | `heliport` | universal | Intel 无线网卡客户端（`itlwmx`）；镜像；锁定版本 |
-| `konsole` | dual | KDE 终端，双架构包镜像到本仓 Release；版本即 CI 构建号 |
+| `konsole` | dual | KDE 终端；ARM/Intel 独立判版，各自镜像到本仓 Release |
 | `lceda` | Intel | 嘉立创 EDA 标准版；镜像；版本跟随官网下载页 Intel(x64) 行 |
 | `lceda-pro` | Intel | 嘉立创 EDA 专业版（zip 内套 dmg 自动解包）；镜像；版本跟随官网下载页 Intel(x64) 行 |
 | `lody` | Intel | Lody 桌面 app（跨桌面/移动端同步 coding agent 会话）；镜像官方 Intel dmg；版本跟 core cask |

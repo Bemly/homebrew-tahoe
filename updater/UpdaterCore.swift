@@ -31,12 +31,9 @@
 //   - 自定义流 customRelease：brew 未收录软件的上游自有更新接口（WorkBuddy），
 //     接口直接给版本号、下载直链、sha256。
 //
-// 产物维度（与版本来源正交）：默认单产物；置 archArtifacts 即双架构产物
-// （zcode / konsole），同一版本多份产物、各算各的 sha，走 runDualArchCheck
-// （逐个 HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行；url 行不动，
-// 靠 #{version}/#{arch} 插值覆盖新版本）。双产物无 checksums 模板，
-// 有更新时逐个下载实算；镜像（uploadRelease=true，konsole/zcode）下先双包
-// 上传本仓 Release 再改写（url 插值须已指向本仓 Release，见 AGENTS.md §11.5）。
+// 产物维度（与版本来源正交）：默认单产物；置 archArtifacts 即双架构产物。
+// zcode 是同一版本多份产物，走 runDualArchCheck；konsole 两架构版本独立，
+// 由 customReleaseByArch + on_arm/on_intel 块走 runIndependentArchCheck。
 //
 // 输出契约与旧版 scripts/check-updates.sh 一致（GITHUB_OUTPUT 键名不变）；
 // brew 流查不到软件（API 404）时输出 status=brew-missing 并停（TODO 见 runCheck）。
@@ -101,6 +98,7 @@ struct CheckConfig {
     let githubTagPrefix: String?
     /// 双架构产物：URL token 列表（如 zcode ["arm64", "x64"]、
     /// konsole ["arm64", "x86_64"]），与 downloadURLForArch 配合。
+    /// konsole 使用 customReleaseByArch 独立判版，此时不需要 downloadURLForArch。
     /// 置空 = 单产物（现有行为）。
     let archArtifacts: [String]?
     /// 双架构产物：(version, archToken) -> 下载直链。archArtifacts 非空时必填。
@@ -122,6 +120,9 @@ struct CheckConfig {
     /// 补丁成品依赖就绪检查：当产物（如本仓 patched Release）尚未发布时，检查上游补丁依赖
     /// 是否就绪，决定触发 `patched.yml`（status=needs-patched-build）还是暂缓等待（waiting-upstream）。
     let patchedReadinessCheck: ((String) -> PatchedBuildReadiness)?
+    /// 分架构独立版本来源：每个 token 各自返回版本与下载直链。
+    /// 用于 on_arm / on_intel 块内版本号不同的 cask（如 konsole）。
+    let customReleaseByArch: ((String) -> UpstreamRelease?)?
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -141,7 +142,8 @@ struct CheckConfig {
           rawDualArch: Bool = false,
           alwaysUpdate: Bool = false,
           manualSyncReason: String? = nil,
-          patchedReadinessCheck: ((String) -> PatchedBuildReadiness)? = nil) {
+          patchedReadinessCheck: ((String) -> PatchedBuildReadiness)? = nil,
+          customReleaseByArch: ((String) -> UpstreamRelease?)? = nil) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -161,6 +163,7 @@ struct CheckConfig {
         self.alwaysUpdate = alwaysUpdate
         self.manualSyncReason = manualSyncReason
         self.patchedReadinessCheck = patchedReadinessCheck
+        self.customReleaseByArch = customReleaseByArch
     }
 }
 
@@ -237,12 +240,19 @@ private func curlHTTP(_ url: String) -> (httpCode: Int?, body: String) {
     return (code, lines.joined(separator: "\n"))
 }
 
-/// HEAD 探测资源可达性（等价 curl -fsI）
+/// HEAD 探测资源可达性；失败时用 1 字节 GET 复验，避免 CDN 临时拒绝 HEAD 造成误报。
 private func curlHeadOK(_ url: String) -> Bool {
     guard let curl = which("curl") else { return false }
-    let (status, _) = run(curl, ["-fsI", "--retry", "2", "--retry-delay", "3",
-                                 "--max-time", "30", url])
-    return status == 0
+    let headArgs = ["-fsI", "--retry", "2", "--retry-delay", "3",
+                    "--max-time", "30", url]
+    if run(curl, headArgs).status == 0 { return true }
+    let getArgs = ["-fsSL", "--retry", "2", "--retry-delay", "3",
+                   "--max-time", "30", "--range", "0-0", "-o", "/dev/null", url]
+    if run(curl, getArgs).status == 0 {
+        print("HEAD 探测失败，1 字节 GET 复验通过：\(url)")
+        return true
+    }
+    return false
 }
 
 /// 取 GitHub 仓库最新 release 的 tag：HEAD 请求 releases/latest，
@@ -704,10 +714,197 @@ private func caskArchKey(for token: String) -> String {
     }
 }
 
-/// 双架构检查主流程（zcode / konsole）：版本已定（stable），逐个产物
-/// HEAD 探测 → 下载实算 → 改写 version 行 + 各 arch sha 行 + url 行版本子串替换。
+private func caskArchBlockName(for token: String) -> String {
+    caskArchKey(for: token) == "arm" ? "on_arm" : "on_intel"
+}
+
+private func caskArchBlockMatch(in content: String, token: String) -> NSTextCheckingResult? {
+    let name = NSRegularExpression.escapedPattern(for: caskArchBlockName(for: token))
+    let pattern = "(?ms)^[ \\t]*" + name + #" do[ \t]*\n(.*?)^[ \t]*end[ \t]*$"#
+    return try? NSRegularExpression(pattern: pattern).firstMatch(
+        in: content, range: fullRange(content))
+}
+
+private func caskArchVersion(in content: String, token: String) -> String? {
+    guard let match = caskArchBlockMatch(in: content, token: token),
+          let bodyRange = Range(match.range(at: 1), in: content) else { return nil }
+    let body = String(content[bodyRange])
+    guard let versionMatch = firstMatch(#"(?m)^[ \t]*version\s+"([^"]+)""#, in: body),
+          let range = Range(versionMatch.range(at: 1), in: body) else { return nil }
+    return String(body[range])
+}
+
+private func rewriteCaskArchBlock(_ content: String, token: String, version: String,
+                                  sha: String, url: String) -> String? {
+    guard let match = caskArchBlockMatch(in: content, token: token),
+          let bodyRange = Range(match.range(at: 1), in: content) else { return nil }
+    var body = String(content[bodyRange])
+    let replacements: [(pattern: String, value: String)] = [
+        (#"(?m)^([ \t]*)version\s+"[^"]+""#, "version \"\(version)\""),
+        (#"(?m)^([ \t]*)sha256\s+"[0-9a-f]{64}""#, "sha256 \"\(sha)\""),
+        (#"(?m)^([ \t]*)url\s+"[^"]+""#, "url \"\(url)\""),
+    ]
+    for replacement in replacements {
+        guard let stanza = try? NSRegularExpression(pattern: replacement.pattern),
+              stanza.numberOfMatches(in: body, range: fullRange(body)) == 1 else { return nil }
+        body = stanza.stringByReplacingMatches(
+            in: body, range: fullRange(body), withTemplate: "$1\(replacement.value)")
+    }
+    return content.replacingCharacters(in: bodyRange, with: body)
+}
+
+private func caskReleaseAssetName(from url: String) -> String {
+    let rawName = URL(string: url)?.lastPathComponent ?? ""
+    return (rawName.removingPercentEncoding ?? rawName)
+        .replacingOccurrences(of: " ", with: ".")
+        .replacingOccurrences(of: "(", with: ".")
+        .replacingOccurrences(of: ")", with: ".")
+}
+
+private func uploadIndependentCaskAsset(repo: String, tag: String, sourcePath: String,
+                                        upstreamURL: String, createRelease: Bool) -> Bool {
+    guard let gh = which("gh") else {
+        print("::error::分架构镜像（\(tag)）需要 gh CLI 上传 Release")
+        return false
+    }
+    let assetName = caskReleaseAssetName(from: upstreamURL)
+    let namedPath = FileManager.default.temporaryDirectory
+        .appendingPathComponent("updater-\(UUID().uuidString)")
+        .appendingPathComponent(assetName).path
+    do {
+        try FileManager.default.createDirectory(
+            atPath: (namedPath as NSString).deletingLastPathComponent,
+            withIntermediateDirectories: true)
+        try FileManager.default.moveItem(atPath: sourcePath, toPath: namedPath)
+    } catch {
+        print("::error::重命名待上传文件失败：\(error)")
+        return false
+    }
+    defer {
+        try? FileManager.default.removeItem(
+            atPath: (namedPath as NSString).deletingLastPathComponent)
+    }
+
+    if createRelease {
+        let (createStatus, createOut) = run(gh, ["release", "create", tag, namedPath,
+                                                  "--repo", repo, "--generate-notes",
+                                                  "--title", "\(tag)"])
+        if createStatus == 0 { return true }
+        let (uploadStatus, uploadOut) = run(gh, ["release", "upload", tag, namedPath,
+                                                  "--repo", repo, "--clobber"])
+        if uploadStatus == 0 { return true }
+        print("::error::上传 Release 失败：\(createOut)\n\(uploadOut)")
+        return false
+    }
+
+    let (uploadStatus, uploadOut) = run(gh, ["release", "upload", tag, namedPath,
+                                              "--repo", repo, "--clobber"])
+    if uploadStatus != 0 { print("::error::上传 Release 失败：\(uploadOut)") }
+    return uploadStatus == 0
+}
+
+private func runIndependentArchCheck(config: CheckConfig, content: String,
+                                     formulaFile: String, tokens: [String],
+                                     releases: [String: UpstreamRelease]) {
+    guard config.uploadRelease else {
+        fail("分架构独立版本（\(config.formula)）目前只支持 Release 镜像")
+    }
+    let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe"
+    var currentVersions: [String: String] = [:]
+    var finalVersions: [String: String] = [:]
+    var updates: [(token: String, current: String, release: UpstreamRelease, sha: String, tmp: String)] = []
+
+    for token in tokens {
+        guard let current = caskArchVersion(in: content, token: token) else {
+            fail("无法从 \(formulaFile) 解析 \(caskArchBlockName(for: token)) 的版本号")
+        }
+        guard let release = releases[token] else {
+            fail("缺少 \(token) 的上游版本信息")
+        }
+        currentVersions[token] = current
+        let order = compareVersions(current, release.version)
+        if order > 0 {
+            finalVersions[token] = current
+            print("\(token) 本地版本(\(current)) 比上游(\(release.version))更新，保持不动。")
+            continue
+        }
+        if order == 0 {
+            finalVersions[token] = current
+            if !config.alwaysUpdate {
+                print("\(token) 已是最新：\(current)")
+                continue
+            }
+        } else {
+            finalVersions[token] = release.version
+        }
+
+        if !curlHeadOK(release.downloadURL) {
+            print("::warning::\(token) 新版本资源不可下载：\(release.downloadURL)")
+            emit("status=upstream-missing")
+            emit("current_version=\(current)")
+            emit("new_version=\(release.version)")
+            emit("failed_arch=\(token)")
+            return
+        }
+        print("下载 \(token) 发布包后本地计算 sha256")
+        guard let tmp = curlDownload(release.downloadURL),
+              let hash = sha256(ofFile: tmp),
+              hash.range(of: #"^[0-9a-f]{64}$"#, options: .regularExpression) != nil else {
+            fail("无法获取 \(release.downloadURL) 的 sha256")
+        }
+        updates.append((token: token, current: current, release: release, sha: hash, tmp: tmp))
+    }
+
+    if updates.isEmpty {
+        print("所有架构均已是最新，无需更新。")
+        emit("status=up-to-date")
+        emit("current_version=\(tokens.map { "\($0)=\(currentVersions[$0]!)" }.joined(separator: ","))")
+        return
+    }
+
+    var createdTags = Set<String>()
+    for update in updates {
+        let tag = "\(config.formula)-\(update.release.version)"
+        guard uploadIndependentCaskAsset(
+            repo: repo, tag: tag, sourcePath: update.tmp,
+            upstreamURL: update.release.downloadURL,
+            createRelease: !createdTags.contains(tag)) else {
+            fail("上传 \(update.token) 发布包失败")
+        }
+        createdTags.insert(tag)
+    }
+
+    var newContent = content
+    for update in updates {
+        let assetName = caskReleaseAssetName(from: update.release.downloadURL)
+        let mirrorURL = "https://github.com/\(repo)/releases/download/\(config.formula)-\(update.release.version)/\(assetName)"
+        guard let rewritten = rewriteCaskArchBlock(
+            newContent, token: update.token, version: update.release.version,
+            sha: update.sha, url: mirrorURL) else {
+            fail("改写 \(update.token) 的 version/sha256/url 失败")
+        }
+        newContent = rewritten
+    }
+
+    do {
+        try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
+    } catch {
+        fail("写回 \(formulaFile) 失败：\(error)")
+    }
+
+    let keepTags = Set(finalVersions.values.map { "\(config.formula)-\($0)" })
+    deleteOldCaskReleases(repo: repo, formula: config.formula, keepTags: keepTags)
+    print("公式已更新：\(tokens.map { "\($0) \(currentVersions[$0]!)->\(finalVersions[$0]!)" }.joined(separator: ", "))")
+    emit("status=updated")
+    emit("current_version=\(tokens.map { "\($0)=\(currentVersions[$0]!)" }.joined(separator: ","))")
+    emit("new_version=\(tokens.map { "\($0)=\(finalVersions[$0]!)" }.joined(separator: ","))")
+    for update in updates { emit("sha256_\(caskArchKey(for: update.token))=\(update.sha)") }
+}
+
+/// 同版本双架构检查主流程（zcode）：逐个产物 HEAD 探测 → 下载实算 →
+/// 改写 version 行 + 各 arch sha 行 + url 行版本子串替换。
 /// url 行不动结构（#{version}/#{arch} 插值或字面版本号只换版本部分）；
-/// 镜像模式（uploadRelease=true，konsole）下先把双包上传本仓 Release
+/// 镜像模式（uploadRelease=true，zcode）下先把双包上传本仓 Release
 ///（tag `<formula>-<stable>`，资产名沿用上游 basename，旧快照清理），
 /// 再改写——Release tag 与资产名都含字面版本号，子串替换即跟随。
 func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
@@ -991,6 +1188,23 @@ func runCheck(_ config: CheckConfig) {
     let formulaFile = "\(config.formulaPath)/\(config.formula).rb"
     guard let content = try? String(contentsOfFile: formulaFile, encoding: .utf8) else {
         fail("找不到文件：\(formulaFile)（须在仓库根目录运行）")
+    }
+    if let releaseForArch = config.customReleaseByArch {
+        guard let tokens = config.archArtifacts, !tokens.isEmpty else {
+            fail("分架构版本来源（\(config.formula)）必须提供 archArtifacts")
+        }
+        var releases: [String: UpstreamRelease] = [:]
+        for token in tokens {
+            guard let release = releaseForArch(token) else {
+                print("::warning::无法从自定义更新接口获取 \(config.formula) 的 \(token) 版本信息（网络故障或接口变化），跳过")
+                emit("status=check-failed")
+                return
+            }
+            releases[token] = release
+        }
+        runIndependentArchCheck(config: config, content: content, formulaFile: formulaFile,
+                                tokens: tokens, releases: releases)
+        return
     }
 
     // 1. 本地版本
@@ -1368,6 +1582,10 @@ func runCheck(_ config: CheckConfig) {
 /// 清理某 cask 的旧版 GitHub Release：只保留 keepTag，其余 tagName 形如 "<formula>-*" 的旧 release 全删。
 /// 用于 workbuddy 等走 Release 分发的 cask——每次发新版后把旧 release 清掉，避免旧资产堆积。
 private func deleteOldCaskReleases(repo: String, formula: String, keepTag: String) {
+    deleteOldCaskReleases(repo: repo, formula: formula, keepTags: Set([keepTag]))
+}
+
+private func deleteOldCaskReleases(repo: String, formula: String, keepTags: Set<String>) {
     guard let gh = which("gh") else { return }
 
     // gh release list 默认只回前 30 个，给足上限；--json 拿 tagName 列表
@@ -1389,7 +1607,7 @@ private func deleteOldCaskReleases(repo: String, formula: String, keepTag: Strin
 
     let prefix = "\(formula)-"
     for tag in tags {
-        guard tag != keepTag, tag.hasPrefix(prefix) else { continue }
+        guard !keepTags.contains(tag), tag.hasPrefix(prefix) else { continue }
         // 前缀可能撞到另一个 cask 的名字（lceda vs lceda-pro）：
         // `lceda-` 也匹配 `lceda-pro-4.1.100`，无脑删会把隔壁 cask 的
         // Release 清掉。版本号一律以数字开头，只认「前缀 + 数字」才算本 cask

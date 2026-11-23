@@ -188,7 +188,7 @@ Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are eit
 | `github-copilot-app` | Intel | GitHub Copilot desktop app; mirrored from official Intel dmg; version tracks core cask |
 | `grok-bot` | Intel | Cursor Grok Bot desktop agent; mirrored; version tracked from Cursor download page |
 | `heliport` | universal | Intel Wi-Fi client app (`itlwmx`); mirrored; pinned |
-| `konsole` | dual | KDE terminal, dual-arch builds mirrored to this repo's releases; version is CI build number |
+| `konsole` | dual | KDE terminal; ARM and Intel builds are versioned and mirrored independently |
 | `lceda` | Intel | LCEDA Standard EDA software; mirrored; version tracked from official download page Intel(x64) row |
 | `lceda-pro` | Intel | LCEDA Pro EDA software (zip wraps a dmg); mirrored; version tracked from official download page Intel(x64) row |
 | `lody` | Intel | Lody desktop app for coding agent sessions; mirrored from official Intel dmg; version tracks core cask |
