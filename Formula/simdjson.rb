@@ -1,17 +1,12 @@
 class Simdjson < Formula
   desc "SIMD-accelerated C++ JSON parser"
   homepage "https://simdjson.org"
-  url "https://github.com/simdjson/simdjson/archive/refs/tags/v5.2.0.tar.gz"
-  sha256 "499176afd4b32fbe6f65551ef573b880407280072e1c19e22df0b45da58cdf64"
+  url "https://github.com/simdjson/simdjson/archive/refs/tags/v5.3.0.tar.gz"
+  sha256 "5e59df8bd3fa760937e6a2ca68193399c85b52b5042716700b149a734737dced"
   license "Apache-2.0"
   compatibility_version 3
 
   head "https://github.com/simdjson/simdjson.git", branch: "master"
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "369c448fb3212f09a7788f0496d50a6268a584df7500ec78ba772dfd3d2be81a"
-  end
 
   depends_on "cmake" => :build
   depends_on arch: :x86_64

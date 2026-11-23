@@ -1,10 +1,10 @@
 cask "qwen-ime" do
-  version "1.2.60.60"
-  sha256 "5b8b1116f1cefb98079973c49c08068c9a5e85aa88e273be46350c5eb251dddc"
+  version "1.2.65.62"
+  sha256 "7dc9d02ec253fb7681ddbf7843e1b6356019d495f61e90f457d7145c6badc46c"
 
   # 镜像到本仓 Release（上游 CDN 链接带构建号与 fp token，直接引用不稳；
   # watcher 下载后上传到 qwen-ime-<ver>，URL 指 Release 资产）。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/qwen-ime-#{version}/QwenimeMac_V1.2.60.60_mac_pf8002_.zh-cn._release_.Build3290310.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/qwen-ime-1.2.65.62/QwenimeMac_V1.2.65.62_mac_pf8002_.zh-cn._release_.Build3301546..dmg"
   name "Qwen Input Method"
   desc "Qwen AI input method"
   homepage "https://ime.qianwen.com/"

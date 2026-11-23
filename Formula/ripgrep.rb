@@ -1,8 +1,8 @@
 class Ripgrep < Formula
   desc "Search tool like grep and The Silver Searcher"
   homepage "https://github.com/BurntSushi/ripgrep"
-  url "https://github.com/BurntSushi/ripgrep/archive/refs/tags/15.2.0.tar.gz"
-  sha256 "7605249d3eb0d5f170e3414498e3344e26b1e7a147aec518b57090b80036a562"
+  url "https://github.com/BurntSushi/ripgrep/archive/refs/tags/16.0.0.tar.gz"
+  sha256 "17e7a1a0db80ed9618a0963c7ae4aecb8fce25c70cf7ebed514daf2b38a0d153"
   license "Unlicense"
   compatibility_version 1
 
@@ -11,11 +11,6 @@ class Ripgrep < Formula
   livecheck do
     url :stable
     strategy :github_latest
-  end
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "1ce904c130b0d22c0ca94f4fae85afe30da7531c1eb0ada4e345c48d50bceaa3"
   end
 
   depends_on "asciidoctor" => :build
