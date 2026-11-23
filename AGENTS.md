@@ -50,7 +50,7 @@ homebrew-tahoe/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
 │   └── <name>.swift                   # 155 个检查器入口，与 Formula|Casks 一一同名
 └── .github/workflows/
-    ├── watch-updates.yml              # 手动触发的批量版本 watcher（ubuntu-latest + Swift）
+    ├── watch-updates.yml              # 每日自动 + 手动触发的批量版本 watcher（ubuntu-latest + Swift）
     ├── bottle.yml                     # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
     ├── patched.yml                    # 手动触发的补丁成品构建 + cask lint（macos-26-intel）
     └── sysroots.yml                   # 手动触发的交叉编译 sysroot 构建（发 Release）
@@ -87,7 +87,7 @@ end
 
 ## 5. Workflow 约定
 
-**所有 workflow 一律只允许 `workflow_dispatch` 手动触发**，严禁 `schedule`、`push`、`pull_request` 自动触发。
+**`watch-updates.yml` 是唯一允许 `schedule` 的 workflow**：每天 UTC 04:00（北京时间 12:00）自动运行一次，同时保留 `workflow_dispatch` 手动入口；其余 workflow 只允许 `workflow_dispatch` 手动触发。所有 workflow 严禁 `push` / `pull_request` 自动触发。
 
 | 约定 | 实现 |
 | --- | --- |

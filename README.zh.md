@@ -270,7 +270,7 @@ workflow 会：信任 tap → 递归校验运行时依赖 → 拓扑排序按序
 
 ### Workflows
 
-四个 workflow，**都只支持 `workflow_dispatch` 手动触发**，不设定时任务：
+共四个 workflow：`watch-updates` **每天 UTC 04:00（北京时间 12:00）自动运行**，同时支持 `workflow_dispatch` 手动触发；其余三个**只支持 `workflow_dispatch` 手动触发**。均不使用 `push` / `pull_request` 触发。
 
 | Workflow | 作用 | Runner |
 | --- | --- | --- |

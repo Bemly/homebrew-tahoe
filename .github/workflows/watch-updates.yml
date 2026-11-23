@@ -1,7 +1,7 @@
 name: Watch upstream versions
 
-# 只允许手动点击运行（Actions → 本 workflow → Run workflow）。
-# 不设 schedule / push 触发，把 GitHub Actions 用量压到最低。
+# 每天 UTC 04:00（北京时间 12:00）自动运行，也支持手动点击运行
+# （Actions → 本 workflow → Run workflow）。不使用 push / pull_request 触发。
 #
 # 只有批量模式：遍历 Formula/*.rb 与 Casks/*.rb，对每个存在同名 updater/<name>.swift
 # 的软件检查上游版本（fastfetch.rb ↔ fastfetch.swift，一一对应）。
@@ -13,6 +13,8 @@ name: Watch upstream versions
 # 检查器是 Swift（runner 镜像自带工具链）：共享逻辑在 updater/UpdaterCore.swift，
 # 每包一个入口文件；用 swiftc 编译后运行（解释器模式会静默跳过顶层代码，不能用）。
 on:
+  schedule:
+    - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       dry_run:

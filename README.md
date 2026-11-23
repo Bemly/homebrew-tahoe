@@ -288,7 +288,7 @@ via `brew pr-upload`, writes the `bottle do` block back, commits, and pushes.
 
 ### Workflows
 
-Four workflows, **all manually triggered via `workflow_dispatch` only** (no scheduled jobs):
+Four workflows: `watch-updates` runs **daily at 04:00 UTC (12:00 UTC+8)** and also supports `workflow_dispatch`; the other three are **manually triggered via `workflow_dispatch` only**. No workflow uses `push` or `pull_request` triggers.
 
 | Workflow | Purpose | Runner |
 | --- | --- | --- |
