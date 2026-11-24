@@ -9,7 +9,8 @@ class Abseil < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "788243a32e65581b487b25416675886a29ddf01c3831e984aa43797e52d5f00e"
+    manifest_sha256 "272d1a2db9a28df9758b2aa43eab83fe848e7dc80d1852c6b3721434400098b9"
+    sha256 cellar: :any, tahoe: "3df068ff226e8f0ef12337029d293afee101a79c11428e0278b63f59eb59368e"
   end
 
   depends_on "bemly/tahoe/cmake" => [:build, :test]
