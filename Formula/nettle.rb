@@ -9,7 +9,8 @@ class Nettle < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "b9c802bda3ffd3dcbb9562d1b5c277c8b65120bdaf32814fc71a5c6810276ad8"
+    manifest_sha256 "3885aa0400033cdf9435d66410d85a9bf6143c9e2d62a44fc914986878299ed0"
+    sha256 cellar: :any, tahoe: "b40055fb7abcac89caf5d094d0e3a9aaf2bb0fe61fa4d01dd364cdf56bb2fb5d"
   end
 
   depends_on arch: :x86_64
