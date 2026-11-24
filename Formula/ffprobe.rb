@@ -9,6 +9,12 @@ class Ffprobe < Formula
   sha256 "fe81b028c213d6387a5c6b315692b3ceddcd31eb6dae55bbcae257a862573918"
   license "GPL-3.0-or-later"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "d95c40a26c9a51768b098cf9504f64e8b41444ca9e62502998cd4e9029e5f296"
+    sha256 cellar: :any_skip_relocation, tahoe: "dd8edf746a595e8bd7f4a47e7b0963d5663b0c6f2c520470b3213bd0fa95c0f8"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
