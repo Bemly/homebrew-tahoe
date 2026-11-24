@@ -14,7 +14,8 @@ class Graphviz < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "49819067a8a2d996e0612aab1d9fdf0af4cf887131c2da76fc3a703c2cce7ed4"
+    manifest_sha256 "c70aea8c3aa39f6c530cd8c3a284f3718d67f5c55b7014064d0f2db0d870c023"
+    sha256 tahoe: "5a6d779436d9673ab56881a3efcae4866870ff11278d795f4b7d53ccb60ab074"
   end
 
   head do
