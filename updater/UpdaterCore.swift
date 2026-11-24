@@ -1412,6 +1412,12 @@ func runCheck(_ config: CheckConfig) {
                 emit("status=needs-patched-build")
                 emit("current_version=\(current)")
                 emit("new_version=\(stable)")
+                let parts = stable.split(separator: "-", omittingEmptySubsequences: false)
+                if let revision = parts.last, revision.hasPrefix("cn"),
+                   Int(revision.dropFirst(2)) != nil {
+                    emit("patched_revision=\(revision.dropFirst(2))")
+                    emit("patched_host=\(parts.dropLast().joined(separator: "-"))")
+                }
                 return
             case .waiting(let reason):
                 print("暂缓触发 patched.yml（\(stable)）：\(reason)")

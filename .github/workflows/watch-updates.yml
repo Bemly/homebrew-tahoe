@@ -56,6 +56,7 @@ jobs:
           updated=()
           updated_formulae=()
           patched_packages=()
+          patched_details=()
           waiting=()
           missing=()
           manual_sync=()
@@ -132,7 +133,12 @@ jobs:
               echo "::warning::$f 无状态输出（自检 fail 或崩溃），已还原文件并跳过（绝不当成无需更新）"
             elif [[ "$status" == "needs-patched-build" ]]; then
               ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
+              rev="$(grep '^patched_revision=' "$out" | cut -d= -f2 || true)"
+              host="$(grep '^patched_host=' "$out" | cut -d= -f2 || true)"
+              [[ -n "$rev" ]] || rev="1"
+              [[ -n "$host" ]] || host="${ver%-cn*}"
               patched_packages+=("$f")
+              patched_details+=("$f:$rev:$host")
               echo "  -> $f 上游已就绪（${ver}），待触发 patched.yml 构建发布"
             elif [[ "$status" == "waiting-upstream" ]]; then
               ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
@@ -170,6 +176,7 @@ jobs:
           # 上游缺失、需人工同步、补丁成品触发与等待适配清单落盘到 GITHUB_OUTPUT
           if [[ ${#patched_packages[@]} -gt 0 ]]; then
             echo "patched=$(IFS=,; echo "${patched_packages[*]}")" >> "$GITHUB_OUTPUT"
+            echo "patched_details=$(IFS=,; echo "${patched_details[*]}")" >> "$GITHUB_OUTPUT"
           fi
           if [[ ${#waiting[@]} -gt 0 ]]; then
             echo "waiting=$(IFS=,; echo "${waiting[*]}")" >> "$GITHUB_OUTPUT"
@@ -306,17 +313,24 @@ jobs:
         if: (!inputs.dry_run) && steps.batch.outputs.patched != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PATCHED: ${{ steps.batch.outputs.patched }}
+          PATCHED_DETAILS: ${{ steps.batch.outputs.patched_details }}
         run: |
           set -euo pipefail
-          IFS=',' read -ra PKGS <<< "$PATCHED"
-          for pkg in "${PKGS[@]}"; do
-            [[ -n "$pkg" ]] || continue
-            echo "触发 patched.yml 构建发布：package=${pkg} revision=1"
+          IFS=',' read -ra ITEMS <<< "$PATCHED_DETAILS"
+          for item in "${ITEMS[@]}"; do
+            [[ -n "$item" ]] || continue
+            pkg="${item%%:*}"
+            rest="${item#*:}"
+            rev="${rest%%:*}"
+            host="${rest#*:}"
+            args=(-f package="$pkg" -f revision="$rev")
+            if [[ -n "$host" ]]; then
+              args+=(-f version="${host%-*}" -f build="${host##*-}")
+            fi
+            echo "触发 patched.yml 构建发布：package=${pkg} revision=${rev} host=${host}"
             gh workflow run "Build patched cask artifacts" \
               --repo bemly/homebrew-tahoe \
-              -f package="$pkg" \
-              -f revision=1
+              "${args[@]}"
           done
 
       - name: 上游资源不可用或需人工同步时开 issue 告警

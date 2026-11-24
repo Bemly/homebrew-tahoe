@@ -29,7 +29,7 @@ on:
         default: "1"
         type: string
       version:
-        description: 显式锁宿主版本（留空 = 跟 core cask API；上游汉化引擎未跟上时用它锁旧宿主）
+        description: 显式锁宿主版本（留空 = 跟官方下载页；上游汉化引擎未跟上时用它锁旧宿主）
         required: false
         default: ""
         type: string
@@ -135,13 +135,13 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- Casks/; then
-            echo "cask 无改动，不提交"
+          if git diff --quiet -- Casks/ Widgets/antigravity-niang/official-sha256.txt; then
+            echo "cask/pin 无改动，不提交"
             exit 0
           fi
-          git --no-pager diff -- Casks/
-          git add Casks/antigravity.rb
-          git commit -m "patched: 更新补丁包 cask 的 version/sha256（antigravity cn${{ inputs.revision }}）"
+          git --no-pager diff -- Casks/ Widgets/antigravity-niang/official-sha256.txt
+          git add Casks/antigravity.rb Widgets/antigravity-niang/official-sha256.txt
+          git commit -m "patched: 更新补丁包 cask 与官方 SHA pin（antigravity cn${{ inputs.revision }}）"
           git pull --rebase origin main
           git push origin HEAD:main
 

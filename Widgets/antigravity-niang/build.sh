@@ -53,42 +53,42 @@ fi
 say() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 die() { printf '\033[31m[失败] %s\033[0m\n' "$1" >&2; exit 1; }
 
-# 版本与官方 sha 默认取自 homebrew/core 的 cask API：它按 macOS 版本给出 darwin-x64
-# 的直链与校验和，比抓官网下载页更稳，且能与 Homebrew 的收录节奏对齐。
-# 若显式传入旧宿主版本，则必须同时提供 --build 与 --official-sha，绝不回退覆盖。
-CORE_JSON="$(mktemp)"
-trap 'rm -f "$CORE_JSON"' EXIT
-curl -fsS "https://formulae.brew.sh/api/cask/antigravity.json" -o "$CORE_JSON"
-CORE_VERSION="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['version'])" "$CORE_JSON")"
-CORE_APP_VERSION="${CORE_VERSION%%,*}"
-CORE_APP_BUILD="${CORE_VERSION##*,}"
-CORE_URL="$(python3 -c "
-import json,sys
-d=json.load(open(sys.argv[1]))
-v=d['variations'].get('tahoe') or {}
-if not v.get('url'): sys.exit('core cask 没有 tahoe 变体，拿不到 darwin-x64 直链')
-print(v['url'])
-" "$CORE_JSON")"
-CORE_SHA="$(python3 -c "
-import json,sys
-print(json.load(open(sys.argv[1]))['variations']['tahoe']['sha256'])
-" "$CORE_JSON")"
+# 版本与下载直链动态取自官方下载页；SHA-256 按「版本-构建号」pin 到
+# official-sha256.txt。首次遇到新版本时允许从官方 GCS 对象元数据 bootstrap pin，
+# 后续重跑必须逐字节核对。显式锁定旧版本仍要求同时给 build 与 official-sha。
+PIN_FILE="$WIDGET_DIR/official-sha256.txt"
+OFFICIAL_PAGE="$(mktemp)"
+HEADERS="$(mktemp)"
+trap 'rm -f "$OFFICIAL_PAGE" "$HEADERS"' EXIT
+curl -fsS "https://antigravity.google/download" -o "$OFFICIAL_PAGE"
+LATEST_HOST="$(python3 -c '
+import re, sys
+s = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r"https://storage\.googleapis\.com/antigravity-public/antigravity-hub/(\d+(?:\.\d+)+)-(\d+)/darwin-x64/Antigravity\.dmg", s)
+if not m: sys.exit("官方下载页没有 macOS Intel 链接")
+print(f"{m.group(1)}-{m.group(2)}")
+' "$OFFICIAL_PAGE")"
+LATEST_APP="${LATEST_HOST%-*}"
+LATEST_BUILD="${LATEST_HOST##*-}"
+LATEST_URL="https://storage.googleapis.com/antigravity-public/antigravity-hub/${LATEST_HOST}/darwin-x64/Antigravity.dmg"
+PINNED_SHA="$(awk -v host="$LATEST_HOST" '$1==host {print $2; exit}' "$PIN_FILE" 2>/dev/null || true)"
 
 if [[ -z "$APP_VERSION" && -z "$APP_BUILD" ]]; then
-  APP_VERSION="$CORE_APP_VERSION"
-  APP_BUILD="$CORE_APP_BUILD"
-  OFFICIAL_URL="$CORE_URL"
-  OFFICIAL_SHA="${OFFICIAL_SHA:-$CORE_SHA}"
-elif [[ "$APP_VERSION" == "$CORE_APP_VERSION" ]] && [[ -z "$APP_BUILD" || "$APP_BUILD" == "$CORE_APP_BUILD" ]]; then
-  APP_BUILD="$CORE_APP_BUILD"
-  OFFICIAL_URL="$CORE_URL"
-  OFFICIAL_SHA="${OFFICIAL_SHA:-$CORE_SHA}"
+  APP_VERSION="$LATEST_APP"
+  APP_BUILD="$LATEST_BUILD"
+  OFFICIAL_URL="$LATEST_URL"
+  OFFICIAL_SHA="${OFFICIAL_SHA:-$PINNED_SHA}"
+elif [[ "$APP_VERSION" == "$LATEST_APP" ]] && [[ -z "$APP_BUILD" || "$APP_BUILD" == "$LATEST_BUILD" ]]; then
+  APP_BUILD="$LATEST_BUILD"
+  OFFICIAL_URL="$LATEST_URL"
+  OFFICIAL_SHA="${OFFICIAL_SHA:-$PINNED_SHA}"
 else
   [[ -n "$APP_VERSION" ]] || die "指定 --build 时必须同时传入 --version"
   [[ -n "$APP_BUILD" ]] || die "锁定非最新宿主版本 ${APP_VERSION} 时必须同时传入 --build <构建号>（或使用 --version <版本>,<构建号>）"
-  [[ "$OFFICIAL_SHA" =~ ^[0-9a-f]{64}$ ]] || die "锁定非最新宿主版本 ${APP_VERSION}-${APP_BUILD} 时必须传入合法的 64 位 --official-sha <sha256>（见 AGENTS.md §1 硬校验约束）"
+  [[ "$OFFICIAL_SHA" =~ ^[0-9a-f]{64}$ ]] || die "锁定非最新宿主版本 ${APP_VERSION}-${APP_BUILD} 时必须传入合法的 64 位 --official-sha <sha256>"
   OFFICIAL_URL="https://storage.googleapis.com/antigravity-public/antigravity-hub/${APP_VERSION}-${APP_BUILD}/darwin-x64/Antigravity.dmg"
 fi
+HOST="${APP_VERSION}-${APP_BUILD}"
 
 PATCHED_VERSION="${APP_VERSION}-${APP_BUILD}-cn${REVISION}"
 WORK="${REPO_DIR}/.build/antigravity-cn/${PATCHED_VERSION}"
@@ -104,15 +104,33 @@ fi
 
 say "官方包：$APP_VERSION build=$APP_BUILD"
 echo "  直链 $OFFICIAL_URL"
-echo "  core 记录的 x64 sha $OFFICIAL_SHA"
+echo "  本地 pin 的 x64 sha ${OFFICIAL_SHA:-待 bootstrap}"
 
 rm -rf "$WORK"
 mkdir -p "$WORK"
 
-# 官方包 240MB，按 core 记录的 sha 缓存，重跑构建不必再下一遍。
+curl -fsSI "$OFFICIAL_URL" > "$HEADERS"
+EXPECTED_SIZE="$(tr -d '\r' < "$HEADERS" | awk -F': ' 'tolower($1)=="x-goog-stored-content-length"{print $2; exit}')"
+EXPECTED_GEN="$(tr -d '\r' < "$HEADERS" | awk -F': ' 'tolower($1)=="x-goog-generation"{print $2; exit}')"
+[[ -n "$EXPECTED_SIZE" && -n "$EXPECTED_GEN" ]] || die "官方 GCS 元数据缺少 size/generation：$OFFICIAL_URL"
+PIN_LINE="$(awk -v host="$HOST" '$1==host {print; exit}' "$PIN_FILE" 2>/dev/null || true)"
+if [[ -n "$PIN_LINE" ]]; then
+  read -r PIN_SHA PIN_SIZE PIN_GEN _ <<< "$PIN_LINE"
+  [[ -z "$OFFICIAL_SHA" || "$OFFICIAL_SHA" == "$PIN_SHA" ]] || die "传入 official-sha 与 pin 不一致：$HOST"
+  [[ "$EXPECTED_SIZE" == "$PIN_SIZE" && "$EXPECTED_GEN" == "$PIN_GEN" ]] || die "官方 GCS 对象元数据与 pin 不一致：$HOST"
+  OFFICIAL_SHA="$PIN_SHA"
+  EXPECTED_SIZE="$PIN_SIZE"
+  EXPECTED_GEN="$PIN_GEN"
+fi
+
+# 官方包约 240MB，按 SHA pin 缓存；新版本首次下载时按 host 临时缓存。
 say "下载官方 darwin-x64 dmg"
+echo "  官方下载页当前 Intel 版本：$LATEST_HOST"
+echo "  本次构建版本：$HOST"
+echo "  直链 $OFFICIAL_URL"
+echo "  官方 GCS size=$EXPECTED_SIZE generation=$EXPECTED_GEN"
 CACHE_DIR="${REPO_DIR}/.build/antigravity-cn/cache"
-CACHE="$CACHE_DIR/official-${OFFICIAL_SHA}.dmg"
+CACHE="$CACHE_DIR/official-${OFFICIAL_SHA:-$HOST}.dmg"
 mkdir -p "$CACHE_DIR"
 if [[ -f "$CACHE" ]]; then
   echo "  命中缓存 $(basename "$CACHE")"
@@ -120,10 +138,19 @@ if [[ -f "$CACHE" ]]; then
 else
   curl -fL --retry 3 -o "$WORK/official.dmg" "$OFFICIAL_URL"
 fi
+ACTUAL_SIZE="$(stat -f%z "$WORK/official.dmg")"
+[[ "$ACTUAL_SIZE" == "$EXPECTED_SIZE" ]] || die "下载大小不符：实算 $ACTUAL_SIZE ≠ 官方 GCS $EXPECTED_SIZE"
 ACTUAL_SHA="$(shasum -a 256 "$WORK/official.dmg" | awk '{print $1}')"
-if [[ "$ACTUAL_SHA" != "$OFFICIAL_SHA" ]]; then
+if [[ -n "$OFFICIAL_SHA" && "$ACTUAL_SHA" != "$OFFICIAL_SHA" ]]; then
   rm -f "$WORK/official.dmg"
-  die "下载校验失败：实算 $ACTUAL_SHA ≠ 官方预期 ${OFFICIAL_SHA}（上游可能重切了同版本包，请按 AGENTS.md §11.6 核对后再构建）"
+  die "下载校验失败：实算 $ACTUAL_SHA ≠ 官方预期 ${OFFICIAL_SHA}（上游可能重切了同版本包，请核对官方对象后再构建）"
+fi
+if [[ -z "$PIN_LINE" ]]; then
+  printf '%s %s %s %s\n' "$HOST" "$ACTUAL_SHA" "$ACTUAL_SIZE" "$EXPECTED_GEN" >> "$PIN_FILE"
+  OFFICIAL_SHA="$ACTUAL_SHA"
+  SHA_CACHE="$CACHE_DIR/official-${OFFICIAL_SHA}.dmg"
+  [[ -f "$SHA_CACHE" ]] || cp "$WORK/official.dmg" "$SHA_CACHE"
+  echo "  已 bootstrap 官方 SHA pin：$HOST $ACTUAL_SHA"
 fi
 echo "  sha256 一致 $ACTUAL_SHA"
 if [[ ! -f "$CACHE" ]]; then
@@ -248,7 +275,7 @@ if [[ "$UPLOAD" == true ]]; then
 fi
 
 if [[ "$KEEP_WORK" != true ]]; then
-  rm -rf "$WORK/mnt" "$WORK/stage" "$WORK/official.dmg"
+  rm -rf "${WORK:?}/mnt" "${WORK:?}/stage" "${WORK:?}/official.dmg"
 fi
 
 say "构建完成"

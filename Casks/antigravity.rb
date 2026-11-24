@@ -9,7 +9,7 @@ cask "antigravity" do
   # 静态改写 app.asar（注入中文汉化 + 页内 Gemini 伴生挂件 + 禁用自更新）再 ad-hoc
   # 重签、重打 dmg，镜像到本仓 Release（tag antigravity-<ver>）。
   # 构建：Widgets/antigravity-niang/build.sh --upload
-  # 判新：updater/antigravity.swift 读 core cask 版本 + 本包 .sha256 sidecar。
+  # 判新：updater/antigravity.swift 动态读取官方下载页的 Intel 链接 + 本包 .sha256 sidecar。
   # url 用 #{version} 插值：手工重打补丁（cn1→cn2）时只动 version/sha256 两行。
   # 注意 watcher 真跑一次更新时，核心对「customRelease 且无 downloadURL 模板」的包
   # 按全量式**整条替换 url 行**（UpdaterCore 的 replaceURLLine 规则，见 AGENTS.md §11.3），

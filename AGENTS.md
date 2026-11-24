@@ -23,7 +23,7 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 **例外约定**：
 
 - **arm64-only 自有软件（`afm`）**：`Casks/afm.rb` 使用 `depends_on arch: :arm64`（Intel 直接拒绝安装），`macos: :tahoe` 门槛不变；仅对自有软件开口，不收外部 arm64-only 包。
-- **分发修改版专有二进制（`antigravity`）**：在官方 darwin-x64 dmg 上静态改写 `app.asar`（中文汉化 + 补充词典 + 页内 Gemini 娘挂件 + 禁用自更新）后 ad-hoc 重签并重打 dmg 发布。约束：构建必须由 `Widgets/antigravity-niang/build.sh` 一条命令复现、官方输入 sha256 与 core cask API 核对一致、每步设硬质量门、`RELEASE-NOTES.template` 如实披露上游许可状态。
+- **分发修改版专有二进制（`antigravity`）**：在官方 darwin-x64 dmg 上静态改写 `app.asar`（中文汉化 + 补充词典 + 页内 Gemini 娘挂件 + 禁用自更新）后 ad-hoc 重签并重打 dmg 发布。约束：构建必须由 `Widgets/antigravity-niang/build.sh` 一条命令复现、版本动态取自官方下载页、官方输入按「版本-构建号」在 `official-sha256.txt` pin SHA-256 并核对 GCS size/generation、每步设硬质量门、`RELEASE-NOTES.template` 如实披露上游许可状态。
 
 ## 2. 命名约定
 
@@ -268,7 +268,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | --- | --- | --- | --- |
 | `afm` | 2026.09.15 | arm64 | 输入法；用户级 `~/Library/Input Methods`；arm64 破例；不检查更新 |
 | `amd` | 2026.09.18 | universal | 自有软件；app + `obcli`；本地构建镜像；不检查更新 |
-| `antigravity` | 2.34.0-5887025308631040-cn1 | Intel | 官方 darwin-x64 + 汉化/补充词典/页内 DOM 挂件/禁自更新；`patched.yml` 构建并传 `.sha256` sidecar；customRelease 读 core cask API 判新 |
+| `antigravity` | 2.34.0-5887025308631040-cn1 | Intel | 官方 darwin-x64 + 汉化/补充词典/页内 DOM 挂件/禁自更新；`patched.yml` 构建并传 `.sha256` sidecar；customRelease 动态读官方下载页判新 |
 | `blender-5x` | 5.2.2 | Intel | Intel 社区构建；github 流；镜像 |
 | `brewui` | 0.6.0 | universal | universal；github 流；镜像 |
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
@@ -402,7 +402,7 @@ brew trust bemly/tahoe
 
 - **asar 格式与完整性**：`tools/asar-lib.mjs` 写入头部的 `@4/@8` 必须使用 4 字节对齐后的长度（`align4(jsonLen)+8` / `+4`），`@12` 为真实 JSON 长度；官方包未启用 integrity fuse，修改 `app.asar` 后无需改动 `Info.plist`，写包器仍重算条目哈希。可用 `ELECTRON_RUN_AS_NODE=1 Antigravity ...` 实读 `app.asar` 验证。
 - **汉化与注入**：`build.sh` 通过 `git ls-remote --tags` 自动解析汉化引擎最新适配 tag（缺失直接失败，绝不拿旧字典硬上）；引擎目录显式置 `{"type":"commonjs"}` 防外部 `"type":"module"` 污染；`ag_audit.js check` 作为硬质量门；`inject-widget.mjs` 禁用 `dist/updater.js` 中 4 处更新锚点（`AutoUpdater` 日志归零），并在 `dist/preload.js` 注入页内 DOM 挂件（门控选择器 `[data-testid="agent-input-box"]`，图片走 base64 data URL）及 `extra-l10n.js` 补充词典（元素级 `FILTER_REJECT` 剪枝、词边界匹配）。
-- **重签与交付**：`codesign --force --deep --sign -` 绝不保留 hardened runtime（否则无 Team ID 会 SIGABRT）；cask 的 `postflight_steps` 用 `xattr -d -r -s com.apple.quarantine` 连同 framework 符号链接一起清零（`must_succeed: false`）。因 `hdiutil create` 不逐字节可复现，cask sha256 必须取当次上传 Release 的 `.sha256` sidecar（由 `patched.yml` 回填并 lint 后提交）。在 `patched.yml` / `build.sh` 中锁定非最新宿主版本时，须同时提供 `version`、`build` 与 `official_sha` 以保持官方 dmg 校验门。
+- **重签与交付**：`codesign --force --deep --sign -` 绝不保留 hardened runtime（否则无 Team ID 会 SIGABRT）；cask 的 `postflight_steps` 用 `xattr -d -r -s com.apple.quarantine` 连同 framework 符号链接一起清零（`must_succeed: false`）。因 `hdiutil create` 不逐字节可复现，cask sha256 必须取当次上传 Release 的 `.sha256` sidecar（由 `patched.yml` 回填并 lint 后提交）。宿主版本动态取自官方下载页；`official-sha256.txt` 只按版本 pin 安装包哈希，不锁版本。锁定旧版本时仍须同时提供 `version`、`build` 与 `official_sha`。
 
 ## 12. 后续演进
 
