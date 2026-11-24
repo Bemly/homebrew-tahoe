@@ -19,8 +19,6 @@ class Nzbget < Formula
     doc.install share/"nzbget/doc/ChangeLog.md", share/"nzbget/doc/COPYING"
 
     inreplace share/"nzbget/nzbget.conf" do |s|
-      s.gsub! "DirectWrite=yes", "DirectWrite=no"
-      s.gsub! "ArticleCache=0", "ArticleCache=700"
       s.gsub! "SevenZipCmd=${AppDir}/7za", "SevenZipCmd=7zz"
       s.gsub! "UnrarCmd=${AppDir}/unrar", "UnrarCmd=7zz"
     end
