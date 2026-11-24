@@ -9,6 +9,12 @@ class ForkBison < Formula
   version_scheme 1
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "bd8c83d6e803b4a44384904cd5fa64b093488c9c3a4792153cac2c141b117e42"
+    sha256 cellar: :any, tahoe: "8328da1c1c806b6095fc7efee16077a957c8717722b61d571ae9d6a3dad9da41"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   uses_from_macos "m4"
