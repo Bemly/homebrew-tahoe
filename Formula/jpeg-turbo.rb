@@ -1,8 +1,8 @@
 class JpegTurbo < Formula
   desc "JPEG image codec that aids compression and decompression"
   homepage "https://www.libjpeg-turbo.org/"
-  url "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.2.1/libjpeg-turbo-3.2.1.tar.gz"
-  sha256 "c27ad72a68da151177929aa969ae773a2da5ac2af9ce946079314fdac8cece7f"
+  url "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.2.1/libjpeg-turbo-3.2.1.dmg"
+  sha256 "10cf9233f771089166da8f0d6cd014294ebae93e1212ef033fbc548dc622ce74"
   license all_of: [
     "IJG", # libjpeg API library and programs
     "Zlib", # libjpeg-turbo SIMD source code
@@ -17,18 +17,8 @@ class JpegTurbo < Formula
     strategy :github_latest
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "78ee661a32bf0a1c086ca5c6e2cff90a051402d96630425d2f7e5a01d76968e6"
-  end
-
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-
-  on_intel do
-    # Required only for x86 SIMD extensions.
-    depends_on "nasm" => :build
-  end
 
   # These conflict with `jpeg`, which is now keg-only.
   link_overwrite "bin/cjpeg", "bin/djpeg", "bin/jpegtran", "bin/rdjpgcom", "bin/wrjpgcom"
@@ -40,28 +30,48 @@ class JpegTurbo < Formula
   deny_network_access!
 
   def install
-    ENV.prepend_path "PATH", Formula["bemly/tahoe/cmake"].opt_bin
-    args = ["-DWITH_JPEG8=1", "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath,#{rpath}"]
-    if Hardware::CPU.arm? && OS.mac?
-      if MacOS.version >= :ventura
-        # https://github.com/libjpeg-turbo/libjpeg-turbo/issues/709
-        args += ["-DFLOATTEST8=fp-contract",
-                 "-DFLOATTEST12=fp-contract"]
-      elsif MacOS.version == :monterey
-        # https://github.com/libjpeg-turbo/libjpeg-turbo/issues/734
-        args << "-DFLOATTEST12=no-fp-contract"
-      end
+    pkg = Dir["*.pkg"].fetch(0)
+    system "pkgutil", "--expand-full", pkg, buildpath/"pkg"
+    payload = Dir[buildpath/"pkg/*.pkg/Payload"].fetch(0)
+    root = Pathname(payload)/"opt/libjpeg-turbo"
+    bin_src = root/"bin"
+    lib_src = root/"lib"
+
+    machos = Dir[bin_src/"*", lib_src/"*.dylib", lib_src/"*.a"].reject do |file|
+      File.symlink?(file) || File.basename(file) == "uninstall"
     end
-    args += std_cmake_args.reject { |arg| arg["CMAKE_INSTALL_LIBDIR"].present? }
+    machos.each do |file|
+      system "lipo", "-thin", "x86_64", file, "-o", "#{file}.thin"
+      File.rename("#{file}.thin", file)
+    end
 
-    system "cmake", "-S", ".", "-B", "build", *args
-    system "cmake", "--build", "build"
-    system "ctest", "--test-dir", "build", "--rerun-failed", "--output-on-failure", "--parallel", ENV.make_jobs
-    system "cmake", "--install", "build"
+    MachO::Tools.change_dylib_id(lib_src/"libjpeg.62.4.0.dylib", "@rpath/libjpeg.62.4.0.dylib")
+    MachO::Tools.change_dylib_id(lib_src/"libturbojpeg.0.5.0.dylib", "@rpath/libturbojpeg.0.5.0.dylib")
+    Dir[bin_src/"*", lib_src/"*.dylib"].each do |file|
+      next if File.symlink?(file) || File.basename(file) == "uninstall"
+      MachO::Tools.change_rpath(file, "/opt/libjpeg-turbo/lib", rpath.to_s)
+    end
 
-    # Avoid rebuilding dependents that hard-code the prefix.
-    inreplace [lib/"pkgconfig/libjpeg.pc", lib/"pkgconfig/libturbojpeg.pc"],
-              prefix, opt_prefix
+    bin.install Dir[bin_src/"*"].reject { |file| File.basename(file) == "uninstall" }
+    include.install Dir[root/"include/*"]
+    lib.install Dir[lib_src/"*"]
+    man1.install Dir[root/"man/man1/*"]
+    (share/"java").install root/"classes/turbojpeg-jna.jar"
+    docs = Pathname(payload)/"Library/Documentation/libjpeg-turbo"
+    doc.install docs/"README.md"
+    doc.install docs/"LICENSE.md"
+
+    inreplace [lib/"pkgconfig/libjpeg.pc", lib/"pkgconfig/libturbojpeg.pc",
+               lib/"cmake/libjpeg-turbo/libjpeg-turboConfig.cmake",
+               lib/"cmake/libjpeg-turbo/libjpeg-turboTargets.cmake",
+               lib/"cmake/libjpeg-turbo/libjpeg-turboTargets-release.cmake"],
+              "/opt/libjpeg-turbo", opt_prefix.to_s
+
+    machos.each do |file|
+      next if file.end_with?(".a")
+      relative = Pathname(file).relative_path_from(root)
+      system "codesign", "--force", "--sign", "-", prefix/relative
+    end
   end
 
   test do

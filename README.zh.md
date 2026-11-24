@@ -50,9 +50,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **141 个公式**（57 个预编译直引 + 70 个源码代编译 + 14 个 `fork-*` 依赖层）与 **25 个 cask**。
+> 共收录 **141 个公式**（58 个预编译直引 + 69 个源码代编译 + 14 个 `fork-*` 依赖层）与 **25 个 cask**。
 
-### CLI 与开发工具 — 预编译直引公式（57 个）
+### CLI 与开发工具 — 预编译直引公式（58 个）
 
 | 软件 | 说明 |
 | --- | --- |
@@ -85,6 +85,7 @@ brew install --cask bemly/tahoe/antigravity
 | `hyperfine` | 命令行基准测试工具，官方 `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz`（带 man 页与补全） |
 | `iperf3` | 网络带宽测速工具，静态构建（`iperf3-amd64-osx-15`，无 `openssl@4` 依赖） |
 | `jadx` | Dex 转 Java 反编译器（含 `jadx` 与 `jadx-gui`），直接取官方 `jadx-<ver>.zip` 预编译包；依赖本 tap 的 `openjdk`；与 core 同名 |
+| `jpeg-turbo` | JPEG 编解码库，官方 universal2 DMG 重打包（thin x86_64、重定位 dylib/rpath）；`qemu` 依赖 |
 | `lima` | macOS 上的 Linux 虚拟机工具（`limactl`/`lima` 等），取官方 `lima-<ver>-Darwin-x86_64.tar.gz` 预编译包并生成补全；与 core 同名 |
 | `llvm` | 编译器基础设施，上游 19.1.7 Intel 预编译 pinned（后续版本仅 ARM64；23.x 源码编译超 6 小时 CI 上限）；thin x86_64，零依赖，keg-only；bindgen 用 `LIBCLANG_PATH` 指过去即用 |
 | `llvm-mingw` | LLVM/Clang 的 mingw-w64 交叉工具链（Intel host → Windows），版本跟 GitHub release |
@@ -152,12 +153,12 @@ brew install --cask bemly/tahoe/antigravity
 | `wget` | 命令行下载工具（`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`）；与 core 同名 |
 | `wimlib` | 创建 / 解包 / 修改 WIM 映像的库与 `wimlib-imagex` 工具（macOS 零运行时依赖，`fork-pkgconf` 构建） |
 
-### 运行时依赖层 — 同名接管（39 个源码库）与 `fork-*`（14 个）
+### 运行时依赖层 — 同名接管（38 个源码库）与 `fork-*`（14 个）
 
 `homebrew/core` 中无 `x86_64_tahoe` 瓶的运行时依赖，按「无 core 依赖方则同名接管、有 core 依赖方则保留改名 `fork-*`」打包出瓶：
 
 - **同名接管的运行时依赖（39 个源码库，连同上述 32 个共 71 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
-  `abseil`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`jpeg-turbo`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libusb`、`libyaml`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
+  `abseil`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libusb`、`libyaml`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
   *（注：`vulkan-loader` 仅运行时依赖在 core 中拥有 `all` 瓶的 `vulkan-headers`。）*
 - **改名且 `keg_only` 的 `fork-*` 依赖（14 个）** *（不与 `homebrew/core` 冲突，按全名 `bemly/tahoe/fork-*` 引用）*：
   `fork-bdw-gc`、`fork-gettext`、`fork-gmp`、`fork-json-c`、`fork-libtasn1`、`fork-libunistring`、`fork-lz4`、`fork-openssl@3`、`fork-openssl@4`、`fork-pcre2`、`fork-pkgconf`、`fork-readline`、`fork-xz`、`fork-zstd`

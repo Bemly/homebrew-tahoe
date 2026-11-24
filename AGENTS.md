@@ -100,7 +100,7 @@ end
 
 ## 6. 当前收录
 
-> **141 个公式（57 个预编译直引 + 70 个源码包 + 14 个 `fork-*`）**，`updater/` 共 155 个检查器（另有 `UpdaterCore.swift`）。
+> **141 个公式（58 个预编译直引 + 69 个源码包 + 14 个 `fork-*`）**，`updater/` 共 155 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -135,6 +135,7 @@ end
 | `hyperfine` | 2.0.0 | GitHub `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz` | 带 man/补全；brew 模板流 |
 | `iperf3` | 3.22.1 | userdocs `iperf3-amd64-osx-15` | 静态零依赖；customRelease 取最大世代 |
 | `jadx` | 1.5.7 | GitHub `jadx-<ver>.zip` | 官方预编译（`jadx` + `jadx-gui`）；依赖本 tap `openjdk`；github 流；与 core 同名 |
+| `jpeg-turbo` | 3.2.1 | 官方 macOS universal2 DMG | 解 pkg、thin x86_64、改 dylib/rpath；qemu 依赖 |
 | `lima` | 2.3.0 | GitHub `lima-<ver>-Darwin-x86_64.tar.gz` | 官方预编译全套 bin/libexec/share；github 流 + `SHA256SUMS`；与 core 同名 |
 | `llvm` | 19.1.7 | GitHub `LLVM-19.1.7-macOS-X64.tar.xz` | pinned（20+ 仅 ARM64）；keg-only；`LIBCLANG_PATH` |
 | `llvm-mingw` | 20261117 | mstorsjo/llvm-mingw 预编译 | Intel host 交叉到 Windows；github 流 |
@@ -188,7 +189,6 @@ end
 | `guile` | 3.0.11 | core 同名接管（源码） | fork-bdw-gc/gmp/libunistring…；交叉工具链依赖 |
 | `icu4c@78` | 78.3 | core 同名接管（源码） | autotools；`keg_only`；freeling 依赖；`revision` 与 core 同步 |
 | `jemalloc` | 5.4.0 | core 同名接管（源码） | autotools；nghttp2 依赖 |
-| `jpeg-turbo` | 3.2.1 | core 同名接管（源码） | cmake；qemu 依赖 |
 | `libassuan` | 3.0.2 | core 同名接管（源码） | autotools；`gnupg`/`pinentry` 依赖；依赖 `libgpg-error` |
 | `libev` | 4.33 | core 同名接管（源码） | autotools；nghttp2 依赖 |
 | `libgcrypt` | 1.12.4 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libgpg-error` |
@@ -241,7 +241,7 @@ end
 
 ### 6.3 `fork-*` 依赖层（14 个）
 
-Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 40 个源码包标为 `core 同名接管`）。`fork-*` 全部走 brew JSON 全量流，补丁随 `Patches/` 入库。
+Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 39 个源码包标为 `core 同名接管`）。`fork-*` 全部走 brew JSON 全量流，补丁随 `Patches/` 入库。
 
 | fork 公式 | 对应 core | 版本 | 说明 |
 | --- | --- | --- | --- |

@@ -61,9 +61,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **141 formulae** (57 prebuilt + 70 source-built + 14 `fork-*` dependency forks) and **25 casks**.
+> Total: **141 formulae** (58 prebuilt + 69 source-built + 14 `fork-*` dependency forks) and **25 casks**.
 
-### CLI & Developer Tools — Prebuilt Formulae (57)
+### CLI & Developer Tools — Prebuilt Formulae (58)
 
 | Package | Notes |
 | --- | --- |
@@ -96,6 +96,7 @@ brew install --cask bemly/tahoe/antigravity
 | `hyperfine` | Command-line benchmarking tool, official `hyperfine-v<ver>-x86_64-apple-darwin.tar.gz` with man pages and completions |
 | `iperf3` | Network bandwidth measurement tool, static build (`iperf3-amd64-osx-15`, zero `openssl@4` dependency) |
 | `jadx` | Dex to Java decompiler (`jadx` and `jadx-gui`), official `jadx-<ver>.zip` prebuilt release; depends on this tap's `openjdk`; same-name conflict with core |
+| `jpeg-turbo` | JPEG codec, repackaged from the official universal2 DMG (thin x86_64, relocated dylibs/rpaths); dependency of `qemu` |
 | `lima` | Linux virtual machines (`limactl`/`lima` and friends), official `lima-<ver>-Darwin-x86_64.tar.gz` prebuilt with generated completions; same-name conflict with core |
 | `llvm` | Compiler infrastructure, upstream 19.1.7 Intel macOS prebuilt pinned (later releases are ARM64-only; building 23.x from source exceeds the 6h CI limit); thin x86_64, zero deps, keg-only; point bindgen at it via `LIBCLANG_PATH` |
 | `llvm-mingw` | LLVM/Clang-based mingw-w64 cross toolchain (Intel host → Windows), version tracked from GitHub releases |
@@ -163,12 +164,12 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`); same-name conflict with core |
 | `wimlib` | Library and `wimlib-imagex` tools for WIM images (zero macOS runtime dependencies, built with `fork-pkgconf`) |
 
-### Runtime Dependency Layer — Same-Name Takeovers (39 source libraries) & `fork-*` (14)
+### Runtime Dependency Layer — Same-Name Takeovers (38 source libraries) & `fork-*` (14)
 
 Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are either taken over under their core name (when no `homebrew/core` dependents remain on a typical setup) or kept renamed as `keg_only` `fork-*` packages:
 
 - **Same-name dependency libraries (39 source-built formulae, totaling 71 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
-  `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `jpeg-turbo`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libusb`, `libyaml`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
+  `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libusb`, `libyaml`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
 - **Renamed `keg_only` `fork-*` packages (14)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
   `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`, `fork-openssl@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
