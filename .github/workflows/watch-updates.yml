@@ -44,7 +44,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      # —— 批量扫描：swiftc 编译（核心 + 单包 @main 入口）后运行，收集更新与上游缺失 ——
+      # —— 批量扫描：按 nproc 满并发编译/运行，独立日志/output，按队列顺序回放 ——
       # 三道保护：dry_run=true 只扫不提交；提交前 ruby -c 语法自检；
       # 上游资源不可下载的软件收集进 missing 输出，由下一步逐个开告警 issue。
       - name: 批量扫描并更新
@@ -60,19 +60,54 @@ jobs:
           missing=()
           manual_sync=()
           failed=()
+          TASK_RB=()
           for rb in Formula/*.rb Casks/*.rb; do
+            TASK_RB+=("$rb")
+          done
+          JOBS="${WATCH_JOBS:-$(nproc)}"
+          run_one() {
+            local idx="$1"
+            local rb="$2"
+            local f dir out log
             f="$(basename "$rb" .rb)"
             dir="$(dirname "$rb")"
+            out="/tmp/watch-out-${idx}"
+            log="/tmp/watch-log-${idx}"
+            : > "$out"
+            : > "$log"
+            {
+              if [[ ! -f "updater/$f.swift" ]]; then
+                echo "::warning::$f 没有对应的 updater/$f.swift（新增软件须按 AGENTS.md §9 登记），跳过"
+                return 0
+              fi
+              # UpdaterCore.swift 是共享核心（无入口），<name>.swift 是唯一 @main 入口
+              if ! swiftc -O -o "/tmp/check-$f" "updater/UpdaterCore.swift" "updater/$f.swift"; then
+                echo "::error::$f 检查器编译失败"
+                return 0
+              fi
+              # 兜底超时：任何检查器（含上游页面抓取）卡死都不能挂住整个 watcher；
+              # 超时等同无 status，走下面的 failed 兜底分支还原文件并公示。
+              GITHUB_OUTPUT="$out" timeout 600 "/tmp/check-$f" || true
+            } > "$log" 2>&1
+            return 0
+          }
+          export -f run_one
+          echo "并行检查 ${#TASK_RB[@]} 个软件，并发数 ${JOBS}"
+          for idx in "${!TASK_RB[@]}"; do
+            printf '%s\t%s\n' "$idx" "${TASK_RB[$idx]}"
+          done | xargs -P "$JOBS" -n 2 bash -c 'run_one "$@"' _
+          # 检查并行执行，日志按原队列顺序回放，避免交叉输出。
+          for idx in "${!TASK_RB[@]}"; do
+            rb="${TASK_RB[$idx]}"
+            f="$(basename "$rb" .rb)"
+            dir="$(dirname "$rb")"
+            out="/tmp/watch-out-${idx}"
+            log="/tmp/watch-log-${idx}"
+            cat "$log" 2>/dev/null || true
             if [[ ! -f "updater/$f.swift" ]]; then
-              echo "::warning::$f 没有对应的 updater/$f.swift（新增软件须按 AGENTS.md §9 登记），跳过"
+              rm -f "$out" "$log"
               continue
             fi
-            out="$(mktemp)"
-            # UpdaterCore.swift 是共享核心（无入口），<name>.swift 是唯一 @main 入口
-            swiftc -O -o "/tmp/check-$f" "updater/UpdaterCore.swift" "updater/$f.swift"
-            # 兜底超时：任何检查器（含上游页面抓取）卡死都不能挂住整个 watcher；
-            # 超时等同无 status，走下面的 failed 兜底分支还原文件并公示。
-            GITHUB_OUTPUT="$out" timeout 600 "/tmp/check-$f" || true
             status="$(grep '^status=' "$out" | cut -d= -f2 || true)"
             # —— 静默失败兜底：检查器没有回 status 行（自检 fail 直接 exit 1、
             # 编译后崩溃、GITHUB_OUTPUT 没写上），绝不能当"无需更新"吃掉——
@@ -110,7 +145,7 @@ jobs:
             else
               echo "  -> $f 无需更新（${status:-无输出}）"
             fi
-            rm -f "$out"
+            rm -f "$out" "$log"
           done
           # 先落盘 outputs：updated/missing 已定；failed 后面 fetch 段还会追加，
           # 那里直接 append 到 GITHUB_OUTPUT（early-exit 分支也要能公示）。

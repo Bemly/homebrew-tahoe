@@ -297,7 +297,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 `watch-updates.yml`（只有全量模式）在 `ubuntu-latest` 上运行：
 
 1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，按同名匹配 `updater/<name>.swift`（11 个 pinned 包故意无检查器：`afm`、`amd`、`checkra1n`、`cmd`、`ffserver`、`heliport`、`llvm`、`macos-tskmgr`、`neofetch`、`palera1n`、`winstart`）。
-2. `swiftc -O updater/UpdaterCore.swift updater/<name>.swift` 编译并运行（每包 `timeout 600`）。
+2. `swiftc -O updater/UpdaterCore.swift updater/<name>.swift` 编译并运行（每包 `timeout 600`）；按 `nproc` 满并发执行，各包写独立日志与 `GITHUB_OUTPUT`，全部完成后按原队列顺序回放日志和状态，避免交叉输出。
 3. 本地版本优先取顶层 `version` 行（跳过 `fails_with` 块内），否则从 `url` 解析。
 4. 上游来源（优先级 `customRelease` > `raw` > `github` > `brew`）：
 
