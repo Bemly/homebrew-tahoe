@@ -43,7 +43,7 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 141 个公式（含 14 个 fork-*）
+├── Formula/                           # 142 个公式（含 15 个 fork-*）
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
@@ -102,7 +102,7 @@ end
 
 ## 6. 当前收录
 
-> **141 个公式（58 个预编译直引 + 69 个源码包 + 14 个 `fork-*`）**，`updater/` 共 155 个检查器（另有 `UpdaterCore.swift`）。
+> **142 个公式（58 个预编译直引 + 69 个源码包 + 15 个 `fork-*`）**，`updater/` 共 156 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -241,7 +241,7 @@ end
 | `wget` | 1.25.0 | core 拷入（源码） | `libidn2`/`libpsl`/fork-openssl@4/fork-gettext |
 | `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
 
-### 6.3 `fork-*` 依赖层（14 个）
+### 6.3 `fork-*` 依赖层（15 个）
 
 Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 39 个源码包标为 `core 同名接管`）。`fork-*` 全部走 brew JSON 全量流，补丁随 `Patches/` 入库。
 
@@ -259,6 +259,7 @@ Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方
 | `fork-pcre2` | `pcre2` | 10.49 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-pkgconf` | `pkgconf` | 3.0.11 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-readline` | `readline` | 8.3.6 | 源码现编；`keg_only`；依赖方写全名 |
+| `fork-sevenzip` | `sevenzip` | 26.06 | 官方 macOS Intel 预编译；`keg_only`；jpeg-turbo 构建依赖 |
 | `fork-xz` | `xz` | 5.8.4 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-zstd` | `zstd` | 1.5.7 | 源码现编；`keg_only`；依赖方写全名 |
 

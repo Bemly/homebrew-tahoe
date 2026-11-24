@@ -61,7 +61,7 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **141 formulae** (58 prebuilt + 69 source-built + 14 `fork-*` dependency forks) and **25 casks**.
+> Total: **142 formulae** (58 prebuilt + 69 source-built + 15 `fork-*` dependency forks) and **25 casks**.
 
 ### CLI & Developer Tools — Prebuilt Formulae (58)
 
@@ -164,15 +164,15 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`); same-name conflict with core |
 | `wimlib` | Library and `wimlib-imagex` tools for WIM images (zero macOS runtime dependencies, built with `fork-pkgconf`) |
 
-### Runtime Dependency Layer — Same-Name Takeovers (38 source libraries) & `fork-*` (14)
+### Runtime Dependency Layer — Same-Name Takeovers (38 source libraries) & `fork-*` (15)
 
 Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are either taken over under their core name (when no `homebrew/core` dependents remain on a typical setup) or kept renamed as `keg_only` `fork-*` packages:
 
-- **Same-name dependency libraries (39 source-built formulae, totaling 71 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
+- **Same-name dependency libraries (38 source-built formulae, totaling 69 source-built formulae with the 31 above; `boost@1.85` prebuilt is also a same-name dependency)**:
   `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libusb`, `libyaml`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
-- **Renamed `keg_only` `fork-*` packages (14)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
-  `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`, `fork-openssl@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
+- **Renamed `keg_only` `fork-*` packages (15)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
+  `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`, `fork-openssl@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-sevenzip`, `fork-xz`, `fork-zstd`
 
 ### Desktop Apps & Input Methods — Casks (25)
 
