@@ -14,6 +14,12 @@ class Gmp < Formula
     regex(/href=.*?gmp[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "8ab2d311cd37bb3601cf8d63a1c5f889565874ba2348d06a04476a3f60140d87"
+    sha256 cellar: :any, tahoe: "b73a7db03716803a04ae5eda667c3ff38d023020fca8465b7624ebab899ce5bd"
+  end
+
   depends_on "autoconf" => :build
   depends_on "bemly/tahoe/automake" => :build
   depends_on "libtool" => :build
