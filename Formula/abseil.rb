@@ -12,7 +12,7 @@ class Abseil < Formula
     sha256 cellar: :any, tahoe: "788243a32e65581b487b25416675886a29ddf01c3831e984aa43797e52d5f00e"
   end
 
-  depends_on "bemly/tahoe/cmake" => [:build, :test]
+  depends_on "cmake" => [:build, :test]
   depends_on "googletest" => :build # For test helpers
   depends_on arch: :x86_64
   depends_on macos: :tahoe
