@@ -21,7 +21,8 @@ class Git < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "61c5d9a9672e22c89ac9320b4c928deb341a0d32828cebb6d754015e703e3586"
+    manifest_sha256 "89211dc45f1a190872a129800fc6d929cd897625a39fd30140b18c6a58da7546"
+    sha256 tahoe: "d33f53ac3cde592f5b4dd53abc2e855a48ba6116f443eb308458b49dfb51e993"
   end
 
   depends_on "bemly/tahoe/fork-gettext" => :build
