@@ -15,8 +15,8 @@ class Glib < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "1f2092c0d2b8e6895b1a45cafb9253c9a31ce617d611fb811a594931407dbbc5"
-    sha256 tahoe: "ca681f619f828f879da43bb8b57912405ca7fc0196ee1b76748aeef7dc3a4ae6"
+    manifest_sha256 "da3c1da7e639786aa6596b0ac606009011bdace8ab0d1dcde415ac18bf203d9c"
+    sha256 tahoe: "33455c41ea302ab71682a29639c0a1768c4ffa88d3b4bba9d6fb8057da50e963"
   end
 
   depends_on "bemly/tahoe/fork-gettext" => :build
