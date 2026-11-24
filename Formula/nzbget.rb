@@ -6,6 +6,12 @@ class Nzbget < Formula
   url "https://github.com/nzbgetcom/nzbget/releases/download/v#{version}/nzbget-#{version}-bin-macos-x64.zip"
   sha256 "d3f5a2b520d9a40e9821272b1564ac031857e1032a7aec9bb37c913b3ffc1e69"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "203dcb2cc31a6f41d0d6a3a2cb5809da360be1bd327db0e83e1dec55c8335fcd"
+    sha256 tahoe: "30e94976dd737f0a5d4c6329bce68c5b82b028e4737655a8ca98fea0d7745d39"
+  end
+
   depends_on "bemly/tahoe/sevenzip"
   depends_on arch: :x86_64
   depends_on macos: :tahoe
