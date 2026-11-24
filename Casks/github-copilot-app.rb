@@ -1,5 +1,5 @@
 cask "github-copilot-app" do
-  version "1.4.3"
+  version "1.5.0"
   # 上游 github/app 按架构分包：core 的 url/sha 是 darwin-arm64 的，本 tap 取
   # GitHub-Copilot-darwin-x64.dmg（主二进制 file 实测 x86_64 thin）。
   # Intel 包的 sha256 由检查器下载实算（core 那份属于另一个架构的包，不能用）。
@@ -9,9 +9,9 @@ cask "github-copilot-app" do
   # API（api/cask/github-copilot-app.json 的 .version）；上游另有 floating
   # 短链 gh.io/copilot-app-mac-intel（releases/latest/download/...）——HEAD
   # 探测不跟随跳转，检查器只能用版本化直链。
-  sha256 "9aabf8a001091557c7ff89305c2b73fdab1cd7d2d0b7425363072865b5e0a6b5"
+  sha256 "3bebe692121aaf81823e0441f63edcff3cbffa66f4f0a69d6813a6f62373381f"
 
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/github-copilot-app-#{version}/GitHub-Copilot-darwin-x64.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/github-copilot-app-1.5.0/GitHub-Copilot-darwin-x64.dmg"
   name "GitHub Copilot"
   desc "Native client for GitHub Copilot"
   homepage "https://github.com/github/app"
