@@ -7,6 +7,12 @@ class ForkGnuSed < Formula
   license "GPL-3.0-or-later"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "b80079373902cc3fb26049c25056893de2e67dceb89cfaf01bc40fa592294448"
+    sha256 tahoe: "e64da413d872a21c3c699b5fb5bae57579e58ac4c7d80ef63c0c2dc24cd214a4"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
