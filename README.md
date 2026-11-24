@@ -61,9 +61,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **142 formulae** (58 prebuilt + 69 source-built + 15 `fork-*` dependency forks) and **25 casks**.
+> Total: **145 formulae** (61 prebuilt + 70 source-built + 14 `fork-*` dependency forks) and **25 casks**.
 
-### CLI & Developer Tools — Prebuilt Formulae (58)
+### CLI & Developer Tools — Prebuilt Formulae (61)
 
 | Package | Notes |
 | --- | --- |
@@ -102,6 +102,7 @@ brew install --cask bemly/tahoe/antigravity
 | `llvm-mingw` | LLVM/Clang-based mingw-w64 cross toolchain (Intel host → Windows), version tracked from GitHub releases |
 | `mufetch` | System info tool, from `mufetch_darwin_x86_64.tar.gz` |
 | `ninja` | Small build system, upstream universal binary (Intel slice) |
+| `nzbget` | Binary newsgrabber, official `nzbget-<ver>-bin-macos-x64.zip` prebuilt with CLI and WebUI; uses this tap's `sevenzip`; same-name conflict with core |
 | `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
 | `node@20` | Node.js 20 LTS, taken directly from the official `node-v20.x-darwin-x64.tar.gz`; same-name conflict with core |
 | `node@22` | Node.js 22 LTS, taken directly from the official `node-v22.x-darwin-x64.tar.gz` |
@@ -114,8 +115,10 @@ brew install --cask bemly/tahoe/antigravity
 | `postgresql@13` | PostgreSQL 13, repackaged from EDB's official macOS x64 binaries (bin/include/lib/share only — pgAdmin skipped); `keg_only` to avoid bundled openssl/icu conflicts; add `opt/postgresql@13/bin` to `PATH` |
 | `protobuf` | Protocol buffers compiler (`protoc` + headers), official macOS x86_64 prebuilt (`protoc-<ver>-osx-x86_64.zip`); same-name conflict with core |
 | `ripgrep` | Fast grep replacement, official macOS x86_64/arm64 prebuilt with PCRE2; zero build dependencies; dependency of `opencode` |
+| `rust@1.91.1` | Pinned official rustc/cargo/rust-std toolchain, keg-only build dependency for Binwalk 3.1.0; no external LLVM dependency |
 | `rustup` | Official static Rust toolchain installer, same name as core; ships `rustup` plus cargo/rustc proxy shims, toolchains managed via `rustup toolchain install stable` |
 | `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero runtime dependencies, includes `adb` and `scrcpy-server`) |
+| `sevenzip` | Official 7-Zip 26.06 Intel prebuilt (`7zz`); runtime dependency of `binwalk` and `nzbget`, build dependency of `jpeg-turbo`; same-name conflict with core |
 | `sst` | SST framework, Intel-only slice of `anomalyco/homebrew-tap` (`sst-mac-x86_64.tar.gz`) |
 | `starship` | Cross-shell prompt, official x86_64 prebuilt (`starship-x86_64-apple-darwin.tar.gz`) with generated shell completions; same-name conflict with core |
 | `swift` | Official Swift macOS `.pkg` repackaged, exposing only `swift`/`swiftc` (no collisions with other toolchains); tracked from swift.org |
@@ -126,7 +129,7 @@ brew install --cask bemly/tahoe/antigravity
 | `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
 | `zig` | Zig toolchain, official `zig-x86_64-macos-<ver>.tar.xz` (Intel host); same-name conflict with core |
 
-### Source-Built User Formulae (31)
+### Source-Built User Formulae (32)
 
 Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources and distributed as GHCR bottles.
 
@@ -135,6 +138,7 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `aria2` | Multi-protocol download utility (`c-ares`/`libssh2`/`sqlite`/fork-openssl@4/fork-gettext); same-name conflict with core |
 | `automake` | GNU Automake build tool (runtime depends on `autoconf`); same-name conflict with core |
 | `bash` | GNU Bash 5.3 (`ncurses`/fork-readline/fork-gettext); same-name conflict with core |
+| `binwalk` | Firmware analysis and embedded-file extraction, built with the pinned Rust 1.91.1 toolchain; `7zz` backport and runtime dependency on this tap's `sevenzip`; same-name conflict with core |
 | `capstone` | Disassembly framework (`fork-gettext`); bottled dependency of `qemu` |
 | `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl, ships the `curl3` command only |
 | `dtc` | Device tree compiler (`libyaml`); bottled dependency of `qemu` |
@@ -164,15 +168,15 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`); same-name conflict with core |
 | `wimlib` | Library and `wimlib-imagex` tools for WIM images (zero macOS runtime dependencies, built with `fork-pkgconf`) |
 
-### Runtime Dependency Layer — Same-Name Takeovers (38 source libraries) & `fork-*` (15)
+### Runtime Dependency Layer — Same-Name Takeovers (38 source libraries) & `fork-*` (14)
 
 Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are either taken over under their core name (when no `homebrew/core` dependents remain on a typical setup) or kept renamed as `keg_only` `fork-*` packages:
 
-- **Same-name dependency libraries (38 source-built formulae, totaling 69 source-built formulae with the 31 above; `boost@1.85` prebuilt is also a same-name dependency)**:
+- **Same-name dependency libraries (38 source-built formulae, totaling 70 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
   `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libusb`, `libyaml`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
-- **Renamed `keg_only` `fork-*` packages (15)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
-  `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`, `fork-openssl@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-sevenzip`, `fork-xz`, `fork-zstd`
+- **Renamed `keg_only` `fork-*` packages (14)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
+  `fork-bdw-gc`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-openssl@3`, `fork-openssl@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
 
 ### Desktop Apps & Input Methods — Casks (25)
 

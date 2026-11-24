@@ -23,7 +23,7 @@ class JpegTurbo < Formula
     sha256 cellar: :any, tahoe: "1e9a90d38531a4ce256b3acedcf5d740ec117c2c105a075cff9c3b9a8d8f5d1c"
   end
 
-  depends_on "bemly/tahoe/fork-sevenzip" => :build
+  depends_on "bemly/tahoe/sevenzip" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
@@ -38,7 +38,7 @@ class JpegTurbo < Formula
 
   def install
     dmg = Dir["*.dmg"].fetch(0)
-    sevenzip = Formula["bemly/tahoe/fork-sevenzip"].opt_bin/"7zz"
+    sevenzip = Formula["bemly/tahoe/sevenzip"].opt_bin/"7zz"
     system sevenzip, "x", "-y", "-o#{buildpath}/dmg", dmg
     pkg = Dir[buildpath/"dmg/**/*.pkg"].fetch(0)
     system "pkgutil", "--expand-full", pkg, buildpath/"pkg"

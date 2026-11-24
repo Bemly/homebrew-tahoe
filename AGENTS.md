@@ -43,7 +43,7 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 142 个公式（含 15 个 fork-*）
+├── Formula/                           # 145 个公式（含 14 个 fork-*）
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
@@ -102,7 +102,7 @@ end
 
 ## 6. 当前收录
 
-> **142 个公式（58 个预编译直引 + 69 个源码包 + 15 个 `fork-*`）**，`updater/` 共 156 个检查器（另有 `UpdaterCore.swift`）。
+> **145 个公式（61 个预编译直引 + 70 个源码包 + 14 个 `fork-*`）**，`updater/` 共 158 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -143,6 +143,7 @@ end
 | `llvm-mingw` | 20261117 | mstorsjo/llvm-mingw 预编译 | Intel host 交叉到 Windows；github 流 |
 | `mufetch` | 0.1.1 | GitHub `mufetch_darwin_x86_64.tar.gz` | tar 无顶层目录；sha 走 checksums.txt |
 | `ninja` | 1.13.2 | GitHub `ninja-mac.zip` | universal；core 有瓶仍镜像 |
+| `nzbget` | 26.3 | nzbgetcom GitHub `nzbget-<ver>-bin-macos-x64.zip` | 官方 Intel 预编译；CLI + WebUI；运行时依赖本仓 `sevenzip`；与 core 同名 |
 | `node` | 26.13.1 | 官方 `node-v<ver>-darwin-x64.tar.gz` | 显式 version 行；brew 模板流 |
 | `node@20` | 20.20.2 | 官方 `node-v20.x-darwin-x64.tar.gz` | 显式 version 行；与 core 同名 |
 | `node@22` | 22.23.5 | 官方 `node-v22.x-darwin-x64.tar.gz` | 显式 version 行 |
@@ -155,8 +156,10 @@ end
 | `postgresql@13` | 13.23 | EDB `postgresql-<ver>-1-osx-binaries.zip` | 只装 bin/include/lib/share（跳过 pgAdmin 等 app）；`keg_only`（自带 openssl/icu 会撞 core）；与 core 同名 |
 | `protobuf` | 36.2 | 官方 `protoc-<ver>-osx-x86_64.zip` | 预编译；与 core 同名 |
 | `ripgrep` | 16.0.0 | 官方 macOS 双架构预编译 | `rg` + man/补全；零构建依赖；opencode 依赖 |
+| `rust@1.91.1` | 1.91.1 | static.rust-lang.org 官方 rustc/cargo/rust-std 组件 | pinned；keg-only；仅用于 Binwalk 3.1.0 构建；无外部 LLVM 依赖 |
 | `rustup` | 1.29.3 | static.rust-lang.org 裸二进制 | cargo/rustc 垫片；跟 release-stable.toml |
 | `scrcpy` | 5.0.1 | GitHub `scrcpy-macos-x86_64-v<ver>.tar.gz` | 静态；整包进 libexec |
+| `sevenzip` | 26.06 | ip7z GitHub `7z2606-mac-x64.tar.xz` | 官方 Intel 预编译；由 `binwalk`、`nzbget`、`jpeg-turbo` 闭环引用；与 core 同名 |
 | `sst` | 4.17.2 | anomalyco raw（Intel 段） | `sst version` 取版本 |
 | `starship` | 1.27.0 | GitHub `starship-x86_64-apple-darwin.tar.gz` | 单二进制 + 生成补全；github 流；与 core 同名 |
 | `swift` | 6.4.2 | swift.org 官方 `swift-<ver>-RELEASE-osx.pkg` | 重打包只暴露 `swift`/`swiftc`；customRelease |
@@ -175,6 +178,7 @@ end
 | `aria2` | 1.37.0 | core 拷入（源码） | autotools；`c-ares`/`libssh2`/`sqlite`/fork-openssl@4 |
 | `automake` | 1.20 | core 拷入（源码） | 纯 autotools；无运行时依赖 |
 | `bash` | 5.3.20 | core 拷入（源码） | `ncurses`/fork-readline/fork-gettext；与 core 同名 |
+| `binwalk` | 3.1.0 | 上游源码 tar.gz | Rust 1.91.1 官方工具链构建；backport `7zz`；运行时依赖本仓 `sevenzip`；与 core 同名 |
 | `brotli` | 1.2.1 | core 同名接管（源码） | cmake；curl3 依赖 |
 | `c-ares` | 1.34.9 | core 同名接管（源码） | cmake；aria2/nghttp2 依赖 |
 | `capstone` | 5.0.9 | core 拷入（源码） | cmake；fork-gettext；qemu 依赖 |
@@ -241,7 +245,7 @@ end
 | `wget` | 1.25.0 | core 拷入（源码） | `libidn2`/`libpsl`/fork-openssl@4/fork-gettext |
 | `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
 
-### 6.3 `fork-*` 依赖层（15 个）
+### 6.3 `fork-*` 依赖层（14 个）
 
 Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 39 个源码包标为 `core 同名接管`）。`fork-*` 全部走 brew JSON 全量流，补丁随 `Patches/` 入库。
 
@@ -259,7 +263,6 @@ Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方
 | `fork-pcre2` | `pcre2` | 10.49 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-pkgconf` | `pkgconf` | 3.0.11 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-readline` | `readline` | 8.3.6 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-sevenzip` | `sevenzip` | 26.06 | 官方 macOS Intel 预编译；`keg_only`；jpeg-turbo 构建依赖 |
 | `fork-xz` | `xz` | 5.8.4 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-zstd` | `zstd` | 1.5.7 | 源码现编；`keg_only`；依赖方写全名 |
 
@@ -299,7 +302,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 
 `watch-updates.yml`（只有全量模式）在 `ubuntu-latest` 上运行：
 
-1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，按同名匹配 `updater/<name>.swift`（11 个 pinned 包故意无检查器：`afm`、`amd`、`checkra1n`、`cmd`、`ffserver`、`heliport`、`llvm`、`macos-tskmgr`、`neofetch`、`palera1n`、`winstart`）。
+1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，按同名匹配 `updater/<name>.swift`（12 个 pinned 包故意无检查器：`afm`、`amd`、`checkra1n`、`cmd`、`ffserver`、`heliport`、`llvm`、`macos-tskmgr`、`neofetch`、`palera1n`、`rust@1.91.1`、`winstart`）。
 2. `swiftc -O updater/UpdaterCore.swift updater/<name>.swift` 编译并运行（每包 `timeout 600`）；默认 8 路并发执行（`WATCH_JOBS` 可覆盖），各包写独立日志与 `GITHUB_OUTPUT`；启动时先按队列打印检查序号，主循环再按原队列顺序等待并立即流式输出详细日志和状态，避免交叉输出。
 3. 本地版本优先取顶层 `version` 行（跳过 `fails_with` 块内），否则从 `url` 解析。
 4. 上游来源（优先级 `customRelease` > `raw` > `github` > `brew`）：
