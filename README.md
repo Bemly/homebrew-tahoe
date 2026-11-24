@@ -61,13 +61,13 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **146 formulae** (61 prebuilt + 74 source-built + 11 `fork-*` dependency forks) and **25 casks**.
+> Total: **146 formulae** (61 prebuilt + 76 source-built + 9 `fork-*` dependency forks) and **25 casks**.
 
 ### CLI & Developer Tools — Prebuilt Formulae (61)
 
 | Package | Notes |
 | --- | --- |
-| `aarch64-unknown-linux-gnu` | GCC cross toolchain targeting aarch64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's `guile`, `python@3.14`, `fork-bdw-gc`, `fork-xz`, and `fork-zstd` |
+| `aarch64-unknown-linux-gnu` | GCC cross toolchain targeting aarch64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's `guile`, `python@3.14`, `bdw-gc`, `fork-xz`, and `fork-zstd` |
 | `antigravity-cli` | Google Antigravity CLI (`agy`), repackaged from the official Intel macOS flat binary; version tracked from the official auto-updater manifest |
 | `boost@1.85` | Boost C++ 1.85 libraries from third-party `prebuilt-boost` macOS x86 `static+shared` archive (dylibs get `@rpath` patched and re-signed ad-hoc); dependency of `freeling`; same-name conflict with core |
 | `bun` | JavaScript runtime/bundler/package manager, official Intel prebuilt (`bun-darwin-x64.zip`, ships `bun` + `bunx` symlink); same-name conflict with core |
@@ -123,7 +123,7 @@ brew install --cask bemly/tahoe/antigravity
 | `starship` | Cross-shell prompt, official x86_64 prebuilt (`starship-x86_64-apple-darwin.tar.gz`) with generated shell completions; same-name conflict with core |
 | `swift` | Official Swift macOS `.pkg` repackaged, exposing only `swift`/`swiftc` (no collisions with other toolchains); tracked from swift.org |
 | `torpedo` | `sst/torpedo` VPC database access tool, Intel-only slice of `anomalyco/homebrew-tap` (`torpedo-mac-x86_64.tar.gz`) |
-| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's `guile`, `python@3.14`, `fork-bdw-gc`, `fork-xz`, and `fork-zstd` |
+| `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's `guile`, `python@3.14`, `bdw-gc`, `fork-xz`, and `fork-zstd` |
 | `xcodegen` | Generate Xcode projects from a spec file, official universal prebuilt (`xcodegen.zip` with `SettingPresets`, zero dependencies); same-name conflict with core |
 | `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies; avoids pulling a full Python stack) |
 | `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
@@ -168,15 +168,15 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`); same-name conflict with core |
 | `wimlib` | Library and `wimlib-imagex` tools for WIM images (zero macOS runtime dependencies, built with `fork-pkgconf`) |
 
-### Runtime Dependency Layer — Same-Name Takeovers (42 source libraries) & `fork-*` (11)
+### Runtime Dependency Layer — Same-Name Takeovers (44 source libraries) & `fork-*` (9)
 
 Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are either taken over under their core name (when no `homebrew/core` dependents remain on a typical setup) or kept renamed as `keg_only` `fork-*` packages:
 
-- **Same-name dependency libraries (42 source-built formulae, totaling 74 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
-  `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `json-c`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libtasn1`, `libusb`, `libyaml`, `lz4`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pcre2`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
+- **Same-name dependency libraries (44 source-built formulae, totaling 76 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
+  `abseil`, `bdw-gc`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gmp`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `json-c`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libtasn1`, `libusb`, `libyaml`, `lz4`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pcre2`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
-- **Renamed `keg_only` `fork-*` packages (11)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
-  `fork-bdw-gc`, `fork-bison`, `fork-gettext`, `fork-gmp`, `fork-libunistring`, `fork-openssl@3`, `fork-openssl@4`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
+- **Renamed `keg_only` `fork-*` packages (9)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
+  `fork-bison`, `fork-gettext`, `fork-libunistring`, `fork-openssl@3`, `fork-openssl@4`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
 
 ### Desktop Apps & Input Methods — Casks (25)
 
@@ -214,7 +214,7 @@ Homebrew forbids installing formulae or casks with the same name/token from two
 different taps at the same time — they share the same `Cellar/<name>` or `Caskroom/<token>`
 directory.
 
-Except for renamed `keg_only` `fork-*` packages (11) and tap-exclusive packages (`curl3`,
+Except for renamed `keg_only` `fork-*` packages (9) and tap-exclusive packages (`curl3`,
 `ffplay`, `ffprobe`, `ffserver`, `antigravity-cli`, `aarch64-unknown-linux-gnu`,
 `x86_64-unknown-linux-gnu`, `llvm-mingw`, `cmd`, `deepseek-harness`, `frida-server`,
 `mufetch`, `sst`, `torpedo`, and tap-only casks), **any package sharing a name with

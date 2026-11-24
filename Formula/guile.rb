@@ -26,8 +26,8 @@ class Guile < Formula
   end
 
   depends_on "gnu-sed" => :build
-  depends_on "bemly/tahoe/fork-bdw-gc"
-  depends_on "bemly/tahoe/fork-gmp"
+  depends_on "bemly/tahoe/bdw-gc"
+  depends_on "bemly/tahoe/gmp"
   depends_on "libtool"
   depends_on "bemly/tahoe/fork-libunistring"
   depends_on "bemly/tahoe/fork-pkgconf" # guile-config is a wrapper around pkg-config.
@@ -52,7 +52,7 @@ class Guile < Formula
 
     system "./configure", "--disable-nls",
                           "--with-libreadline-prefix=#{formula_opt_prefix("bemly/tahoe/fork-readline")}",
-                          "--with-libgmp-prefix=#{formula_opt_prefix("bemly/tahoe/fork-gmp")}",
+                          "--with-libgmp-prefix=#{formula_opt_prefix("bemly/tahoe/gmp")}",
                           *std_configure_args
     system "make", "install"
 
@@ -66,7 +66,7 @@ class Guile < Formula
     # Homebrew automatically removing Cellar paths from .pc files in favour
     # of opt_prefix usage everywhere.
     inreplace lib/"pkgconfig/guile-3.0.pc" do |s|
-      s.gsub! Formula["bemly/tahoe/fork-bdw-gc"].prefix.realpath, formula_opt_prefix("bemly/tahoe/fork-bdw-gc")
+      s.gsub! Formula["bemly/tahoe/bdw-gc"].prefix.realpath, formula_opt_prefix("bemly/tahoe/bdw-gc")
       s.gsub! Formula["libffi"].prefix.realpath, formula_opt_prefix("libffi") unless OS.mac?
     end
 

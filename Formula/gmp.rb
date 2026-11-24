@@ -1,4 +1,4 @@
-class ForkGmp < Formula
+class Gmp < Formula
   desc "GNU multiple precision arithmetic library"
   homepage "https://gmplib.org/"
   url "https://ftpmirror.gnu.org/gmp/gmp-6.3.0.tar.xz"
@@ -13,14 +13,6 @@ class ForkGmp < Formula
     url "https://gmplib.org/download/gmp/"
     regex(/href=.*?gmp[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "9731a1cd91f739a434ff153c3d28a2723240fb93f734583335faff9f338fed84"
-    sha256 cellar: :any, tahoe: "32ce4407ac9ce5beec7a84fcd3305d49507b13a0b4c776a471d1ddcf7b03e8c6"
-  end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "autoconf" => :build
   depends_on "bemly/tahoe/automake" => :build

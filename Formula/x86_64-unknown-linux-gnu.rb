@@ -15,7 +15,7 @@ class X8664UnknownLinuxGnu < Formula
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   # 运行时依赖走本源 fork-* 与同名接管瓶（guile），用户端零源码编译。
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-bdw-gc"
+  depends_on "bemly/tahoe/bdw-gc"
   depends_on "bemly/tahoe/python@3.14"
   depends_on "bemly/tahoe/fork-xz"
   depends_on "bemly/tahoe/fork-zstd"

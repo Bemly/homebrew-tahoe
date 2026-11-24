@@ -43,7 +43,7 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 146 个公式（含 11 个 fork-*）
+├── Formula/                           # 146 个公式（含 9 个 fork-*）
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
@@ -102,7 +102,7 @@ end
 
 ## 6. 当前收录
 
-> **146 个公式（61 个预编译直引 + 74 个源码包 + 11 个 `fork-*`）**，`updater/` 共 160 个检查器（另有 `UpdaterCore.swift`）。
+> **146 个公式（61 个预编译直引 + 76 个源码包 + 9 个 `fork-*`）**，`updater/` 共 160 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -178,6 +178,7 @@ end
 | `aria2` | 1.37.0 | core 拷入（源码） | autotools；`c-ares`/`libssh2`/`sqlite`/fork-openssl@4 |
 | `automake` | 1.20 | core 拷入（源码） | 纯 autotools；无运行时依赖 |
 | `bash` | 5.3.20 | core 拷入（源码） | `ncurses`/fork-readline/fork-gettext；与 core 同名 |
+| `bdw-gc` | 8.2.12 | core 同名接管（源码） | CMake；guile 与交叉工具链依赖 |
 | `binwalk` | 3.1.0 | 上游源码 tar.gz | 内嵌官方 Rust 1.91.1 rustc/cargo/rust-std 构建资源；backport `7zz`；运行时依赖本仓 `sevenzip`；与 core 同名 |
 | `brotli` | 1.2.1 | core 同名接管（源码） | cmake；curl3 依赖 |
 | `c-ares` | 1.34.9 | core 同名接管（源码） | cmake；aria2/nghttp2 依赖 |
@@ -189,10 +190,11 @@ end
 | `freeling` | 4.2.1 | core 同名接管（源码） | cmake；解捆自带 dynet/eigen；依赖本 tap `boost@1.85`/`icu4c@78`/`dynet`；`revision` 与 core 同步 |
 | `git` | 2.56.1 | core 拷入（源码） | make；`pcre2`/`fork-gettext`（macOS 用 CommonCrypto，`fork-openssl@4` 仅在 `on_linux`）；与 core 同名 |
 | `glib` | 2.90.1 | core 同名接管（源码） | meson；libslirp/qemu 依赖；`pcre2`/`fork-gettext` |
+| `gmp` | 6.3.0 | core 同名接管（源码） | autotools；gnutls/guile/nettle 依赖 |
 | `gnupg` | 2.5.24 | core 同名接管（源码） | autotools；依赖本 tap `gnutls`/`libusb`/`fork-readline`/`fork-gettext` + 同名 GnuPG C 库全家桶；`revision` 与 core 同步 |
-| `gnutls` | 3.8.14 | core 同名接管（源码） | autotools；`libidn2`/`nettle`/`p11-kit`/`fork-gmp`/`libtasn1`/`fork-libunistring`/`fork-gettext` |
+| `gnutls` | 3.8.14 | core 同名接管（源码） | autotools；`libidn2`/`nettle`/`p11-kit`/`gmp`/`libtasn1`/`fork-libunistring`/`fork-gettext` |
 | `graphviz` | 16.1.2 | core 拷入（源码） | 零第三方渲染插件；autotools |
-| `guile` | 3.0.11 | core 同名接管（源码） | fork-bdw-gc/gmp/libunistring…；交叉工具链依赖 |
+| `guile` | 3.0.11 | core 同名接管（源码） | bdw-gc/gmp/libunistring…；交叉工具链依赖 |
 | `icu4c@78` | 78.3 | core 同名接管（源码） | autotools；`keg_only`；freeling 依赖；`revision` 与 core 同步 |
 | `jemalloc` | 5.4.0 | core 同名接管（源码） | autotools；nghttp2 依赖 |
 | `json-c` | 0.19 | core 同名接管（源码） | cmake；fork-gettext 依赖 |
@@ -226,7 +228,7 @@ end
 | `mpdecimal` | 4.0.1 | core 同名接管（源码） | autotools；python 家族依赖 |
 | `ncurses` | 6.6 | core 同名接管（源码） | autotools；`keg_only :provided_by_macos`；bash/qemu 依赖 |
 | `neofetch` | 7.1.0 | GitHub archive tag（纯脚本） | 已归档最后一版；不检查更新 |
-| `nettle` | 4.0 | core 同名接管（源码） | autotools；gnutls 依赖；fork-gmp |
+| `nettle` | 4.0 | core 同名接管（源码） | autotools；gnutls 依赖；gmp |
 | `nghttp2` | 1.71.0 | core 拷入（源码） | `--enable-app`；`c-ares`/jemalloc/libev/libnghttp2/fork-openssl@3 |
 | `npth` | 1.8 | core 同名接管（源码） | autotools；`gnupg` 依赖；零运行时依赖 |
 | `p11-kit` | 0.26.6 | core 同名接管（源码） | meson；gnutls 依赖；libtasn1 |
@@ -249,16 +251,14 @@ end
 | `wget` | 1.25.0 | core 拷入（源码） | `libidn2`/`libpsl`/fork-openssl@4/fork-gettext |
 | `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
 
-### 6.3 `fork-*` 依赖层（11 个）
+### 6.3 `fork-*` 依赖层（9 个）
 
-Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 43 个源码包标为 `core 同名接管`）。`fork-*` 走 brew JSON 全量流，补丁随 `Patches/` 入库。
+Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 44 个源码包标为 `core 同名接管`）。`fork-*` 走 brew JSON 全量流，补丁随 `Patches/` 入库。
 
 | fork 公式 | 对应 core | 版本 | 说明 |
 | --- | --- | --- | --- |
-| `fork-bdw-gc` | `bdw-gc` | 8.2.12 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-bison` | `bison` | 3.8.2 | 最小源码瓶；系统 bison 2.3 不满足 Graphviz/QEMU ≥3.0；`keg_only` |
 | `fork-gettext` | `gettext` | 1.0 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-gmp` | `gmp` | 6.3.0 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-libunistring` | `libunistring` | 1.5 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-openssl@3` | `openssl@3` | 3.5.9 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-openssl@4` | `openssl@4` | 4.1.0 | 源码现编；`keg_only`；依赖方写全名 |

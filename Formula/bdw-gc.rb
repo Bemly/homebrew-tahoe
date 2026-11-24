@@ -1,4 +1,4 @@
-class ForkBdwGc < Formula
+class BdwGc < Formula
   desc "Garbage collector for C and C++"
   homepage "https://www.hboehm.info/gc/"
   url "https://github.com/bdwgc/bdwgc/releases/download/v8.2.12/gc-8.2.12.tar.gz"
@@ -15,14 +15,6 @@ class ForkBdwGc < Formula
     url :stable
     strategy :github_latest
   end
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "43fac18fc08b260b1db950aa0fff65d8cfd6b250fb36b9da1b4605a8a6bacb0e"
-    sha256 cellar: :any, tahoe: "ed8779f0594e5f9141718056ce1a3f38e2709c5824ce5b7ab0827444db3e50a0"
-  end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64

@@ -50,13 +50,13 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **146 个公式**（61 个预编译直引 + 74 个源码代编译 + 11 个 `fork-*` 依赖层）与 **25 个 cask**。
+> 共收录 **146 个公式**（61 个预编译直引 + 76 个源码代编译 + 9 个 `fork-*` 依赖层）与 **25 个 cask**。
 
 ### CLI 与开发工具 — 预编译直引公式（61 个）
 
 | 软件 | 说明 |
 | --- | --- |
-| `aarch64-unknown-linux-gnu` | 面向 aarch64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖走本源 `guile`、`python@3.14`、`fork-bdw-gc`、`fork-xz`、`fork-zstd` |
+| `aarch64-unknown-linux-gnu` | 面向 aarch64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖走本源 `guile`、`python@3.14`、`bdw-gc`、`fork-xz`、`fork-zstd` |
 | `antigravity-cli` | Google Antigravity CLI（装成 `agy` 命令），官方 Intel macOS 扁平二进制重打包；版本跟随官方 auto-updater manifest |
 | `boost@1.85` | Boost C++ 库 1.85，取第三方 `prebuilt-boost` 的 macOS x86 `static+shared` 包（预编译 dylib 补 `@rpath` 后 ad-hoc 重签）；`freeling` 依赖；与 core 同名 |
 | `bun` | JS 运行时 / 打包 / 包管理器，取官方 Intel 预编译包（`bun-darwin-x64.zip`，提供 `bun` 与 `bunx` 软链）；与 core 同名 |
@@ -112,7 +112,7 @@ brew install --cask bemly/tahoe/antigravity
 | `starship` | 跨 Shell 提示符工具，取官方 x86_64 预编译包（`starship-x86_64-apple-darwin.tar.gz`）并生成补全；与 core 同名 |
 | `swift` | 官方 Swift macOS `.pkg` 重打包，只暴露 `swift`/`swiftc`（不污染其它工具链）；版本跟 swift.org |
 | `torpedo` | `sst/torpedo` VPC 数据库访问工具，取 `anomalyco/homebrew-tap` 的 Intel 段（`torpedo-mac-x86_64.tar.gz`） |
-| `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖走本源 `guile`、`python@3.14`、`fork-bdw-gc`、`fork-xz`、`fork-zstd` |
+| `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖走本源 `guile`、`python@3.14`、`bdw-gc`、`fork-xz`、`fork-zstd` |
 | `xcodegen` | 按配置文件生成 Xcode 工程，取官方 universal 预编译包（`xcodegen.zip`，含 `SettingPresets`，零依赖）；与 core 同名 |
 | `yt-dlp` | 音视频下载器，上游 universal macOS 单二进制（零依赖，不拖整套 Python 栈） |
 | `z3` | 高性能定理证明器，官方 macOS x64 预编译包（`z3-<ver>-x64-osx-13.3.zip`，零依赖）；与 core 同名 |
@@ -157,15 +157,15 @@ brew install --cask bemly/tahoe/antigravity
 | `wget` | 命令行下载工具（`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`）；与 core 同名 |
 | `wimlib` | 创建 / 解包 / 修改 WIM 映像的库与 `wimlib-imagex` 工具（macOS 零运行时依赖，`fork-pkgconf` 构建） |
 
-### 运行时依赖层 — 同名接管（42 个源码库）与 `fork-*`（11 个）
+### 运行时依赖层 — 同名接管（44 个源码库）与 `fork-*`（9 个）
 
 `homebrew/core` 中无 `x86_64_tahoe` 瓶的运行时依赖，按「无 core 依赖方则同名接管、有 core 依赖方则保留改名 `fork-*`」打包出瓶：
 
-- **同名接管的运行时依赖（42 个源码库，连同上述 32 个共 74 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
-  `abseil`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`json-c`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libtasn1`、`libusb`、`libyaml`、`lz4`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pcre2`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
+- **同名接管的运行时依赖（44 个源码库，连同上述 32 个共 76 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
+  `abseil`、`bdw-gc`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gmp`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`json-c`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libtasn1`、`libusb`、`libyaml`、`lz4`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pcre2`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
   *（注：`vulkan-loader` 仅运行时依赖在 core 中拥有 `all` 瓶的 `vulkan-headers`。）*
-- **改名且 `keg_only` 的 `fork-*` 依赖（11 个）** *（不与 `homebrew/core` 冲突，按全名 `bemly/tahoe/fork-*` 引用）*：
-  `fork-bdw-gc`、`fork-bison`、`fork-gettext`、`fork-gmp`、`fork-libunistring`、`fork-openssl@3`、`fork-openssl@4`、`fork-pkgconf`、`fork-readline`、`fork-xz`、`fork-zstd`
+- **改名且 `keg_only` 的 `fork-*` 依赖（9 个）** *（不与 `homebrew/core` 冲突，按全名 `bemly/tahoe/fork-*` 引用）*：
+  `fork-bison`、`fork-gettext`、`fork-libunistring`、`fork-openssl@3`、`fork-openssl@4`、`fork-pkgconf`、`fork-readline`、`fork-xz`、`fork-zstd`
 
 ### 桌面应用与输入法 — Cask（25 个）
 
@@ -202,7 +202,7 @@ brew install --cask bemly/tahoe/antigravity
 Homebrew 禁止同时安装来自不同 tap 的同名公式或同 token cask——它们共用同一份
 `Cellar/<name>` 或 `Caskroom/<token>` 目录。
 
-除改名且 `keg_only` 的 `fork-*`（11 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
+除改名且 `keg_only` 的 `fork-*`（9 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
 `ffserver`、`antigravity-cli`、`aarch64-unknown-linux-gnu`、`x86_64-unknown-linux-gnu`、
 `llvm-mingw`、`cmd`、`deepseek-harness`、`frida-server`、`mufetch`、`sst`、`torpedo`
 以及本仓独有 cask）外，**凡与 `homebrew/core` 同名的软件都必须先卸载另一方**

@@ -36,7 +36,7 @@ class Gnutls < Formula
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on "texinfo" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-gmp"
+  depends_on "bemly/tahoe/gmp"
   depends_on "bemly/tahoe/libidn2"
   depends_on "bemly/tahoe/libtasn1"
   depends_on "bemly/tahoe/fork-libunistring"

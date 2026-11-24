@@ -13,7 +13,7 @@ class Nettle < Formula
   end
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-gmp"
+  depends_on "bemly/tahoe/gmp"
   depends_on macos: :tahoe
 
   uses_from_macos "m4" => :build
