@@ -44,16 +44,22 @@ class RustAT1911 < Formula
 
     resource("rust-std").stage do
       stdlib = Pathname(Dir["**/lib/rustlib/x86_64-apple-darwin/lib"].fetch(0))
-      (lib/"rustlib").install stdlib.dirname.parent
+      (lib/"rustlib").install Dir[stdlib.dirname.parent/"*"]
     end
 
     chmod 0555, bin/"rustc"
     chmod 0555, bin/"cargo"
+    odie "Rust 标准库缺失" unless (lib/"rustlib/x86_64-apple-darwin/lib").directory?
     odie "Rust 工具链版本自检失败" unless Utils.safe_popen_read(bin/"rustc", "--version").include?("1.91.1")
   end
 
   test do
     assert_match "rustc 1.91.1", shell_output("#{bin}/rustc --version")
     assert_match "cargo 1.91.1", shell_output("#{bin}/cargo --version")
+    (testpath/"hello.rs").write <<~RUST
+      fn main() { println!("hello"); }
+    RUST
+    system bin/"rustc", testpath/"hello.rs", "-o", testpath/"hello"
+    assert_equal "hello\n", shell_output(testpath/"hello")
   end
 end
