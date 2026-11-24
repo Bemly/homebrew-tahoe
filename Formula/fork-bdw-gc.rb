@@ -18,7 +18,8 @@ class ForkBdwGc < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "e41aba5e0f9c8ac1d09f585ecd99ae6063107b63dccb8d000fe3e5d5b90b7924"
+    manifest_sha256 "43fac18fc08b260b1db950aa0fff65d8cfd6b250fb36b9da1b4605a8a6bacb0e"
+    sha256 cellar: :any, tahoe: "ed8779f0594e5f9141718056ce1a3f38e2709c5824ce5b7ab0827444db3e50a0"
   end
 
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
