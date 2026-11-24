@@ -44,7 +44,7 @@ class RustAT1911 < Formula
 
     resource("rust-std").stage do
       stdlib = Pathname(Dir["**/lib/rustlib/x86_64-apple-darwin/lib"].fetch(0))
-      (lib/"rustlib").install Dir[stdlib.dirname.parent/"*"]
+      (lib/"rustlib/x86_64-apple-darwin").install Dir[stdlib.dirname/"*"]
     end
 
     chmod 0555, bin/"rustc"
