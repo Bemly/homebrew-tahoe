@@ -13,18 +13,18 @@ class Nzbget < Formula
   deny_network_access!
 
   def install
-    root = "NZBGet.app/Contents/Resources/daemon/usr/local"
-    bin.install "#{root}/bin/nzbget"
-    share.install "#{root}/share/nzbget"
-    doc.install "#{root}/share/nzbget/doc/ChangeLog.md", "#{root}/share/nzbget/doc/COPYING"
+    root = Pathname(Dir["**/Resources/daemon/usr/local"].fetch(0))
+    bin.install root/"bin/nzbget"
+    share.install root/"share/nzbget"
+    doc.install share/"nzbget/doc/ChangeLog.md", share/"nzbget/doc/COPYING"
 
-    inreplace "#{root}/share/nzbget/nzbget.conf" do |s|
+    inreplace share/"nzbget/nzbget.conf" do |s|
       s.gsub! "DirectWrite=yes", "DirectWrite=no"
       s.gsub! "ArticleCache=0", "ArticleCache=700"
       s.gsub! "SevenZipCmd=${AppDir}/7za", "SevenZipCmd=7zz"
       s.gsub! "UnrarCmd=${AppDir}/unrar", "UnrarCmd=7zz"
     end
-    etc.install "#{root}/share/nzbget/nzbget.conf"
+    etc.install share/"nzbget/nzbget.conf"
 
     chmod 0555, bin/"nzbget"
     odie "NZBGet 架构或版本自检失败" unless Utils.safe_popen_read(bin/"nzbget", "-V").include?(version.to_s)
@@ -32,7 +32,7 @@ class Nzbget < Formula
 
   service do
     run [opt_bin/"nzbget", "-c", etc/"nzbget.conf", "-s", "-o", "OutputMode=Log",
-         "-o", "ConfigTemplate=#{opt_prefix}/share/nzbget/nzbget.conf",
+         "-o", "ConfigTemplate=#{etc}/nzbget.conf",
          "-o", "WebDir=#{opt_prefix}/share/nzbget/webui"]
     keep_alive true
     environment_variables PATH: "#{HOMEBREW_PREFIX}/bin:/usr/bin:/bin:/usr/sbin:/sbin"
