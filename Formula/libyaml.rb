@@ -13,7 +13,8 @@ class Libyaml < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "72c3b129545e93a1e6ddb7857ca14b9c490e266f63c4815aad4638a225e2d552"
+    manifest_sha256 "6c1e9a6f09d046bf5a0f4bd0d8c3208731af01515584cb7bff7fd0f99de362b8"
+    sha256 cellar: :any, tahoe: "781953be424e02dcce486617441dae38b2a65efc7b69781481b54d71fa424125"
   end
 
   depends_on "autoconf" => :build
