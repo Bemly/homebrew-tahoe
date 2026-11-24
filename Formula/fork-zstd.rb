@@ -22,8 +22,8 @@ class ForkZstd < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "81341fb0c2995643df21ba650f70a26ecaaedfbc17dd147d9c3951c49f8247cd"
-    sha256 cellar: :any, tahoe: "0ebdfecbd6d3cf054afdbb41a67eec31da364bfa69073fa7d835245fbb79a3d0"
+    manifest_sha256 "25e70fa1965868276a15e7bde508379bfdfce70f393ce6efe61f66841915a3fa"
+    sha256 cellar: :any, tahoe: "c77581a10b5ded6946760627e3bdec37f81e1a7a081676da21882ede878cca8a"
   end
 
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
