@@ -15,6 +15,12 @@ class Lz4 < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "70db0a222fb6452dc49646283f6ec6817f978cb90f578d3a50e8070849a44ab6"
+    sha256 cellar: :any, tahoe: "f29f886bd9643805099c81693a611547aa9764e8a72d18bb7b22bb84994b9745"
+  end
+
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
