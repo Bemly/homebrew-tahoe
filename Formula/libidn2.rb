@@ -28,7 +28,7 @@ class Libidn2 < Formula
     url "https://gitlab.com/libidn/libidn2.git", branch: "master"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
     depends_on "bemly/tahoe/fork-gettext" => :build
     depends_on "gengetopt" => :build
     depends_on "help2man" => :build

@@ -20,7 +20,7 @@ class Libusb < Formula
     url "https://github.com/libusb/libusb.git", branch: "master"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
     depends_on "libtool" => :build
   end
 

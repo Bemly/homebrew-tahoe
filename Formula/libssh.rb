@@ -14,7 +14,7 @@ class Libssh < Formula
     sha256 cellar: :any, tahoe: "ab438b96d39a92978641ca2b4436f1662e585c56557bf6f9289d952e0e753bbf"
   end
 
-  depends_on "cmake" => :build
+  depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-openssl@4"
   depends_on macos: :tahoe

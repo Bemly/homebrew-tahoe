@@ -16,7 +16,7 @@ class Guile < Formula
     url "https://git.savannah.gnu.org/git/guile.git", branch: "main"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
     depends_on "bemly/tahoe/fork-gettext" => :build
     uses_from_macos "flex" => :build
 

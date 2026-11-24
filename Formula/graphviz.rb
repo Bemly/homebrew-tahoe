@@ -21,11 +21,11 @@ class Graphviz < Formula
     url "https://gitlab.com/graphviz/graphviz.git", branch: "main"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
   end
 
   depends_on "bison" => :build
-  depends_on "pkgconf" => :build
+  depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

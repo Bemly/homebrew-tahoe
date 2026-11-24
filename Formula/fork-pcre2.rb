@@ -20,7 +20,7 @@ class ForkPcre2 < Formula
     url "https://github.com/PCRE2Project/pcre2.git", branch: "main"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
     depends_on "libtool" => :build
   end
 

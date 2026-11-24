@@ -27,7 +27,7 @@ class Wget < Formula
     url "https://git.savannah.gnu.org/git/wget.git", branch: "master"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
     depends_on "bemly/tahoe/fork-xz" => :build
   end
 

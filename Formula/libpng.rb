@@ -20,7 +20,7 @@ class Libpng < Formula
     url "https://github.com/pnggroup/libpng.git", branch: "libpng16"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
     depends_on "libtool" => :build
   end
 

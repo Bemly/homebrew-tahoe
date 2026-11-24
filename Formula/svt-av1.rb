@@ -18,7 +18,7 @@ class SvtAv1 < Formula
     sha256 cellar: :any, tahoe: "a22e8c54656c360c50383dcca8918c0f028c0c674efbcd055273b04f4d367a33"
   end
 
-  depends_on "cmake" => :build
+  depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

@@ -22,7 +22,7 @@ class ForkGmp < Formula
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "autoconf" => :build
-  depends_on "automake" => :build
+  depends_on "bemly/tahoe/automake" => :build
   depends_on "libtool" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe

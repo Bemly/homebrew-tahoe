@@ -23,7 +23,7 @@ class ForkBdwGc < Formula
 
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
-  depends_on "cmake" => :build
+  depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

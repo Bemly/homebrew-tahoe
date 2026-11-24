@@ -14,7 +14,7 @@ class Snappy < Formula
   end
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
-  depends_on "cmake" => :build
+  depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

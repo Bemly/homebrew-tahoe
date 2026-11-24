@@ -16,7 +16,7 @@ class Make < Formula
     url "https://git.savannah.gnu.org/git/make.git", branch: "master"
 
     depends_on "autoconf" => :build
-    depends_on "automake" => :build
+    depends_on "bemly/tahoe/automake" => :build
     depends_on "bemly/tahoe/fork-gettext" => :build # for autopoint
     depends_on "libtool" => :build
     depends_on "texinfo" => :build

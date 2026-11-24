@@ -12,7 +12,7 @@ class Vde < Formula
     sha256 tahoe: "06f4845c96f24175867c44377ac4d6b1ced705fcbe4c6ea93f4c9b7256b39eca"
   end
   depends_on "autoconf" => :build
-  depends_on "automake" => :build
+  depends_on "bemly/tahoe/automake" => :build
   depends_on "libtool" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe

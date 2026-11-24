@@ -13,7 +13,7 @@ class Libnghttp3 < Formula
     sha256 cellar: :any, tahoe: "e4b0dc2c45b91e60e2a4cae13c9e2a9a0407c30affdb92514c261dbdb9ce6c24"
   end
 
-  depends_on "cmake" => :build
+  depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

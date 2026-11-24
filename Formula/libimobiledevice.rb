@@ -19,7 +19,7 @@ class Libimobiledevice < Formula
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on "autoconf" => :build
-  depends_on "automake" => :build
+  depends_on "bemly/tahoe/automake" => :build
   depends_on "libtool" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
