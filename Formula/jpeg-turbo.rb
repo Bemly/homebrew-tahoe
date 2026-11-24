@@ -1,7 +1,7 @@
 class JpegTurbo < Formula
   desc "JPEG image codec that aids compression and decompression"
   homepage "https://www.libjpeg-turbo.org/"
-  url "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.2.1/libjpeg-turbo-3.2.1.dmg"
+  url "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.2.1/libjpeg-turbo-3.2.1.dmg", using: :nounzip
   sha256 "10cf9233f771089166da8f0d6cd014294ebae93e1212ef033fbc548dc622ce74"
   license all_of: [
     "IJG", # libjpeg API library and programs
@@ -30,8 +30,16 @@ class JpegTurbo < Formula
   deny_network_access!
 
   def install
-    pkg = Dir["*.pkg"].fetch(0)
-    system "pkgutil", "--expand-full", pkg, buildpath/"pkg"
+    dmg = Dir["*.dmg"].fetch(0)
+    mount = buildpath/"mnt"
+    mount.mkpath
+    begin
+      system "hdiutil", "attach", "-nobrowse", "-readonly", "-mountpoint", mount.to_s, dmg
+      pkg = Dir[mount/"*.pkg"].fetch(0)
+      system "pkgutil", "--expand-full", pkg, buildpath/"pkg"
+    ensure
+      Utils.safe_popen_read("hdiutil", "detach", mount.to_s)
+    end
     payload = Dir[buildpath/"pkg/*.pkg/Payload"].fetch(0)
     root = Pathname(payload)/"opt/libjpeg-turbo"
     bin_src = root/"bin"
