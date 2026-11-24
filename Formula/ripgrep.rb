@@ -1,16 +1,22 @@
 class Ripgrep < Formula
   desc "Search tool like grep and The Silver Searcher"
   homepage "https://github.com/BurntSushi/ripgrep"
-  version "15.2.0"
+  version "16.0.0"
   license "Unlicense"
   compatibility_version 1
 
   url "https://github.com/BurntSushi/ripgrep/releases/download/#{version}/ripgrep-#{version}-x86_64-apple-darwin.tar.gz"
-  sha256 "af7825fcc69a2afc7a7aea55fc9af90e26421d8f20fe59df32e233c0b8a231c1"
+  sha256 "aa9183b0e0bfac03c5818895ad18b75001c402d230063898abfe5a58cd413caa"
+
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "1129d82e41c8936c92ef63d8c4620bcc23b517ce2d6f8f58ca4b5e5e84aad81b"
+    sha256 cellar: :any_skip_relocation, tahoe: "7caa262a768376b649af68ed7290a2f2a3f5b8444d4b879eb553b3157b276d72"
+  end
 
   on_arm do
     url "https://github.com/BurntSushi/ripgrep/releases/download/#{version}/ripgrep-#{version}-aarch64-apple-darwin.tar.gz"
-    sha256 "3750b2e93f37e0c692657da574d7019a101c0084da05a790c83fd335bad973e4"
+    sha256 "5a145656d5067144001bfce6648767fd3254599aa736f1ffdb7fb907760b8ca1"
   end
 
   head "https://github.com/BurntSushi/ripgrep.git", branch: "master"
