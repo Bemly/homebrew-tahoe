@@ -148,7 +148,7 @@ const checks = [
   ['main.js 仍含汉化注入块', mainText.includes(CN_MARK)],
   ['updater.js 已禁自更新', updaterText.includes(UPDATE_DISABLED_MARK) && updaterText.includes('autoDownload = false') && updaterText.includes('autoInstallOnAppQuit = false')],
   ['preload.js 含页内挂件块', preloadText.includes(PAGE_MARK) && preloadText.includes('agent-input-box')],
-  ['preload.js 含补充词典块', preloadText.includes(L10N_MARK) && preloadText.includes('哈基米')],
+  ['preload.js 含补充词典块', preloadText.includes(L10N_MARK) && preloadText.includes('哈基米') && preloadText.includes('编排器')],
   ['主进程模块不再开独立窗口', !widgetMainText.includes('new BrowserWindow') && !widgetMainText.includes('new BaseWindow')],
   ['角色清单存在', readEntry(verify, 'dist/gyWidget/characters/characters.json') !== null],
   ['默认立绘存在', readEntry(verify, 'dist/gyWidget/characters/gemini_default.png') !== null],

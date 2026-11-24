@@ -3,7 +3,7 @@
 // 上游引擎的字典没覆盖模型名/元素代号/思考档位，这里补：
 //   Gemini→哈基米；元素代号→周期表中文化学元素字（全表，含未来可能用的代号）；
 //   Claude→克劳德，Opus→巨著、Sonnet→十四行诗、Haiku→俳句、Fable→神话 等；
-//   思考档位 Low/Medium/High→低/中/高；New→新。
+//   思考档位 Low/Medium/High→低/中/高；New→新；Orchestrator→编排器。
 // 只改**可见文本节点**，不碰 input/textarea/代码编辑器/终端——模型 id 与代码内容
 // 保持英文原文，服务端拿到的仍是正确标识。
 'use strict';
@@ -53,7 +53,7 @@
     ['Flash', '闪电'], ['Ultra', '极致'], ['Pro', '专业'], ['Max', '最大'],
     ['Lite', '轻量'], ['Nano', '纳米'], ['Mini', '迷你'],
     ['Medium', '中'], ['High', '高'], ['Low', '低'], ['Minimal', '极简'], ['Auto', '自动'],
-    ['New', '新'],
+    ['New', '新'], ['Orchestrator', '编排器'],
   ];
 
   const map = new Map();

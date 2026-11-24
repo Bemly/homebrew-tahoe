@@ -66,7 +66,7 @@ cask "antigravity" do
     本包在官方 Intel 包上做了三处静态改写，与原版行为不同：
       1. 界面中文汉化（Silas-02/antigravity-desktop-cn 的引擎，锚点巡检 20/20 通过），
          另加本 tap 自有补充词典：Gemini→哈基米、模型元素代号→周期表中文字（氖/氩/氢…）、
-         Claude→克劳德（Opus 巨著 / Sonnet 十四行诗 / Haiku 俳句）、思考档位→低/中/高；
+         Claude→克劳德（Opus 巨著 / Sonnet 十四行诗 / Haiku 俳句）、Orchestrator→编排器、思考档位→低/中/高；
       2. 右下角 Gemini 伴生挂件：跟随主窗、显示额度剩余与重置时间、可右键换立绘
          或导入自己的图片（数据与导入图都在
          ~/Library/Application Support/GeminiNiangWidget，额度 MCP 同读一份 status.json）；

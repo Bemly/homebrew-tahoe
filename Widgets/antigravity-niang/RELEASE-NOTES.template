@@ -5,7 +5,7 @@ Antigravity 中文补丁版（bemly/tahoe 构建）
 1. 官方 dmg（sha256 与 homebrew/core 的 `antigravity` cask `tahoe` 变体逐字节核对）；
 2. 汉化：Silas-02/antigravity-desktop-cn 的 localization engine，静态改写 `app.asar`
    （字典 + 9 个 dist 模块注入，原包备份为 `app.asar.bak`），另注入本源补充词典
-   （`inject/extra-l10n.js`：模型名哈基米 / 118 元素周期表汉字 / 克劳德 / 巨著 / 十四行诗 / 俳句及思考档位低/中/高等）；
+   （`inject/extra-l10n.js`：模型名哈基米 / 118 元素周期表汉字 / 克劳德 / 巨著 / 十四行诗 / 俳句 / 编排器及思考档位低/中/高等）；
 3. 挂件：Gemini 娘额度挂件（移植自 CosmicShinosawa/agy-gemini-niang-widget 的
    Windows PowerShell/WPF 实现，改为注入 `app.asar` 内 `dist/preload.js` 的页内 DOM 挂件，不开独立窗口）；
 4. **禁用应用自更新**：否则宿主会自行拉官方新版覆盖打过补丁的 `app.asar`，
