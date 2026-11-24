@@ -29,7 +29,8 @@ class Gnutls < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "b1e3874c34379824fd14518058a445162fa78a05a59d28b8ec3b0df14a8567dd"
+    manifest_sha256 "1b285ef60e79d964f697f65d83863c4ebd42591e9ec92484ae0e7410bcd6b5d5"
+    sha256 tahoe: "8e2eaa7bc08d7bf77ff07340423739d43065723a98cd0e91d34ec7474d96a4b1"
   end
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
