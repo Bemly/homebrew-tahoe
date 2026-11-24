@@ -15,7 +15,8 @@ class ForkJsonC < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "06c92338eecdf3bbb4e5ffaa96c6089ee8d260c1b77fa740481367db02d49b85"
+    manifest_sha256 "30f70ba1e404391dd6b8ed8df5254769de66adab6c34e5612126f0549c6f9bdb"
+    sha256 cellar: :any, tahoe: "77be01d956964c2b04eedb8a74a045748b637448e444947e6da159e0e0f890bd"
   end
 
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
