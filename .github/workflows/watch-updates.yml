@@ -44,7 +44,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      # —— 批量扫描：按 nproc 满并发编译/运行，独立日志/output，按队列顺序回放 ——
+      # —— 批量扫描：默认 8 路并发编译/运行，独立日志/output，按队列顺序回放 ——
       # 三道保护：dry_run=true 只扫不提交；提交前 ruby -c 语法自检；
       # 上游资源不可下载的软件收集进 missing 输出，由下一步逐个开告警 issue。
       - name: 批量扫描并更新
@@ -64,7 +64,7 @@ jobs:
           for rb in Formula/*.rb Casks/*.rb; do
             TASK_RB+=("$rb")
           done
-          JOBS="${WATCH_JOBS:-$(nproc)}"
+          JOBS="${WATCH_JOBS:-8}"
           run_one() {
             local idx="$1"
             local rb="$2"
