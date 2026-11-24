@@ -44,7 +44,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      # —— 批量扫描：默认 8 路并发编译/运行，独立日志/output，按队列顺序回放 ——
+      # —— 批量扫描：默认 8 路并发编译/运行，独立日志/output，按队列顺序流式输出 ——
       # 三道保护：dry_run=true 只扫不提交；提交前 ruby -c 语法自检；
       # 上游资源不可下载的软件收集进 missing 输出，由下一步逐个开告警 issue。
       - name: 批量扫描并更新
@@ -91,13 +91,22 @@ jobs:
             } > "$log" 2>&1
             return 0
           }
-          export -f run_one
+          [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || JOBS=8
           echo "并行检查 ${#TASK_RB[@]} 个软件，并发数 ${JOBS}"
+          PIDS=()
+          running=0
           for idx in "${!TASK_RB[@]}"; do
-            printf '%s\t%s\n' "$idx" "${TASK_RB[$idx]}"
-          done | xargs -P "$JOBS" -n 2 bash -c 'run_one "$@"' _
-          # 检查并行执行，日志按原队列顺序回放，避免交叉输出。
+            while (( running >= JOBS )); do
+              wait -n || true
+              running=$((running - 1))
+            done
+            run_one "$idx" "${TASK_RB[$idx]}" &
+            PIDS[idx]=$!
+            running=$((running + 1))
+          done
+          # 按原队列顺序等待并立即输出；后续任务仍在后台并行执行。
           for idx in "${!TASK_RB[@]}"; do
+            wait "${PIDS[$idx]}" 2>/dev/null || true
             rb="${TASK_RB[$idx]}"
             f="$(basename "$rb" .rb)"
             dir="$(dirname "$rb")"
