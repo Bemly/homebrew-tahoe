@@ -338,7 +338,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
   - 批内依赖做拓扑排序（被依赖者先出瓶）；安装前清理 runner 预装的冲突 keg（`node@24`、`cmake`、Python 3.11 等）及本批用到的同源依赖。
   - 先 `brew install --only-dependencies` 再 `--build-bottle` + `brew bottle`；版本号取 `brew list --versions`。
   - **推送前删整个包重建**：GitHub 禁止删除最后一个带标签版本，而 `pr-upload` 撞已存在标签会直接报错，因此先通过 `DELETE users/{owner}/packages/container/tahoe%2F<pkg>` 删除旧包再由 `pr-upload` 重建（重建会继承公开状态，后续仍有匿名可拉体检）。
-  - **逐包提交**：watcher 只把公式候选版本放到临时分支；`bottle.yml` 每包 `pr-upload` 成功后，立即通过独立 main worktree 把该包相对 `origin/main` 的「版本+瓶块」补丁提交并推送。后续包失败或 job 被取消时，已完成包不受影响，未完成包仍保持 `main` 旧版。
+  - **逐包提交**：watcher 只把公式候选版本放到临时分支；`bottle.yml` 每包 `pr-upload` 成功后，立即通过独立 main worktree 把该包相对 `origin/main` 的「版本+瓶块」补丁提交并推送。后续包失败或 job 被取消时，已完成包不受影响，未完成包仍保持 `main` 旧版；整批成功后自动删除 `watcher/*` 暂存分支，失败则保留供重试。
 
 ## 9. 新增或修改软件 SOP
 

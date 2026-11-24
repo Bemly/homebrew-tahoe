@@ -463,3 +463,9 @@ jobs:
             echo "- 瓶根地址：\`$ROOT_URL\`"
             echo "- 已逐包提交：\`$(paste -sd, /tmp/committed.txt 2>/dev/null || true)\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 清理已完成的 watcher 暂存分支
+        if: ${{ always() && steps.bottle_loop.outcome == 'success' && startsWith(inputs.source_ref, 'watcher/') }}
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: git push origin --delete "$SOURCE_REF"

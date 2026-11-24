@@ -243,10 +243,10 @@ private func curlHTTP(_ url: String) -> (httpCode: Int?, body: String) {
 /// HEAD 探测资源可达性；失败时用 1 字节 GET 复验，避免 CDN 临时拒绝 HEAD 造成误报。
 private func curlHeadOK(_ url: String) -> Bool {
     guard let curl = which("curl") else { return false }
-    let headArgs = ["-fsI", "--retry", "2", "--retry-delay", "3",
+    let headArgs = ["-fsI", "--retry", "2", "--retry-all-errors", "--retry-delay", "3",
                     "--max-time", "30", url]
     if run(curl, headArgs).status == 0 { return true }
-    let getArgs = ["-fsSL", "--retry", "2", "--retry-delay", "3",
+    let getArgs = ["-fsSL", "--retry", "2", "--retry-all-errors", "--retry-delay", "3",
                    "--max-time", "30", "--range", "0-0", "-o", "/dev/null", url]
     if run(curl, getArgs).status == 0 {
         print("HEAD 探测失败，1 字节 GET 复验通过：\(url)")
