@@ -25,7 +25,7 @@ class Guile < Formula
     end
   end
 
-  depends_on "gnu-sed" => :build
+  depends_on "bemly/tahoe/fork-gnu-sed" => :build
   depends_on "bemly/tahoe/bdw-gc"
   depends_on "bemly/tahoe/gmp"
   depends_on "libtool"
@@ -42,6 +42,7 @@ class Guile < Formula
   deny_network_access!
 
   def install
+    ENV.prepend_path "PATH", Formula["bemly/tahoe/fork-gnu-sed"].opt_libexec/"gnubin"
     # So we can find libraries with (dlopen).
     ENV.append "LDFLAGS", "-Wl,-rpath,#{HOMEBREW_PREFIX}/lib"
 
