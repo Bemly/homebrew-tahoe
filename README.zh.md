@@ -246,8 +246,8 @@ brew install --cask bemly/tahoe/antigravity
 
 | 场景 | 处理 |
 | --- | --- |
-| 软件有新版本 | `watch-updates` 改写公式并触发一次 `bottle.yml` |
-| 新版刚提交、GHCR 尚未出瓶的短暂窗口 | `brew` 会暂时回退到上游 `url` 直链 |
+| 软件有新版本 | `watch-updates` 把公式改动暂存到临时分支；`bottle.yml` 每个公式制瓶成功后才把该版本发布到 `main` |
+| GHCR 尚未出瓶 | `main` 保持带旧瓶的版本；watcher 更新不会逼用户源码编译 |
 | 上游资源取不到或需人工同步 | `watch-updates.yml` 自动开 `automated-alert` issue 告警 |
 
 ## 维护者说明
@@ -261,8 +261,8 @@ brew install --cask bemly/tahoe/antigravity
 3. 填入公式名（单个 / 逗号分隔多个如 `gh,fastfetch` / `all` 表示全部）并运行。
 
 workflow 会：信任 tap → 递归校验运行时依赖 → 拓扑排序按序 `--build-bottle` 安装
-→ `brew bottle` → 清理旧包并用 `brew pr-upload` 推 GHCR → 校验匿名可拉性 → 把 `bottle do`
-块写回公式并提交。
+→ `brew bottle` → 清理旧包并用 `brew pr-upload` 推 GHCR → 立即把该公式的版本与
+`bottle do` 块单独提交到 `main`，再处理下一个公式。
 
 > 提示：新建的 GHCR 包默认私有，匿名 `brew install` 会返回 401。若匿名拉取体检发出告警，
 > 请到 `https://github.com/bemly?tab=packages` 对应包 → **Package settings** → **Danger Zone**

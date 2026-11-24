@@ -264,8 +264,8 @@ manual escape hatch for maintainers).
 
 | Scenario | Behavior |
 | --- | --- |
-| New version | `watch-updates` rewrites the formula and triggers one `bottle.yml` run |
-| No bottle in GHCR yet (brief post-upgrade window) | `brew` falls back to the upstream `url` directly |
+| New version | `watch-updates` stages formula changes on a temporary branch; `bottle.yml` publishes each formula to `main` only after its bottle succeeds |
+| No bottle in GHCR yet | `main` keeps the previous bottled version; watcher updates never force a source build |
 | Upstream asset unavailable / needs manual sync | `watch-updates.yml` opens an `automated-alert` issue |
 
 ## For Maintainers
@@ -280,7 +280,8 @@ After adding or updating a formula, push its bottle to GHCR:
 
 The workflow trusts the tap, checks recursive runtime dependencies, installs in
 topological order with `--build-bottle`, runs `brew bottle`, recreates the GHCR package
-via `brew pr-upload`, writes the `bottle do` block back, commits, and pushes.
+via `brew pr-upload`, then immediately commits that formula's version and `bottle do`
+block to `main` before moving to the next formula.
 
 > Note: Newly created GHCR packages are private by default (returning `401` to anonymous
 > `brew install`). If the anonymous pull check warns, change the package visibility to
