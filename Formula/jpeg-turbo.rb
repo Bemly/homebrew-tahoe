@@ -19,8 +19,8 @@ class JpegTurbo < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "2219a22f05cb23f3e24b0a2cd49b6c6d2ee663633b7f762fdbea0e5ba7698ad3"
-    sha256 cellar: :any, tahoe: "1e9a90d38531a4ce256b3acedcf5d740ec117c2c105a075cff9c3b9a8d8f5d1c"
+    manifest_sha256 "50c38659674dc11f32f7a860bd56120d0683ba1d8f126cf4afa817b2a995b8af"
+    sha256 cellar: :any, tahoe: "8f69eb0cc654ab607fea62ab22785626e0e054078a84e53bfc89d9ecfacfa163"
   end
 
   depends_on "bemly/tahoe/sevenzip" => :build
