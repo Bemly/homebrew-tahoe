@@ -13,6 +13,12 @@ class JsonC < Formula
     regex(/^json-c[._-](\d+(?:\.\d+)+)(?:[._-]\d{6,8})?$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "aa1de37691c0ad26250ebb23d29ddd068d10c3914544d69f22d21d421c50fb4f"
+    sha256 cellar: :any, tahoe: "95e4ff028514fe322575e3b4b7eaa7e9b63598627adb6478efcf318066df7f36"
+  end
+
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
