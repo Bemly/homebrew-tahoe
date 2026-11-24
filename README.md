@@ -61,9 +61,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **145 formulae** (61 prebuilt + 70 source-built + 14 `fork-*` dependency forks) and **25 casks**.
+> Total: **144 formulae** (60 prebuilt + 70 source-built + 14 `fork-*` dependency forks) and **25 casks**.
 
-### CLI & Developer Tools — Prebuilt Formulae (61)
+### CLI & Developer Tools — Prebuilt Formulae (60)
 
 | Package | Notes |
 | --- | --- |
@@ -115,7 +115,6 @@ brew install --cask bemly/tahoe/antigravity
 | `postgresql@13` | PostgreSQL 13, repackaged from EDB's official macOS x64 binaries (bin/include/lib/share only — pgAdmin skipped); `keg_only` to avoid bundled openssl/icu conflicts; add `opt/postgresql@13/bin` to `PATH` |
 | `protobuf` | Protocol buffers compiler (`protoc` + headers), official macOS x86_64 prebuilt (`protoc-<ver>-osx-x86_64.zip`); same-name conflict with core |
 | `ripgrep` | Fast grep replacement, official macOS x86_64/arm64 prebuilt with PCRE2; zero build dependencies; dependency of `opencode` |
-| `rust@1.91.1` | Pinned official rustc/cargo/rust-std toolchain, keg-only build dependency for Binwalk 3.1.0; no external LLVM dependency |
 | `rustup` | Official static Rust toolchain installer, same name as core; ships `rustup` plus cargo/rustc proxy shims, toolchains managed via `rustup toolchain install stable` |
 | `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero runtime dependencies, includes `adb` and `scrcpy-server`) |
 | `sevenzip` | Official 7-Zip 26.06 Intel prebuilt (`7zz`); runtime dependency of `binwalk` and `nzbget`, build dependency of `jpeg-turbo`; same-name conflict with core |
@@ -138,7 +137,7 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `aria2` | Multi-protocol download utility (`c-ares`/`libssh2`/`sqlite`/fork-openssl@4/fork-gettext); same-name conflict with core |
 | `automake` | GNU Automake build tool (runtime depends on `autoconf`); same-name conflict with core |
 | `bash` | GNU Bash 5.3 (`ncurses`/fork-readline/fork-gettext); same-name conflict with core |
-| `binwalk` | Firmware analysis and embedded-file extraction, built with the pinned Rust 1.91.1 toolchain; `7zz` backport and runtime dependency on this tap's `sevenzip`; same-name conflict with core |
+| `binwalk` | Firmware analysis and embedded-file extraction, built with embedded official Rust 1.91.1 rustc/cargo/rust-std resources; `7zz` backport and runtime dependency on this tap's `sevenzip`; same-name conflict with core |
 | `capstone` | Disassembly framework (`fork-gettext`); bottled dependency of `qemu` |
 | `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl, ships the `curl3` command only |
 | `dtc` | Device tree compiler (`libyaml`); bottled dependency of `qemu` |

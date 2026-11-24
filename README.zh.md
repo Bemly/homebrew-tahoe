@@ -50,9 +50,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **145 个公式**（61 个预编译直引 + 70 个源码代编译 + 14 个 `fork-*` 依赖层）与 **25 个 cask**。
+> 共收录 **144 个公式**（60 个预编译直引 + 70 个源码代编译 + 14 个 `fork-*` 依赖层）与 **25 个 cask**。
 
-### CLI 与开发工具 — 预编译直引公式（61 个）
+### CLI 与开发工具 — 预编译直引公式（60 个）
 
 | 软件 | 说明 |
 | --- | --- |
@@ -104,7 +104,6 @@ brew install --cask bemly/tahoe/antigravity
 | `postgresql@13` | PostgreSQL 13，EDB 官方 macOS x64 二进制包重打包（只装 bin/include/lib/share，跳过 pgAdmin 等 app）；`keg_only` 避免自带 openssl/icu 撞 core；把 `opt/postgresql@13/bin` 加进 `PATH` 使用 |
 | `protobuf` | Protocol Buffers 编译器（`protoc` + 头文件），官方 macOS x86_64 预编译包（`protoc-<ver>-osx-x86_64.zip`）；与 core 同名 |
 | `ripgrep` | 快速文本搜索工具，官方 macOS x86_64/arm64 预编译且带 PCRE2；零构建依赖；`opencode` 依赖 |
-| `rust@1.91.1` | 固定版官方 rustc/cargo/rust-std 工具链，keg-only；仅作为 Binwalk 3.1.0 的构建依赖；无外部 LLVM 依赖 |
 | `rustup` | 官方静态 Rust 工具链安装器，与 core 同名；提供 `rustup` 及 cargo/rustc 代理垫片，工具链走 `rustup toolchain install stable` |
 | `scrcpy` | 安卓投屏工具，上游 Intel 静态构建（零运行时依赖，内置 `adb` 与 `scrcpy-server`） |
 | `sevenzip` | 官方 7-Zip 26.06 Intel 预编译（`7zz`）；是 `binwalk`、`nzbget` 的运行时依赖及 `jpeg-turbo` 的构建依赖；与 core 同名 |
@@ -127,7 +126,7 @@ brew install --cask bemly/tahoe/antigravity
 | `aria2` | 多协议下载工具（`c-ares`/`libssh2`/`sqlite`/`fork-openssl@4`/`fork-gettext`）；与 core 同名 |
 | `automake` | GNU Automake 构建工具（运行时依赖 `autoconf`）；与 core 同名 |
 | `bash` | GNU Bash 5.3（`ncurses`/`fork-readline`/`fork-gettext`）；与 core 同名 |
-| `binwalk` | 固件分析与嵌入式文件提取，使用固定版 Rust 1.91.1 工具链构建；backport `7zz` 并依赖本仓 `sevenzip`；与 core 同名 |
+| `binwalk` | 固件分析与嵌入式文件提取，内嵌官方 Rust 1.91.1 rustc/cargo/rust-std 构建资源；backport `7zz` 并依赖本仓 `sevenzip`；与 core 同名 |
 | `capstone` | 反汇编框架（`fork-gettext`），`qemu` 依赖 |
 | `curl3` | 独立 HTTP/3 客户端（含 MASQUE/CONNECT-UDP 的 `--enable-proxy-http3`，core 没开）；改名与 core 的 curl 共存，仅提供 `curl3` 命令 |
 | `dtc` | 设备树编译器（`libyaml`），`qemu` 依赖 |
