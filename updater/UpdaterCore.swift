@@ -755,10 +755,13 @@ private func rewriteCaskArchBlock(_ content: String, token: String, version: Str
 
 private func caskReleaseAssetName(from url: String) -> String {
     let rawName = URL(string: url)?.lastPathComponent ?? ""
-    return (rawName.removingPercentEncoding ?? rawName)
+    var name = (rawName.removingPercentEncoding ?? rawName)
         .replacingOccurrences(of: " ", with: ".")
         .replacingOccurrences(of: "(", with: ".")
         .replacingOccurrences(of: ")", with: ".")
+    // GitHub 会把资产名中的连续点折叠为一个（qwen-ime 的 `).dmg` → `..dmg` → `.dmg`）。
+    while name.contains("..") { name = name.replacingOccurrences(of: "..", with: ".") }
+    return name
 }
 
 private func uploadIndependentCaskAsset(repo: String, tag: String, sourcePath: String,
@@ -960,11 +963,7 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
             // gh 以本地文件名做资产名：改成上游 basename（单包镜像流同例，见 AGENTS.md §11.5）。
             // 空格同步换成点（GitHub 存资产时会这么干，见本文件单包分支注释；
             // %20 先解码，wireshark 的 appcast 直链是编码形态）。
-            let rawName = URL(fileURLWithPath: d.url).lastPathComponent
-            let assetName = (rawName.removingPercentEncoding ?? rawName)
-                .replacingOccurrences(of: " ", with: ".")
-                .replacingOccurrences(of: "(", with: ".")
-                .replacingOccurrences(of: ")", with: ".")
+            let assetName = caskReleaseAssetName(from: d.url)
             let namedPath = FileManager.default.temporaryDirectory
                 .appendingPathComponent("updater-\(UUID().uuidString)")
                 .appendingPathComponent(assetName).path
@@ -1474,16 +1473,9 @@ func runCheck(_ config: CheckConfig) {
     var finalURL = downloadURL
     if config.isCask && config.uploadRelease {
         let tagName = "\(config.formula)-\(stable)"
-        // GitHub 会把资产名里的空格改成点（如 "checkra1n beta 0.12.4.dmg" 存成
-        // "checkra1n.beta.0.12.4.dmg"，2026-09-05 实测）：上传用名与 cask URL
-        // 必须同步做这个替换，否则 URL 404。单/双架构两条路都要换；
-        // 先解 %20（appcast/URL 编码形态的下载直链，lastPathComponent 拿到的是
-        // 字面 %20，不解就传上去，资产名就烂了）。
-        let assetName = (URL(fileURLWithPath: downloadURL).lastPathComponent
-            .removingPercentEncoding ?? URL(fileURLWithPath: downloadURL).lastPathComponent)
-            .replacingOccurrences(of: " ", with: ".")
-            .replacingOccurrences(of: "(", with: ".")
-            .replacingOccurrences(of: ")", with: ".")
+        // GitHub 会把空格/括号换成点并折叠连续点；上传名与 cask URL 必须使用
+        // 同一个规范化名称，否则会出现 qwen-ime 那种资产已上传但 URL 404。
+        let assetName = caskReleaseAssetName(from: downloadURL)
         let repo = ProcessInfo.processInfo.environment["GITHUB_REPOSITORY"] ?? "Bemly/homebrew-tahoe"
         guard let zipPath = curlDownload(downloadURL) else {
             fail("下载 \(config.formula) 发布包失败，无法上传 Release")

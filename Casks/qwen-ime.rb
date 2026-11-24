@@ -4,7 +4,7 @@ cask "qwen-ime" do
 
   # 镜像到本仓 Release（上游 CDN 链接带构建号与 fp token，直接引用不稳；
   # watcher 下载后上传到 qwen-ime-<ver>，URL 指 Release 资产）。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/qwen-ime-1.2.65.62/QwenimeMac_V1.2.65.62_mac_pf8002_.zh-cn._release_.Build3301546..dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/qwen-ime-1.2.65.62/QwenimeMac_V1.2.65.62_mac_pf8002_.zh-cn._release_.Build3301546.dmg"
   name "Qwen Input Method"
   desc "Qwen AI input method"
   homepage "https://ime.qianwen.com/"
