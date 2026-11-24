@@ -66,11 +66,14 @@ class Binwalk < Formula
 
   def fetch
     rust = prepare_rust
+    ENV["RUSTC"] = (rust/"bin/rustc").to_s
+    ENV.prepend_path "PATH", rust/"bin"
     system rust/"bin/cargo", "fetch", *std_cargo_fetch_args
   end
 
   def install
     rust = prepare_rust
+    ENV["RUSTC"] = (rust/"bin/rustc").to_s
     ENV.prepend_path "PATH", rust/"bin"
     system "cargo", "install", *std_cargo_args
   end
