@@ -65,10 +65,7 @@ class JpegTurbo < Formula
     doc.install docs/"README.md"
     doc.install docs/"LICENSE.md"
 
-    inreplace [lib/"pkgconfig/libjpeg.pc", lib/"pkgconfig/libturbojpeg.pc",
-               lib/"cmake/libjpeg-turbo/libjpeg-turboConfig.cmake",
-               lib/"cmake/libjpeg-turbo/libjpeg-turboTargets.cmake",
-               lib/"cmake/libjpeg-turbo/libjpeg-turboTargets-release.cmake"],
+    inreplace [lib/"pkgconfig/libjpeg.pc", lib/"pkgconfig/libturbojpeg.pc"],
               "/opt/libjpeg-turbo", opt_prefix.to_s
 
     machos.each do |file|
