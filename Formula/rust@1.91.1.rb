@@ -5,6 +5,12 @@ class RustAT1911 < Formula
   url "https://static.rust-lang.org/dist/2025-11-10/cargo-1.91.1-x86_64-apple-darwin.tar.xz"
   sha256 "806bfe86fc4809ec1f5a9b0b0d48cb2de3e0e44a1c46faf47fe041d68f4f1966"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "232bb9c8d2f1fc5a1927cbd39632db51e1d4f5e58276e7491fb22622cf0ed7bd"
+    sha256 cellar: :any, tahoe: "83f05b59d594d6fe52f204f98253f307ecab7a41a58a8968f2f14a6f88c7a677"
+  end
+
   resource "rustc" do
     url "https://static.rust-lang.org/dist/2025-11-10/rustc-1.91.1-x86_64-apple-darwin.tar.xz"
     sha256 "bfd9626778ab8b89bc3fbf5ebb1cadd89dc95aa03341619ce7f1bff232682d2d"
