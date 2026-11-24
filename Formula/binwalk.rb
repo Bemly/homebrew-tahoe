@@ -5,6 +5,12 @@ class Binwalk < Formula
   url "https://github.com/ReFirmLabs/binwalk/archive/refs/tags/v3.1.0.tar.gz"
   sha256 "06f595719417b70a592580258ed980237892eadc198e02363201abe6ca59e49a"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "90d9814e674c0cbd5585c3b3e79f5b693d3ef32a51b931355c84a84731abd045"
+    sha256 cellar: :any_skip_relocation, tahoe: "014845ee1a026a8d19501a40e7453748fb762040f763ec4c81c9997c3d3a555e"
+  end
+
   resource "rustc" do
     url "https://static.rust-lang.org/dist/2025-11-10/rustc-1.91.1-x86_64-apple-darwin.tar.xz"
     sha256 "bfd9626778ab8b89bc3fbf5ebb1cadd89dc95aa03341619ce7f1bff232682d2d"
