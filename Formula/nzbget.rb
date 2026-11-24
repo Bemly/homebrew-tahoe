@@ -25,7 +25,7 @@ class Nzbget < Formula
     etc.install share/"nzbget/nzbget.conf"
 
     chmod 0555, bin/"nzbget"
-    odie "NZBGet 架构或版本自检失败" unless Utils.safe_popen_read(bin/"nzbget", "-V").include?(version.to_s)
+    odie "NZBGet 架构或版本自检失败" unless Utils.safe_popen_read(bin/"nzbget", "--version").include?(version.to_s)
   end
 
   service do
@@ -37,6 +37,6 @@ class Nzbget < Formula
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/nzbget -V")
+    assert_match version.to_s, shell_output("#{bin}/nzbget --version")
   end
 end
