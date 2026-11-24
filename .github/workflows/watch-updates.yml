@@ -100,6 +100,8 @@ jobs:
               wait -n || true
               running=$((running - 1))
             done
+            f="$(basename "${TASK_RB[$idx]}" .rb)"
+            echo "[$((idx + 1))/${#TASK_RB[@]}] 开始检查 $f"
             run_one "$idx" "${TASK_RB[$idx]}" &
             PIDS[idx]=$!
             running=$((running + 1))
