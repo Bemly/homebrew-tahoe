@@ -7,6 +7,12 @@ class Libtasn1 < Formula
   license "LGPL-2.1-or-later"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "73b2b2e7297a7eca77df67ab92c61c7c13c2613d21cc415c7d29c1c94baae7e8"
+    sha256 cellar: :any, tahoe: "362cac70002e1520e8d46b1cd88144e0b1830426e0eb9403e26678aa4da3dd9f"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
