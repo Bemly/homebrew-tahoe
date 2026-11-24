@@ -13,7 +13,8 @@ class Libusbmuxd < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "e8fa74dfca805b270d70356262d0bf76e5b445ff5f247220b83eaee098eaa0d7"
+    manifest_sha256 "a37ec05b1776aaac900e97beae6a23033980d451b5ec546171c85c7493067cef"
+    sha256 cellar: :any, tahoe: "87292cbe0f795c01a4967ea960c7be73139cb96ce3ed4184432f56b21830b361"
   end
 
   head do
