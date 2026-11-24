@@ -21,7 +21,7 @@ class Glib < Formula
   depends_on "bemly/tahoe/fork-gettext" => :build
 
   depends_on "bemly/tahoe/fork-pkgconf" => [:build, :test]
-  depends_on "bison" => :build
+  depends_on "bemly/tahoe/fork-bison" => :build
 
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build

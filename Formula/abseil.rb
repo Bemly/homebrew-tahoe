@@ -12,8 +12,7 @@ class Abseil < Formula
     sha256 cellar: :any, tahoe: "788243a32e65581b487b25416675886a29ddf01c3831e984aa43797e52d5f00e"
   end
 
-  depends_on "cmake" => [:build, :test]
-  depends_on "googletest" => :build # For test helpers
+  depends_on "bemly/tahoe/cmake" => [:build, :test]
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
@@ -22,18 +21,13 @@ class Abseil < Formula
   def install
     ENV.runtime_cpu_detection
 
-    # Install test helpers.
-    extra_cmake_args = %w[ABSL_BUILD_TEST_HELPERS ABSL_USE_EXTERNAL_GOOGLETEST ABSL_FIND_GOOGLETEST].map do |arg|
-      "-D#{arg}=ON"
-    end
-
     system "cmake", "-S", ".", "-B", "build",
                     "-DCMAKE_INSTALL_RPATH=#{rpath}",
                     "-DCMAKE_CXX_STANDARD=17",
                     "-DBUILD_SHARED_LIBS=ON",
                     "-DABSL_PROPAGATE_CXX_STD=ON",
                     "-DABSL_ENABLE_INSTALL=ON",
-                    *extra_cmake_args, *std_cmake_args
+                    *std_cmake_args
     system "cmake", "--build", "build"
     system "cmake", "--install", "build"
   end

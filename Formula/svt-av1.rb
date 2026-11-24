@@ -23,7 +23,7 @@ class SvtAv1 < Formula
   depends_on macos: :tahoe
 
   on_intel do
-    depends_on "nasm" => :build
+    depends_on "bemly/tahoe/fork-nasm" => :build
   end
 
   resource "homebrew-testvideo" do
