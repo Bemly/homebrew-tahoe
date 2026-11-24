@@ -16,6 +16,12 @@ class BdwGc < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "eb56ad49b09e11f6b49df12723712912500ad3f6e7fae5948f12ff474f17913d"
+    sha256 cellar: :any, tahoe: "4152fba82e2c2ea9881a9c1f41e36bb503e42829c5db75c5cd61c92641b75afa"
+  end
+
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
