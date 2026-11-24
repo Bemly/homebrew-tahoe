@@ -6,6 +6,12 @@ class ForkNasm < Formula
   license "BSD-2-Clause"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "67ffffa776223333274480bf954f764596f6884658306cbe86fd4bec56f3826e"
+    sha256 cellar: :any_skip_relocation, tahoe: "a844a3b06e53dba21877415a94a27ef2a794616e80fac478ddcb94983a9a0eab"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
