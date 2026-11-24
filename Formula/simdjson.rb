@@ -13,7 +13,7 @@ class Simdjson < Formula
     sha256 cellar: :any, tahoe: "369c448fb3212f09a7788f0496d50a6268a584df7500ec78ba772dfd3d2be81a"
   end
 
-  depends_on "cmake" => :build
+  depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

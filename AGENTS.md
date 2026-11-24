@@ -227,7 +227,7 @@ end
 | `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；交叉工具链依赖 |
 | `python@3.15` | 3.15.2 | core 拷入（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；meson 依赖；与 core 同名 |
 | `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；`glib`/`gnutls`/`jpeg-turbo`/`libpng`/`libusb`/`lzo`/`ncurses`/`pixman`/`capstone`/`dtc`/`libslirp`/`vde`/fork-zstd |
-| `simdjson` | 5.2.0 | core 同名接管（源码） | cmake |
+| `simdjson` | 5.2.0 | core 同名接管（源码） | 本 tap `cmake` |
 | `snappy` | 1.3.1 | core 同名接管（源码） | cmake；fork-pkgconf 构建 |
 | `socat` | 1.8.1.3 | core 拷入（源码） | fork-openssl@3；test 走回环 |
 | `spirv-tools` | 1.4.363.0 | core 同名接管（源码） | cmake；`glslang` 等着色器工具链依赖；零运行时依赖（`spirv-headers` 为纯构建依赖 `all` 瓶） |
