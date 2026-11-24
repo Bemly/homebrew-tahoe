@@ -246,7 +246,7 @@ brew install --cask bemly/tahoe/antigravity
 
 | 场景 | 处理 |
 | --- | --- |
-| 软件有新版本 | `watch-updates` 把公式改动暂存到临时分支；`bottle.yml` 每个公式制瓶成功后才把该版本发布到 `main` |
+| 软件有新版本 | `watch-updates` 把公式改动上传为 artifact；`bottle.yml` 在 `main` 工作区应用，每个公式制瓶成功后才发布该版本 |
 | GHCR 尚未出瓶 | `main` 保持带旧瓶的版本；watcher 更新不会逼用户源码编译 |
 | 上游资源取不到或需人工同步 | `watch-updates.yml` 自动开 `automated-alert` issue 告警 |
 

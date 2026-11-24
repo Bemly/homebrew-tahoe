@@ -264,7 +264,7 @@ manual escape hatch for maintainers).
 
 | Scenario | Behavior |
 | --- | --- |
-| New version | `watch-updates` stages formula changes on a temporary branch; `bottle.yml` publishes each formula to `main` only after its bottle succeeds |
+| New version | `watch-updates` uploads formula changes as an artifact; `bottle.yml` applies them on `main` and publishes each formula only after its bottle succeeds |
 | No bottle in GHCR yet | `main` keeps the previous bottled version; watcher updates never force a source build |
 | Upstream asset unavailable / needs manual sync | `watch-updates.yml` opens an `automated-alert` issue |
 

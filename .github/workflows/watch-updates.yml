@@ -266,18 +266,22 @@ jobs:
             echo "dry_run=true：文件已就地改写但不提交、不触发制瓶。"
             exit 0
           fi
-          # 公式与 cask 分离发布：cask 资产已镜像，可直接提交 main；公式先暂存到
-          # 临时分支，等 bottle.yml 逐个制瓶成功后才会把新版本+瓶块提交 main。
+          # 公式与 cask 分离发布：cask 资产已镜像，可直接提交 main；公式候选补丁
+          # 上传为 Actions artifact，bottle.yml 下载到 main 工作区后逐包制瓶提交。
           updated_casks=()
           for f in "${updated[@]}"; do
             [[ -f "Casks/$f.rb" ]] && updated_casks+=("$f")
           done
           formula_list="$(IFS=,; echo "${updated_formulae[*]}")"
           cask_list="$(IFS=,; echo "${updated_casks[*]}")"
-          formula_patch="$(mktemp)"
+          formula_patch="$RUNNER_TEMP/formula-updates.patch"
+          formula_list_file="$RUNNER_TEMP/formula-list.txt"
           if [[ ${#updated_formulae[@]} -gt 0 ]]; then
             git diff --binary -- Formula > "$formula_patch"
+            printf '%s\n' "$formula_list" > "$formula_list_file"
             git checkout -- Formula
+            echo "has_formula_updates=true" >> "$GITHUB_OUTPUT"
+            echo "formula_list=$formula_list" >> "$GITHUB_OUTPUT"
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -291,23 +295,32 @@ jobs:
             echo "已提交 cask 更新：${cask_list}"
           fi
           if [[ ${#updated_formulae[@]} -gt 0 ]]; then
-            branch="watcher/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-            git fetch origin main
-            git switch -c "$branch" origin/main
-            git apply "$formula_patch"
-            git add Formula/*.rb
-            git commit -m "watcher: stage ${formula_list}"
-            git push -u origin "$branch"
-            echo "公式已暂存到 ${branch}，触发单次批量制瓶（formula=${formula_list}）"
-            gh workflow run "Build bottle and publish to GHCR" \
-              --repo bemly/homebrew-tahoe \
-              --ref "$branch" \
-              -f formula="$formula_list" \
-              -f source_ref="$branch"
+            echo "公式候选补丁已准备，等待上传 artifact 后触发单次批量制瓶：${formula_list}"
           else
             echo "已提交更新（仅 cask，无需制瓶）"
           fi
-          rm -f "$formula_patch"
+
+      - name: 上传公式候选补丁
+        if: steps.batch.outputs.has_formula_updates == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: formula-updates
+          path: |
+            ${{ runner.temp }}/formula-updates.patch
+            ${{ runner.temp }}/formula-list.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: 触发批量制瓶
+        if: steps.batch.outputs.has_formula_updates == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORMULA_LIST: ${{ steps.batch.outputs.formula_list }}
+        run: |
+          gh workflow run "Build bottle and publish to GHCR" \
+            --repo bemly/homebrew-tahoe \
+            -f formula="$FORMULA_LIST" \
+            -f watcher_run_id="$GITHUB_RUN_ID"
 
       - name: 触发补丁成品构建（patched.yml）
         if: (!inputs.dry_run) && steps.batch.outputs.patched != ''
