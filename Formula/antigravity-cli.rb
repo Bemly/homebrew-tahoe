@@ -5,6 +5,12 @@ class AntigravityCli < Formula
   version "1.5.15"
   sha256 "91fee043a384b76cee5d5f1568b946ab2f25bf38c938f0bd7c4b27fefa0c4e43"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "1c64001188017a774a3c19754f417e61986656a2f68cb70d5647aa89c1444af7"
+    sha256 cellar: :any_skip_relocation, tahoe: "0af8d06b8da7b84ac1bbc4e08bec95ae9a3dbf7832514c5f82053a3d5acc96d7"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
