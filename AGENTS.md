@@ -152,7 +152,7 @@ end
 | `openjdk@26` | 26.0.2.1_macos | jdk.java.net GA（锁 26 线） | 与 `openjdk` 同源同物 |
 | `postgresql@13` | 13.23 | EDB `postgresql-<ver>-1-osx-binaries.zip` | 只装 bin/include/lib/share（跳过 pgAdmin 等 app）；`keg_only`（自带 openssl/icu 会撞 core）；与 core 同名 |
 | `protobuf` | 36.2 | 官方 `protoc-<ver>-osx-x86_64.zip` | 预编译；与 core 同名 |
-| `ripgrep` | 15.2.0 | 官方 macOS 双架构预编译 | `rg` + man/补全；零构建依赖；opencode 依赖 |
+| `ripgrep` | 16.0.0 | 官方 macOS 双架构预编译 | `rg` + man/补全；零构建依赖；opencode 依赖 |
 | `rustup` | 1.29.3 | static.rust-lang.org 裸二进制 | cargo/rustc 垫片；跟 release-stable.toml |
 | `scrcpy` | 5.0.1 | GitHub `scrcpy-macos-x86_64-v<ver>.tar.gz` | 静态；整包进 libexec |
 | `sst` | 4.17.2 | anomalyco raw（Intel 段） | `sst version` 取版本 |
@@ -227,7 +227,7 @@ end
 | `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；交叉工具链依赖 |
 | `python@3.15` | 3.15.2 | core 拷入（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；meson 依赖；与 core 同名 |
 | `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；`glib`/`gnutls`/`jpeg-turbo`/`libpng`/`libusb`/`lzo`/`ncurses`/`pixman`/`capstone`/`dtc`/`libslirp`/`vde`/fork-zstd |
-| `simdjson` | 5.2.0 | core 同名接管（源码） | 本 tap `cmake` |
+| `simdjson` | 5.3.0 | core 同名接管（源码） | 本 tap `cmake` |
 | `snappy` | 1.3.1 | core 同名接管（源码） | cmake；fork-pkgconf 构建 |
 | `socat` | 1.8.1.3 | core 拷入（源码） | fork-openssl@3；test 走回环 |
 | `spirv-tools` | 1.4.363.0 | core 同名接管（源码） | cmake；`glslang` 等着色器工具链依赖；零运行时依赖（`spirv-headers` 为纯构建依赖 `all` 瓶） |
