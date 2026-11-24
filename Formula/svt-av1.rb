@@ -15,7 +15,8 @@ class SvtAv1 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "a22e8c54656c360c50383dcca8918c0f028c0c674efbcd055273b04f4d367a33"
+    manifest_sha256 "6b97770bfd74c4118af59da82604ac4d165d484ea05171700cfab2ac2497b23d"
+    sha256 cellar: :any, tahoe: "3b1b74465366626d6be048dd419096ff0b9b598444826798bccde5515aff56d1"
   end
 
   depends_on "bemly/tahoe/cmake" => :build
