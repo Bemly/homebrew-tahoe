@@ -10,7 +10,8 @@ class Libnghttp3 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "e4b0dc2c45b91e60e2a4cae13c9e2a9a0407c30affdb92514c261dbdb9ce6c24"
+    manifest_sha256 "c4830b37b121ab787783adf1e8a7707e601c8084eec1aec181ddb086ab1e81bd"
+    sha256 cellar: :any, tahoe: "883369a92e331eb6bfa0223fcc866b95e3fbea9a6f93e68b93efbc23af544360"
   end
 
   depends_on "bemly/tahoe/cmake" => :build
