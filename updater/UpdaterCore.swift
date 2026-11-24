@@ -1223,7 +1223,13 @@ func runCheck(_ config: CheckConfig) {
             emit("current_version=\(current)")
             return
         }
-        upstream = release
+        if release.downloadURL.isEmpty, let template = config.downloadURL {
+            upstream = UpstreamRelease(version: release.version,
+                                       downloadURL: template(release.version),
+                                       sha256: release.sha256)
+        } else {
+            upstream = release
+        }
         print("上游版本 : \(upstream.version)（自定义更新接口）")
     } else if let rawURL = config.rawFormulaURL {
         let (status, body) = curlText(rawURL)

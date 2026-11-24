@@ -16,7 +16,8 @@ struct SwiftCheck {
                       let json = (try? JSONSerialization.jsonObject(with: Data(body.utf8))) as? [[String: Any]],
                       let last = json.last,
                       let v = last["name"] as? String, !v.isEmpty else { return nil }
-                return UpstreamRelease(version: v, downloadURL: "", sha256: nil)
+                let url = "https://download.swift.org/swift-\(v)-release/xcode/swift-\(v)-RELEASE/swift-\(v)-RELEASE-osx.pkg"
+                return UpstreamRelease(version: v, downloadURL: url, sha256: nil)
             }
         ))
     }
