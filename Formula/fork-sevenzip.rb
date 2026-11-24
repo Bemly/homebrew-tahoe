@@ -7,6 +7,12 @@ class ForkSevenzip < Formula
 
   url "https://github.com/ip7z/7zip/releases/download/#{version}/7z#{version.to_s.delete(".")}-mac-x64.tar.xz"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "32336c12bbd9f5f99315de3b746a88812262e64208ca1c5e3d2e11259a34dc5d"
+    sha256 cellar: :any_skip_relocation, tahoe: "d6887efd541d3773104c3294c86eb4fca57db59faa3d6d552e7d1ac757691c33"
+  end
+
   keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
