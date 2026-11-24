@@ -9,6 +9,12 @@ class Ffmpeg < Formula
   sha256 "9962f7b3c01af9ac89673c91df9ef998343a280ac0857c295e2d2a301820598a"
   license "GPL-3.0-or-later"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "d0b82a3d6c17a11486441dc5c2809ccfd59912a00303325d657980791e72352c"
+    sha256 cellar: :any_skip_relocation, tahoe: "042a15f5cf2fa2c9487a654d79ddc14e5bf04278c5a1fc8544d6782e057df8dc"
+  end
+
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
