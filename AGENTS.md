@@ -409,6 +409,16 @@ brew trust bemly/tahoe
 - **汉化与注入**：`build.sh` 通过 `git ls-remote --tags` 自动解析汉化引擎最新适配 tag（缺失直接失败，绝不拿旧字典硬上）；引擎目录显式置 `{"type":"commonjs"}` 防外部 `"type":"module"` 污染；`ag_audit.js check` 作为硬质量门；`inject-widget.mjs` 禁用 `dist/updater.js` 中 4 处更新锚点（`AutoUpdater` 日志归零），并在 `dist/preload.js` 注入页内 DOM 挂件（门控选择器 `[data-testid="agent-input-box"]`，图片走 base64 data URL）及 `extra-l10n.js` 补充词典（元素级 `FILTER_REJECT` 剪枝、词边界匹配）。
 - **重签与交付**：`codesign --force --deep --sign -` 绝不保留 hardened runtime（否则无 Team ID 会 SIGABRT）；cask 的 `postflight_steps` 用 `xattr -d -r -s com.apple.quarantine` 连同 framework 符号链接一起清零（`must_succeed: false`）。因 `hdiutil create` 不逐字节可复现，cask sha256 必须取当次上传 Release 的 `.sha256` sidecar（由 `patched.yml` 回填并 lint 后提交）。宿主版本动态取自官方下载页；`official-sha256.txt` 只按版本 pin 安装包哈希，不锁版本。锁定旧版本时仍须同时提供 `version`、`build` 与 `official_sha`。
 
+### 11.7 Binwalk / NZBget / Sevenzip 构建与重打包经验
+
+- **上游证据与最终形态**：`nzbget 26.3` 官方提供 `nzbget-<ver>-bin-macos-x64.zip`，直接重打包 CLI/WebUI；`sevenzip 26.06` 官方提供 Intel `7zz`，由 `binwalk`、`nzbget`、`jpeg-turbo` 闭环引用并恢复原名；`binwalk 3.1.0` 无官方 macOS 二进制，但 Cargo 依赖均为纯 Rust，**不链接 LLVM**，无需本仓 LLVM 19。
+- **构建工具链内嵌，不单独出瓶**：Binwalk 公式内用官方 `rustc`/`cargo`/`rust-std` 1.91.1 资源组装临时工具链。曾把 Rust 1.91.1 单独做成公式并制瓶，体积过大导致 hosted runner 失联；用户端不需要该构建工具，最终不回退为独立 Rust 公式。
+- **`nounzip` 与解包路径**：`using: :nounzip` 会禁止解包、只复制压缩文件，Rust 的 `.tar.xz` 绝不能使用；所有组件定位用 `Dir["**/bin/rustc"]` 等通配，兼容 Homebrew 是否自动下降。
+- **`Pathname#install` 是移动语义**：先 `share.install` 后再从源目录读取许可证/配置会失败；许可证先安装，配置从已安装的 `share` 路径读取。`rustc` 组件已创建 `lib/rustlib/x86_64-apple-darwin`（链接器工具），`rust-std` 必须把 target 目录**内容**合并进去，不能再次移动同名目录，否则会嵌套成 `x86_64-apple-darwin/x86_64-apple-darwin`。
+- **Cargo 环境**：显式设置 `ENV["RUSTC"]` 指向内嵌 `rustc`，并 prepend 工具链 `bin`；只改 PATH 仍会被 Homebrew rustc shim 拦截。`std_cargo_args` 已包含 `--locked` 与 `--offline`，不得重复传 `--locked`。
+- **NZBget 细节**：官方 zip 唯一顶层是 `NZBGet.app`，daemon 根目录用 `Dir["**/Resources/daemon/usr/local"]` 定位；官方配置已是 `DirectWrite=no`、`ArticleCache=700`，只改 `SevenZipCmd`/`UnrarCmd` 为 `7zz`。`-V` 查询运行中的服务器，本地版本自检必须用 `--version`。
+- **验证闭环**：CI 用 `macos-26-intel` 真实编译 Binwalk；本地只用 `brew readall`、`brew fetch` 和临时工具链编译探针。出瓶后执行 `brew fetch --force --bottle-tag=tahoe` 实拉校验，并核对 GHCR 匿名 tags。
+
 ## 12. 后续演进
 
 - [ ] 在真实多包更新下持续验证 `watch-updates.yml` → 单次 `bottle.yml` 端到端链路稳定性。
