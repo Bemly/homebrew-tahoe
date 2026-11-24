@@ -6,6 +6,12 @@ class Nasm < Formula
   license "BSD-2-Clause"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "3817cc62ce5d07ec4d956a0a864d5fe1f44a36263825cba228e6b0e8f656f2a2"
+    sha256 cellar: :any_skip_relocation, tahoe: "14aad678884d6d934b5b5ecdbf07c85cedd8c34cc70dce939f81d7cb4cf18c6f"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
