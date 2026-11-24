@@ -27,7 +27,7 @@ class Binwalk < Formula
   end
 
   def install
-    system "cargo", "install", *std_cargo_args, "--locked"
+    system "cargo", "install", *std_cargo_args
   end
 
   test do
