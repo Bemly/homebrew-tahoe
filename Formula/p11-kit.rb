@@ -17,7 +17,7 @@ class P11Kit < Formula
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-libtasn1"
+  depends_on "bemly/tahoe/libtasn1"
   depends_on "ca-certificates"
   depends_on macos: :tahoe
 

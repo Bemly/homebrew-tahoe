@@ -27,7 +27,7 @@ class Git < Formula
   depends_on "bemly/tahoe/fork-gettext" => :build
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-pcre2"
+  depends_on "bemly/tahoe/pcre2"
   depends_on macos: :tahoe
 
   uses_from_macos "curl"
@@ -86,7 +86,7 @@ class Git < Formula
     ENV["PERL_PATH"] = which("perl")
     ENV["USE_LIBPCRE2"] = "1"
     ENV["INSTALL_SYMLINKS"] = "1"
-    ENV["LIBPCREDIR"] = formula_opt_prefix("bemly/tahoe/fork-pcre2")
+    ENV["LIBPCREDIR"] = formula_opt_prefix("bemly/tahoe/pcre2")
     ENV["V"] = "1" # build verbosely
 
     perl_version = Utils.safe_popen_read("perl", "--version")[/v(\d+\.\d+)(?:\.\d+)?/, 1]

@@ -30,7 +30,7 @@ class ForkZstd < Formula
 
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-lz4"
+  depends_on "bemly/tahoe/lz4"
   depends_on "bemly/tahoe/fork-xz"
   depends_on macos: :tahoe
 

@@ -1,4 +1,4 @@
-class ForkJsonC < Formula
+class JsonC < Formula
   desc "JSON parser for C"
   homepage "https://github.com/json-c/json-c/wiki"
   url "https://s3.amazonaws.com/json-c_releases/releases/json-c-0.19.tar.gz"
@@ -12,14 +12,6 @@ class ForkJsonC < Formula
     url :head
     regex(/^json-c[._-](\d+(?:\.\d+)+)(?:[._-]\d{6,8})?$/i)
   end
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "30f70ba1e404391dd6b8ed8df5254769de66adab6c34e5612126f0549c6f9bdb"
-    sha256 cellar: :any, tahoe: "77be01d956964c2b04eedb8a74a045748b637448e444947e6da159e0e0f890bd"
-  end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64

@@ -37,7 +37,7 @@ class Gnutls < Formula
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/fork-gmp"
   depends_on "bemly/tahoe/libidn2"
-  depends_on "bemly/tahoe/fork-libtasn1"
+  depends_on "bemly/tahoe/libtasn1"
   depends_on "bemly/tahoe/fork-libunistring"
   depends_on "bemly/tahoe/nettle"
   depends_on "bemly/tahoe/p11-kit"

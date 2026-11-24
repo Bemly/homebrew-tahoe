@@ -61,9 +61,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **146 formulae** (60 prebuilt + 70 source-built + 16 `fork-*` dependency forks) and **25 casks**.
+> Total: **146 formulae** (61 prebuilt + 74 source-built + 11 `fork-*` dependency forks) and **25 casks**.
 
-### CLI & Developer Tools — Prebuilt Formulae (60)
+### CLI & Developer Tools — Prebuilt Formulae (61)
 
 | Package | Notes |
 | --- | --- |
@@ -101,6 +101,7 @@ brew install --cask bemly/tahoe/antigravity
 | `llvm` | Compiler infrastructure, upstream 19.1.7 Intel macOS prebuilt pinned (later releases are ARM64-only; building 23.x from source exceeds the 6h CI limit); thin x86_64, zero deps, keg-only; point bindgen at it via `LIBCLANG_PATH` |
 | `llvm-mingw` | LLVM/Clang-based mingw-w64 cross toolchain (Intel host → Windows), version tracked from GitHub releases |
 | `mufetch` | System info tool, from `mufetch_darwin_x86_64.tar.gz` |
+| `nasm` | Official NASM 3.02 macOS universal package, thinned to x86_64 (`nasm` + `ndisasm`); build dependency of `svt-av1`; same-name conflict with core |
 | `ninja` | Small build system, upstream universal binary (Intel slice) |
 | `nzbget` | Binary newsgrabber, official `nzbget-<ver>-bin-macos-x64.zip` prebuilt with CLI and WebUI; uses this tap's `sevenzip`; same-name conflict with core |
 | `node` | Node.js runtime, taken directly from the official `node-v<ver>-darwin-x64.tar.gz` |
@@ -142,10 +143,10 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `curl3` | Independent HTTP/3 client with MASQUE/CONNECT-UDP (`--enable-proxy-http3`, core doesn't enable it); renamed to coexist with core's curl, ships the `curl3` command only |
 | `dtc` | Device tree compiler (`libyaml`); bottled dependency of `qemu` |
 | `freeling` | Language analysis suite (tokenizing, POS tagging, NER); unbundles bundled dynet/eigen in favor of `boost@1.85`, `dynet`, `icu4c@78`; same-name conflict with core |
-| `git` | Distributed version control system (`fork-pcre2`/`fork-gettext` on macOS with CommonCrypto); same-name conflict with core |
+| `git` | Distributed version control system (`pcre2`/`fork-gettext` on macOS with CommonCrypto); same-name conflict with core |
 | `gnupg` | GNU Privacy Guard (OpenPGP), compiled from core sources using `gnutls`, `libusb`, `fork-readline`, `fork-gettext`, and the GnuPG C library stack; same-name conflict with core |
 | `graphviz` | Graph visualization software, zero-runtime-dependency build (Quartz and built-in plugins provide PDF/PNG/SVG) |
-| `libimobiledevice` | iOS device communication tools (`idevice*`), compiled with `libimobiledevice-glue`, `libplist`, `libtatsu`, `libusbmuxd`, `fork-libtasn1`, `fork-openssl@4` |
+| `libimobiledevice` | iOS device communication tools (`idevice*`), compiled with `libimobiledevice-glue`, `libplist`, `libtatsu`, `libusbmuxd`, `libtasn1`, `fork-openssl@4` |
 | `libimobiledevice-glue` | Glue library for the `libimobiledevice` stack (`libplist`); same-name conflict with core |
 | `libnghttp3` | HTTP/3 C library; bottled dependency of `curl3` |
 | `libngtcp2` | QUIC protocol C library (`fork-openssl@4`); bottled dependency of `curl3` |
@@ -167,15 +168,15 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`); same-name conflict with core |
 | `wimlib` | Library and `wimlib-imagex` tools for WIM images (zero macOS runtime dependencies, built with `fork-pkgconf`) |
 
-### Runtime Dependency Layer — Same-Name Takeovers (38 source libraries) & `fork-*` (16)
+### Runtime Dependency Layer — Same-Name Takeovers (42 source libraries) & `fork-*` (11)
 
 Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are either taken over under their core name (when no `homebrew/core` dependents remain on a typical setup) or kept renamed as `keg_only` `fork-*` packages:
 
-- **Same-name dependency libraries (38 source-built formulae, totaling 70 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
-  `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libusb`, `libyaml`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
+- **Same-name dependency libraries (42 source-built formulae, totaling 74 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
+  `abseil`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `json-c`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libtasn1`, `libusb`, `libyaml`, `lz4`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pcre2`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
-- **Renamed `keg_only` `fork-*` packages (16)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
-  `fork-bdw-gc`, `fork-bison`, `fork-gettext`, `fork-gmp`, `fork-json-c`, `fork-libtasn1`, `fork-libunistring`, `fork-lz4`, `fork-nasm`, `fork-openssl@3`, `fork-openssl@4`, `fork-pcre2`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
+- **Renamed `keg_only` `fork-*` packages (11)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
+  `fork-bdw-gc`, `fork-bison`, `fork-gettext`, `fork-gmp`, `fork-libunistring`, `fork-openssl@3`, `fork-openssl@4`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
 
 ### Desktop Apps & Input Methods — Casks (25)
 
@@ -213,7 +214,7 @@ Homebrew forbids installing formulae or casks with the same name/token from two
 different taps at the same time — they share the same `Cellar/<name>` or `Caskroom/<token>`
 directory.
 
-Except for renamed `keg_only` `fork-*` packages (14) and tap-exclusive packages (`curl3`,
+Except for renamed `keg_only` `fork-*` packages (11) and tap-exclusive packages (`curl3`,
 `ffplay`, `ffprobe`, `ffserver`, `antigravity-cli`, `aarch64-unknown-linux-gnu`,
 `x86_64-unknown-linux-gnu`, `llvm-mingw`, `cmd`, `deepseek-harness`, `frida-server`,
 `mufetch`, `sst`, `torpedo`, and tap-only casks), **any package sharing a name with

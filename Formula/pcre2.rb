@@ -1,4 +1,4 @@
-class ForkPcre2 < Formula
+class Pcre2 < Formula
   desc "Perl compatible regular expressions library with a new API"
   homepage "https://www.pcre.org/"
   url "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.49/pcre2-10.49.tar.bz2"
@@ -11,11 +11,6 @@ class ForkPcre2 < Formula
     regex(/^pcre2[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "a8a43fcd6829276041a6eef2523758b4390dcc8af698317c75abadb1ba6b0f9f"
-  end
-
   head do
     url "https://github.com/PCRE2Project/pcre2.git", branch: "main"
 
@@ -23,8 +18,6 @@ class ForkPcre2 < Formula
     depends_on "bemly/tahoe/automake" => :build
     depends_on "libtool" => :build
   end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
   depends_on macos: :tahoe

@@ -30,7 +30,7 @@ class Glib < Formula
   depends_on "bemly/tahoe/python@3.15" => :build
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-pcre2"
+  depends_on "bemly/tahoe/pcre2"
   depends_on macos: :tahoe
 
   # This regex is intended to avoid the `Gnome` strategy's version filtering

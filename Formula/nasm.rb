@@ -1,18 +1,10 @@
-class ForkNasm < Formula
+class Nasm < Formula
   desc "Netwide Assembler prebuilt for Intel macOS"
   homepage "https://www.nasm.us/"
   url "https://www.nasm.us/pub/nasm/releasebuilds/3.02/macosx/nasm-3.02-macosx.zip"
   sha256 "4c1bbb09853f5f5ffc9b7832cbc9366c4761bc79ce7ffb148b0e427e5f3fa114"
   license "BSD-2-Clause"
   compatibility_version 1
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "67ffffa776223333274480bf954f764596f6884658306cbe86fd4bec56f3826e"
-    sha256 cellar: :any_skip_relocation, tahoe: "a844a3b06e53dba21877415a94a27ef2a794616e80fac478ddcb94983a9a0eab"
-  end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
   depends_on macos: :tahoe

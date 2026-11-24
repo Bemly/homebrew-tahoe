@@ -1,4 +1,4 @@
-class ForkLibtasn1 < Formula
+class Libtasn1 < Formula
   desc "ASN.1 structure parser library"
   homepage "https://www.gnu.org/software/libtasn1/"
   url "https://ftpmirror.gnu.org/libtasn1/libtasn1-4.21.0.tar.gz"
@@ -6,13 +6,6 @@ class ForkLibtasn1 < Formula
   sha256 "1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87"
   license "LGPL-2.1-or-later"
   compatibility_version 1
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "17fe673a0c54ca7670336160a49906b414c1e42a7f53e00805d3aa03cf10ac93"
-  end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
   depends_on macos: :tahoe

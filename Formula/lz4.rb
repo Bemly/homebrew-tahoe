@@ -1,4 +1,4 @@
-class ForkLz4 < Formula
+class Lz4 < Formula
   desc "Extremely Fast Compression algorithm"
   homepage "https://lz4.github.io/lz4/"
   url "https://github.com/lz4/lz4/archive/refs/tags/v1.11.1.tar.gz"
@@ -14,14 +14,6 @@ class ForkLz4 < Formula
     url :stable
     strategy :github_latest
   end
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "429a7983c690dd2e8dc1feb74f95ea5a1272e75db0f2b70512c9f41f8d9609c9"
-    sha256 cellar: :any, tahoe: "ea7cf1918903a9ae6cdfb6d10f2e4467d7fa00a8ca18b6de7b00c03914e9dbcf"
-  end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64

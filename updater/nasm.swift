@@ -1,12 +1,12 @@
-// updater/fork-nasm.swift —— 官方 NASM macOS Intel 预编译包检查器
+// updater/nasm.swift —— 官方 NASM macOS Intel 预编译包检查器
 
 import Foundation
 
 @main
-struct ForkNasmCheck {
+struct NasmCheck {
     static func main() {
         runCheck(CheckConfig(
-            formula: "fork-nasm",
+            formula: "nasm",
             customRelease: {
                 let (status, html) = curlText("https://www.nasm.us/pub/nasm/releasebuilds/")
                 guard status == 0,

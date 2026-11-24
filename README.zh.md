@@ -50,9 +50,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **146 个公式**（60 个预编译直引 + 70 个源码代编译 + 16 个 `fork-*` 依赖层）与 **25 个 cask**。
+> 共收录 **146 个公式**（61 个预编译直引 + 74 个源码代编译 + 11 个 `fork-*` 依赖层）与 **25 个 cask**。
 
-### CLI 与开发工具 — 预编译直引公式（60 个）
+### CLI 与开发工具 — 预编译直引公式（61 个）
 
 | 软件 | 说明 |
 | --- | --- |
@@ -90,6 +90,7 @@ brew install --cask bemly/tahoe/antigravity
 | `llvm` | 编译器基础设施，上游 19.1.7 Intel 预编译 pinned（后续版本仅 ARM64；23.x 源码编译超 6 小时 CI 上限）；thin x86_64，零依赖，keg-only；bindgen 用 `LIBCLANG_PATH` 指过去即用 |
 | `llvm-mingw` | LLVM/Clang 的 mingw-w64 交叉工具链（Intel host → Windows），版本跟 GitHub release |
 | `mufetch` | 系统信息工具，取 release 的 `mufetch_darwin_x86_64.tar.gz` |
+| `nasm` | 官方 NASM 3.02 macOS universal 预编译包（thin x86_64，含 `nasm`/`ndisasm`）；`svt-av1` 构建依赖；与 core 同名 |
 | `ninja` | 小而快的构建系统，上游 universal 包（Intel 切片） |
 | `nzbget` | 二进制新闻组下载工具，官方 `nzbget-<ver>-bin-macos-x64.zip` 预编译包（CLI + WebUI）；运行时使用本仓 `sevenzip`；与 core 同名 |
 | `node` | Node.js 运行时，直接取官方 `node-v<ver>-darwin-x64.tar.gz` |
@@ -131,10 +132,10 @@ brew install --cask bemly/tahoe/antigravity
 | `curl3` | 独立 HTTP/3 客户端（含 MASQUE/CONNECT-UDP 的 `--enable-proxy-http3`，core 没开）；改名与 core 的 curl 共存，仅提供 `curl3` 命令 |
 | `dtc` | 设备树编译器（`libyaml`），`qemu` 依赖 |
 | `freeling` | 自然语言分析器套件（分词 / 词性标注 / 命名实体等），解捆自带 dynet/eigen，改用 `boost@1.85`、`dynet`、`icu4c@78`；与 core 同名 |
-| `git` | 分布式版本控制系统（macOS 用 CommonCrypto，依赖 `fork-pcre2`/`fork-gettext`）；与 core 同名 |
+| `git` | 分布式版本控制系统（macOS 用 CommonCrypto，依赖 `pcre2`/`fork-gettext`）；与 core 同名 |
 | `gnupg` | GNU Privacy Guard（OpenPGP），使用 `gnutls`、`libusb`、`fork-readline`、`fork-gettext` 与 GnuPG C 库全家桶；与 core 同名 |
 | `graphviz` | 图形可视化软件，零运行时依赖构建（Quartz 与内置插件支持 PDF/PNG/SVG） |
-| `libimobiledevice` | iOS 设备通信工具集（`idevice*`），使用本源 `libimobiledevice-glue`、`libplist`、`libtatsu`、`libusbmuxd`、`fork-libtasn1`、`fork-openssl@4` |
+| `libimobiledevice` | iOS 设备通信工具集（`idevice*`），使用本源 `libimobiledevice-glue`、`libplist`、`libtatsu`、`libusbmuxd`、`libtasn1`、`fork-openssl@4` |
 | `libimobiledevice-glue` | `libimobiledevice` 胶水库（`libplist`）；与 core 同名 |
 | `libnghttp3` | HTTP/3 C 库，`curl3` 依赖 |
 | `libngtcp2` | QUIC 协议 C 库（`fork-openssl@4`），`curl3` 依赖 |
@@ -156,15 +157,15 @@ brew install --cask bemly/tahoe/antigravity
 | `wget` | 命令行下载工具（`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`）；与 core 同名 |
 | `wimlib` | 创建 / 解包 / 修改 WIM 映像的库与 `wimlib-imagex` 工具（macOS 零运行时依赖，`fork-pkgconf` 构建） |
 
-### 运行时依赖层 — 同名接管（38 个源码库）与 `fork-*`（16 个）
+### 运行时依赖层 — 同名接管（42 个源码库）与 `fork-*`（11 个）
 
 `homebrew/core` 中无 `x86_64_tahoe` 瓶的运行时依赖，按「无 core 依赖方则同名接管、有 core 依赖方则保留改名 `fork-*`」打包出瓶：
 
-- **同名接管的运行时依赖（38 个源码库，连同上述 32 个共 70 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
-  `abseil`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libusb`、`libyaml`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
+- **同名接管的运行时依赖（42 个源码库，连同上述 32 个共 74 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
+  `abseil`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`json-c`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libtasn1`、`libusb`、`libyaml`、`lz4`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pcre2`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
   *（注：`vulkan-loader` 仅运行时依赖在 core 中拥有 `all` 瓶的 `vulkan-headers`。）*
-- **改名且 `keg_only` 的 `fork-*` 依赖（16 个）** *（不与 `homebrew/core` 冲突，按全名 `bemly/tahoe/fork-*` 引用）*：
-  `fork-bdw-gc`、`fork-bison`、`fork-gettext`、`fork-gmp`、`fork-json-c`、`fork-libtasn1`、`fork-libunistring`、`fork-lz4`、`fork-nasm`、`fork-openssl@3`、`fork-openssl@4`、`fork-pcre2`、`fork-pkgconf`、`fork-readline`、`fork-xz`、`fork-zstd`
+- **改名且 `keg_only` 的 `fork-*` 依赖（11 个）** *（不与 `homebrew/core` 冲突，按全名 `bemly/tahoe/fork-*` 引用）*：
+  `fork-bdw-gc`、`fork-bison`、`fork-gettext`、`fork-gmp`、`fork-libunistring`、`fork-openssl@3`、`fork-openssl@4`、`fork-pkgconf`、`fork-readline`、`fork-xz`、`fork-zstd`
 
 ### 桌面应用与输入法 — Cask（25 个）
 
@@ -201,7 +202,7 @@ brew install --cask bemly/tahoe/antigravity
 Homebrew 禁止同时安装来自不同 tap 的同名公式或同 token cask——它们共用同一份
 `Cellar/<name>` 或 `Caskroom/<token>` 目录。
 
-除改名且 `keg_only` 的 `fork-*`（14 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
+除改名且 `keg_only` 的 `fork-*`（11 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
 `ffserver`、`antigravity-cli`、`aarch64-unknown-linux-gnu`、`x86_64-unknown-linux-gnu`、
 `llvm-mingw`、`cmd`、`deepseek-harness`、`frida-server`、`mufetch`、`sst`、`torpedo`
 以及本仓独有 cask）外，**凡与 `homebrew/core` 同名的软件都必须先卸载另一方**

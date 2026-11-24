@@ -28,7 +28,7 @@ class Libimobiledevice < Formula
   depends_on "bemly/tahoe/libplist"
   depends_on "bemly/tahoe/libtatsu"
   depends_on "bemly/tahoe/libusbmuxd"
-  depends_on "bemly/tahoe/fork-libtasn1"
+  depends_on "bemly/tahoe/libtasn1"
   depends_on macos: :tahoe
   depends_on "bemly/tahoe/fork-openssl@4"
 
