@@ -753,6 +753,17 @@ private func rewriteCaskArchBlock(_ content: String, token: String, version: Str
     return content.replacingCharacters(in: bodyRange, with: body)
 }
 
+private func rewriteFormulaArmBlock(_ content: String, sha: String) -> String? {
+    guard let match = caskArchBlockMatch(in: content, token: "arm64"),
+          let bodyRange = Range(match.range(at: 1), in: content) else { return nil }
+    var body = String(content[bodyRange])
+    guard let stanza = try? NSRegularExpression(pattern: #"(?m)^([ \t]*)sha256\s+"[0-9a-f]{64}""#),
+          stanza.numberOfMatches(in: body, range: fullRange(body)) == 1 else { return nil }
+    body = stanza.stringByReplacingMatches(
+        in: body, range: fullRange(body), withTemplate: "$1sha256 \"\(sha)\"")
+    return content.replacingCharacters(in: bodyRange, with: body)
+}
+
 private func caskReleaseAssetName(from url: String) -> String {
     let rawName = URL(string: url)?.lastPathComponent ?? ""
     var name = (rawName.removingPercentEncoding ?? rawName)
@@ -1001,23 +1012,42 @@ func runDualArchCheck(config: CheckConfig, content: String, formulaFile: String,
         for d in dls { try? FileManager.default.removeItem(atPath: d.tmp) }
     }
 
-    // 6. 改写 cask（version 行 + 双 sha 行 + url 行版本子串替换；
-    //    镜像模式 url 行同样只换版本——Release tag 与资产名含字面版本号）。
+    // 6. 改写 version + 双架构 sha；cask 的 #{arch} URL 或公式的 on_arm 块都保持插值结构。
     //    先验后写：自检在内存里通过才落盘（单包流同例）。
-    let (newContent, bottleStale) = rewriteFormula(content, newURL: "",
-                                                   newVersion: stable, oldVersion: current,
-                                                   sha: "", archShas: keyed,
-                                                   replaceURLLine: false)
-    // 7. 改后自检：arch 插值保留、双 sha 就位
-    // （sha 行 key 与引号间的对齐空格原样保留；首行 `sha256 <key>:` 与换行延续
-    // `<key>:` 两种形态都认，只验 key/sha 落位）
-    guard newContent.contains("#{arch}") else { fail("url 的 arch 插值丢失") }
-    for (k, h) in keyed {
-        let pat = try! NSRegularExpression(
-            pattern: "(?:sha256\\s+)?" + NSRegularExpression.escapedPattern(for: k)
-                + ":\\s+\"" + h + "\"")
-        guard pat.firstMatch(in: newContent, range: fullRange(newContent)) != nil else {
-            fail("sha256 \(k) 未成功更新")
+    let newContent: String
+    let bottleStale: Bool
+    if caskArchBlockMatch(in: content, token: "arm64") != nil {
+        guard let intel = keyed.first(where: { $0.key == "intel" }),
+              let arm = keyed.first(where: { $0.key == "arm" }) else {
+            fail("双架构公式缺少 intel/arm sha")
+        }
+        let (base, stale) = rewriteFormula(content, newURL: "",
+                                           newVersion: stable, oldVersion: current,
+                                           sha: intel.sha, replaceURLLine: false)
+        guard let rewritten = rewriteFormulaArmBlock(base, sha: arm.sha) else {
+            fail("改写 on_arm sha256 失败")
+        }
+        newContent = rewritten
+        bottleStale = stale
+        guard newContent.contains("sha256 \"\(intel.sha)\""),
+              newContent.contains("sha256 \"\(arm.sha)\"") else {
+            fail("双架构公式 sha256 未成功更新")
+        }
+    } else {
+        let (rewritten, stale) = rewriteFormula(content, newURL: "",
+                                                newVersion: stable, oldVersion: current,
+                                                sha: "", archShas: keyed,
+                                                replaceURLLine: false)
+        newContent = rewritten
+        bottleStale = stale
+        guard newContent.contains("#{arch}") else { fail("url 的 arch 插值丢失") }
+        for (k, h) in keyed {
+            let pat = try! NSRegularExpression(
+                pattern: "(?:sha256\\s+)?" + NSRegularExpression.escapedPattern(for: k)
+                    + ":\\s+\"" + h + "\"")
+            guard pat.firstMatch(in: newContent, range: fullRange(newContent)) != nil else {
+                fail("sha256 \(k) 未成功更新")
+            }
         }
     }
 

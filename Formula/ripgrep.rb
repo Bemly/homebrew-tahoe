@@ -1,10 +1,17 @@
 class Ripgrep < Formula
   desc "Search tool like grep and The Silver Searcher"
   homepage "https://github.com/BurntSushi/ripgrep"
-  url "https://github.com/BurntSushi/ripgrep/archive/refs/tags/15.2.0.tar.gz"
-  sha256 "7605249d3eb0d5f170e3414498e3344e26b1e7a147aec518b57090b80036a562"
+  version "15.2.0"
   license "Unlicense"
   compatibility_version 1
+
+  url "https://github.com/BurntSushi/ripgrep/releases/download/#{version}/ripgrep-#{version}-x86_64-apple-darwin.tar.gz"
+  sha256 "af7825fcc69a2afc7a7aea55fc9af90e26421d8f20fe59df32e233c0b8a231c1"
+
+  on_arm do
+    url "https://github.com/BurntSushi/ripgrep/releases/download/#{version}/ripgrep-#{version}-aarch64-apple-darwin.tar.gz"
+    sha256 "3750b2e93f37e0c692657da574d7019a101c0084da05a790c83fd335bad973e4"
+  end
 
   head "https://github.com/BurntSushi/ripgrep.git", branch: "master"
 
@@ -13,31 +20,18 @@ class Ripgrep < Formula
     strategy :github_latest
   end
 
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "1ce904c130b0d22c0ca94f4fae85afe30da7531c1eb0ada4e345c48d50bceaa3"
-  end
-
-  depends_on "asciidoctor" => :build
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
-  depends_on "rust" => :build
-  # arch 门槛已摘：opencode 双架构后，ARM 装 opencode 会依赖到它
-  # （源码编译，Intel 上走 GHCR 瓶；摘门槛是例外，见 AGENTS.md §4）。
   depends_on macos: :tahoe
-  depends_on "bemly/tahoe/fork-pcre2"
-
-  # downloads crates during install
-  allow_network_access! :build
 
   def install
-    system "cargo", "install", *std_cargo_args(features: "pcre2")
-
+    bin.install "rg"
+    man1.install "doc/rg.1"
+    doc.install "README.md", "COPYING", "UNLICENSE", "LICENSE-MIT"
     generate_completions_from_executable(bin/"rg", "--generate", shell_parameter_format: "complete-")
-    (man1/"rg.1").write Utils.safe_popen_read(bin/"rg", "--generate", "man")
   end
 
   test do
     (testpath/"Hello.txt").write("Hello World!")
     system bin/"rg", "Hello World!", testpath
+    assert_match "features:+pcre2", shell_output("#{bin}/rg --version")
   end
 end

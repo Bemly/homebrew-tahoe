@@ -127,7 +127,7 @@ jobs:
 
       # GHCR 瓶只含本体；依赖必须一并入本源、写全名引用，否则 core 依赖会在用户端
       # 现场源码编译（见 AGENTS.md §5 / §11.2）。这里递归展开每批
-      # 公式的依赖闭包，开编前就红掉，而不是等用户装瓶时才发现要编译几十分钟。
+      # 公式的构建+运行时依赖闭包，开编前就红掉，而不是等用户装瓶时才发现要编译几十分钟。
       - name: 递归检查依赖瓶覆盖
         env:
           ALLOW_UNBOTTLED_CORE: ${{ inputs.allow_unbottled_core }}
@@ -166,7 +166,7 @@ jobs:
                   echo "$f -> $dep" >> "$core_unbottled"
                   ;;
               esac
-            done < <(brew deps --tree --full-name --union "bemly/tahoe/$f" 2>/dev/null \
+            done < <(brew deps --tree --include-build --full-name --union "bemly/tahoe/$f" 2>/dev/null \
               | sed -E 's/^[^A-Za-z0-9]*//; s/ .*$//' \
               | grep -v -F "bemly/tahoe/$f" | sort -u)
           done

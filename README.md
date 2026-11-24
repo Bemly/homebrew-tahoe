@@ -61,9 +61,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **141 formulae** (56 prebuilt + 71 source-built + 14 `fork-*` dependency forks) and **25 casks**.
+> Total: **141 formulae** (57 prebuilt + 70 source-built + 14 `fork-*` dependency forks) and **25 casks**.
 
-### CLI & Developer Tools — Prebuilt Formulae (56)
+### CLI & Developer Tools — Prebuilt Formulae (57)
 
 | Package | Notes |
 | --- | --- |
@@ -112,6 +112,7 @@ brew install --cask bemly/tahoe/antigravity
 | `openjdk@26` | OpenJDK 26 GA official macOS x64 prebuilt (`keg_only`, pinned to line 26); same-name conflict with core |
 | `postgresql@13` | PostgreSQL 13, repackaged from EDB's official macOS x64 binaries (bin/include/lib/share only — pgAdmin skipped); `keg_only` to avoid bundled openssl/icu conflicts; add `opt/postgresql@13/bin` to `PATH` |
 | `protobuf` | Protocol buffers compiler (`protoc` + headers), official macOS x86_64 prebuilt (`protoc-<ver>-osx-x86_64.zip`); same-name conflict with core |
+| `ripgrep` | Fast grep replacement, official macOS x86_64/arm64 prebuilt with PCRE2; zero build dependencies; dependency of `opencode` |
 | `rustup` | Official static Rust toolchain installer, same name as core; ships `rustup` plus cargo/rustc proxy shims, toolchains managed via `rustup toolchain install stable` |
 | `scrcpy` | Android screen mirroring tool, upstream Intel static build (zero runtime dependencies, includes `adb` and `scrcpy-server`) |
 | `sst` | SST framework, Intel-only slice of `anomalyco/homebrew-tap` (`sst-mac-x86_64.tar.gz`) |
@@ -124,7 +125,7 @@ brew install --cask bemly/tahoe/antigravity
 | `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
 | `zig` | Zig toolchain, official `zig-x86_64-macos-<ver>.tar.xz` (Intel host); same-name conflict with core |
 
-### Source-Built User Formulae (32)
+### Source-Built User Formulae (31)
 
 Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources and distributed as GHCR bottles.
 
@@ -156,7 +157,6 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `python@3.11` | Python 3.11 interpreter (`mpdecimal`/`sqlite`/`fork-openssl@3`/`fork-xz`); used by `mercurial`; same-name conflict with core |
 | `python@3.15` | Python 3.15 interpreter (`mpdecimal`/`sqlite`/`fork-openssl@4`/`fork-xz`/`fork-zstd`); used by `meson`; same-name conflict with core |
 | `qemu` | Generic machine emulator and virtualizer (68 targets, full tap dependency closure bottled on CI) |
-| `ripgrep` | Fast grep replacement (`fork-pcre2`), bottled dependency of `opencode` |
 | `socat` | SOcket CAT relay tool (`fork-openssl@3`), compiled from source |
 | `vde` | Virtual distributed Ethernet (`-std=gnu17` for Clang 26), bottled dependency of `qemu` |
 | `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends, `fork-openssl@4`; upstream macOS asset is arm64-only) |

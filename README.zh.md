@@ -50,9 +50,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **141 个公式**（56 个预编译直引 + 71 个源码代编译 + 14 个 `fork-*` 依赖层）与 **25 个 cask**。
+> 共收录 **141 个公式**（57 个预编译直引 + 70 个源码代编译 + 14 个 `fork-*` 依赖层）与 **25 个 cask**。
 
-### CLI 与开发工具 — 预编译直引公式（56 个）
+### CLI 与开发工具 — 预编译直引公式（57 个）
 
 | 软件 | 说明 |
 | --- | --- |
@@ -101,6 +101,7 @@ brew install --cask bemly/tahoe/antigravity
 | `openjdk@26` | OpenJDK 26 GA 官方 macOS x64 预编译包（`keg_only`，锁 26 线）；与 core 同名 |
 | `postgresql@13` | PostgreSQL 13，EDB 官方 macOS x64 二进制包重打包（只装 bin/include/lib/share，跳过 pgAdmin 等 app）；`keg_only` 避免自带 openssl/icu 撞 core；把 `opt/postgresql@13/bin` 加进 `PATH` 使用 |
 | `protobuf` | Protocol Buffers 编译器（`protoc` + 头文件），官方 macOS x86_64 预编译包（`protoc-<ver>-osx-x86_64.zip`）；与 core 同名 |
+| `ripgrep` | 快速文本搜索工具，官方 macOS x86_64/arm64 预编译且带 PCRE2；零构建依赖；`opencode` 依赖 |
 | `rustup` | 官方静态 Rust 工具链安装器，与 core 同名；提供 `rustup` 及 cargo/rustc 代理垫片，工具链走 `rustup toolchain install stable` |
 | `scrcpy` | 安卓投屏工具，上游 Intel 静态构建（零运行时依赖，内置 `adb` 与 `scrcpy-server`） |
 | `sst` | SST 开发框架，取 `anomalyco/homebrew-tap` 的 Intel 段（`sst-mac-x86_64.tar.gz`） |
@@ -113,7 +114,7 @@ brew install --cask bemly/tahoe/antigravity
 | `z3` | 高性能定理证明器，官方 macOS x64 预编译包（`z3-<ver>-x64-osx-13.3.zip`，零依赖）；与 core 同名 |
 | `zig` | Zig 工具链，官方 `zig-x86_64-macos-<ver>.tar.xz`（Intel host）；与 core 同名 |
 
-### 源码代编译公式（32 个工具与专用栈）
+### 源码代编译公式（31 个工具与专用栈）
 
 在 `macos-26-intel` CI 上从 `homebrew/core` 或上游源码一次性编译出瓶，经 GHCR 分发。
 
@@ -145,7 +146,6 @@ brew install --cask bemly/tahoe/antigravity
 | `python@3.11` | Python 3.11 解释器（`mpdecimal`/`sqlite`/`fork-openssl@3`/`fork-xz`）；`mercurial` 依赖；与 core 同名 |
 | `python@3.15` | Python 3.15 解释器（`mpdecimal`/`sqlite`/`fork-openssl@4`/`fork-xz`/`fork-zstd`）；`meson` 依赖；与 core 同名 |
 | `qemu` | 通用模拟器/虚拟机（全量 68 目标，完整依赖闭包已在本仓出瓶） |
-| `ripgrep` | 快速文本搜索工具（`fork-pcre2`），`opencode` 依赖 |
 | `socat` | SOcket CAT 中继工具（`fork-openssl@3`），源码现编出瓶 |
 | `vde` | 虚拟分布式以太网（Clang 26 下加 `-std=gnu17`），`qemu` 依赖 |
 | `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等，`fork-openssl@4`；上游 macOS 包仅 arm64） |

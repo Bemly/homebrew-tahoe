@@ -93,14 +93,14 @@ end
 | --- | --- |
 | 检查与制瓶分离 | 版本检查用 `ubuntu-latest`（Swift 检查器用 `swiftc -O` 编译运行，禁用解释器模式）；制瓶必须跑在 `macos-26-intel` 才产出 `x86_64_tahoe` 标签 |
 | 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名）；公式候选补丁上传为 Actions artifact，`bottle.yml` 用 `watcher_run_id` 下载并应用到 `main` 工作区，**每包推瓶成功后立即单独提交该包的新版本+瓶块到 `main`**，不创建分支；遇到依赖外部补丁构建的成品 cask（`antigravity`）且上下游都已就绪时自动触发一次 `patched.yml` |
-| 递归依赖门控 | `bottle.yml` 在 `brew readall` 后递归展开每批公式的**运行时**依赖闭包：本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断（`allow_unbottled_core: true` 仅作临时放行开关） |
+| 递归依赖门控 | `bottle.yml` 在 `brew readall` 后递归展开每批公式的**构建+运行时**依赖闭包（`brew deps --include-build`）：本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断（`allow_unbottled_core: true` 仅作临时放行开关） |
 | 重型任务走 CI | `patched.yml` 在 `macos-26-intel` 执行 `antigravity` 构建上传、写回 sidecar sha 并跑 `brew style`/`audit --strict`；开发机只跑轻量验证，避免卡死 |
 | 交叉 sysroot 构建 | `sysroots.yml` 在 `macos-26` / `ubuntu-22.04` 构建 `openssl-macos-arm64` 与 `linux-sysroot-x64/a64` 并发布到 GitHub Release（目标端头库不进 `Formula/` 或 GHCR），默认 `openssl_version` 与 `fork-openssl@4` 对齐 |
 | 控制 GitHub 负载 | `fetch-depth: 1`；brew 流走 `formulae.brew.sh`、github 流走 `HEAD releases/latest` 跳转（不耗 API 限额）；优先读 `checksums.txt`；配 `concurrency` 防并发互踩 |
 
 ## 6. 当前收录
 
-> **141 个公式（含 14 个 `fork-*`）+ 25 个 cask**，`updater/` 共 155 个检查器（另有 `UpdaterCore.swift`）。
+> **141 个公式（57 个预编译直引 + 70 个源码包 + 14 个 `fork-*`）**，`updater/` 共 155 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -151,6 +151,7 @@ end
 | `openjdk@26` | 26.0.2.1_macos | jdk.java.net GA（锁 26 线） | 与 `openjdk` 同源同物 |
 | `postgresql@13` | 13.23 | EDB `postgresql-<ver>-1-osx-binaries.zip` | 只装 bin/include/lib/share（跳过 pgAdmin 等 app）；`keg_only`（自带 openssl/icu 会撞 core）；与 core 同名 |
 | `protobuf` | 36.2 | 官方 `protoc-<ver>-osx-x86_64.zip` | 预编译；与 core 同名 |
+| `ripgrep` | 15.2.0 | 官方 macOS 双架构预编译 | `rg` + man/补全；零构建依赖；opencode 依赖 |
 | `rustup` | 1.29.3 | static.rust-lang.org 裸二进制 | cargo/rustc 垫片；跟 release-stable.toml |
 | `scrcpy` | 5.0.1 | GitHub `scrcpy-macos-x86_64-v<ver>.tar.gz` | 静态；整包进 libexec |
 | `sst` | 4.17.2 | anomalyco raw（Intel 段） | `sst version` 取版本 |
@@ -226,7 +227,6 @@ end
 | `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；交叉工具链依赖 |
 | `python@3.15` | 3.15.2 | core 拷入（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；meson 依赖；与 core 同名 |
 | `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；`glib`/`gnutls`/`jpeg-turbo`/`libpng`/`libusb`/`lzo`/`ncurses`/`pixman`/`capstone`/`dtc`/`libslirp`/`vde`/fork-zstd |
-| `ripgrep` | 15.2.0 | core 拷入（源码） | fork-pcre2；opencode 依赖 |
 | `simdjson` | 5.2.0 | core 同名接管（源码） | cmake |
 | `snappy` | 1.3.1 | core 同名接管（源码） | cmake；fork-pkgconf 构建 |
 | `socat` | 1.8.1.3 | core 拷入（源码） | fork-openssl@3；test 走回环 |
