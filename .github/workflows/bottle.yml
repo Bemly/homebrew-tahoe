@@ -23,6 +23,11 @@ on:
         required: false
         default: false
         type: boolean
+      source_ref:
+        description: watcher 暂存分支；留空表示直接在当前分支制瓶
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -55,6 +60,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+          ref: ${{ inputs.source_ref || github.ref }}
 
       - name: 计算待制瓶软件列表
         run: |
@@ -169,11 +175,8 @@ jobs:
 
       # 一次任务内顺序处理所有软件：build-bottle 安装 → 制瓶 → 删旧标签 → 推 GHCR。
       # 只占用「一个」macos-26-intel runner，避免每个软件各占一次（见 AGENTS.md §5）。
-      # pr-upload 会把瓶块写进 Formula/*.rb（--no-commit 只是不 git 提交），
-      # 该改动由后面的「提交瓶块」步骤入库。若循环中途失败，前面的瓶块改动
-      # 会随 runner 丢弃（2026-09-03 实测：capstone/dtc/libslirp 的瓶已推上 GHCR
-      # 但瓶块丢失，导致后续 qemu 构建判其无瓶而失败）——
-      # 故「提交瓶块」用 if: always() 兜底，并另设失败门槛步。
+      # 每个公式推瓶成功后立即单独提交「候选版本 + 瓶块」到 main；后续包失败或
+      # job 被取消时，已完成包仍保持可用，main 不会提前暴露尚未出瓶的新版本。
       - name: 循环制瓶并推 GHCR
         id: bottle_loop
         env:
@@ -242,6 +245,39 @@ jobs:
             FORMULAS_SORTED=("${FORMULAS[@]}")
           fi
           echo "制瓶顺序（依赖优先）：$(printf '%s,' "${FORMULAS_SORTED[@]}")"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          MAIN_WT="${RUNNER_TEMP}/tahoe-main"
+          git worktree add --detach "$MAIN_WT" origin/main
+          : > /tmp/committed.txt
+          commit_formula() {
+            local f="$1"
+            local version="$2"
+            local patch="${RUNNER_TEMP}/${f//\//_}.patch"
+            git fetch origin main
+            git diff --binary origin/main -- "Formula/${f}.rb" > "$patch"
+            if [[ ! -s "$patch" ]]; then
+              echo "::error::${f} 相对 main 无改动，跳过提交"
+              return 1
+            fi
+            git -C "$MAIN_WT" fetch origin main
+            git -C "$MAIN_WT" merge --ff-only origin/main
+            if ! git -C "$MAIN_WT" apply "$patch"; then
+              echo "::error::${f} 暂存补丁与最新 main 冲突，保持 main 旧版不变"
+              return 1
+            fi
+            "$(brew --repository)/Library/Homebrew/vendor/portable-ruby/current/bin/ruby" -c "$MAIN_WT/Formula/${f}.rb"
+            git -C "$MAIN_WT" add "Formula/${f}.rb"
+            git -C "$MAIN_WT" commit -m "bottle: ${f} ${version}"
+            if ! git -C "$MAIN_WT" push origin HEAD:main; then
+              git -C "$MAIN_WT" fetch origin main
+              git -C "$MAIN_WT" rebase origin/main
+              git -C "$MAIN_WT" push origin HEAD:main
+            fi
+            echo "$f" >> /tmp/committed.txt
+            echo "已单独提交 ${f} ${version} 的新版本与瓶块"
+          }
           for f in "${FORMULAS_SORTED[@]}"; do
             echo "===== 处理 $f ====="
             # node 家族（node / node@24 / node@22）共用 bin/node、bin/npm 等链接。
@@ -374,6 +410,7 @@ jobs:
             brew pr-upload --root-url="$ROOT_URL" --no-commit
             echo "pr-upload 完成：${ghcr_name}:${version}"
             rm -f *.bottle.json
+            commit_formula "$f" "$version"
           done
 
       # GHCR 包默认私有，匿名 brew install 会 401。GitHub 没有任何 API 能改包
@@ -402,36 +439,16 @@ jobs:
               failed="$failed ${ghcr_name}"
               echo "::warning::${ghcr_name} 无法匿名拉取（包私有或缺失）。GitHub 没有 API 能改可见性，请到 https://github.com/${GITHUB_REPOSITORY_OWNER}?tab=packages 对应包 → Package settings → Danger Zone 手动改为 Public，否则匿名 brew install 会 401。"
             fi
-          done < /tmp/formulas.txt
+          done < /tmp/committed.txt
           [[ -z "$failed" ]] || echo "以下包不可匿名拉取：${failed}"
           # 只告警不阻断：公开化只能手动处理，而瓶本身已推送成功
           exit 0
 
-      # if: always()：循环中途失败时仍把已成功的瓶块提交入库（GHCR 上的瓶
-      # 与公式瓶块必须一致，否则后续安装判「无瓶」），再让门槛步红掉。
-      - name: 提交瓶块
-        id: commit
-        if: always()
-        run: |
-          set -euo pipefail
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- Formula/*.rb; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "瓶块无变化，跳过提交。"
-            exit 0
-          fi
-          git add Formula/*.rb
-          git commit -m "bottle: 更新 GHCR 瓶块（$(paste -sd, /tmp/formulas.txt)）"
-          git push origin HEAD:main
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-
-      # 失败门槛：循环制瓶有失败项时 job 仍然红掉（宁可真红不可假绿），
-      # 但此时已成功部分的瓶块已由上面的 if: always() 步骤提交。
+      # 失败门槛：循环制瓶失败时 job 仍然红掉；已成功公式已在循环内逐个提交。
       - name: 制瓶失败门槛
         if: steps.bottle_loop.outcome == 'failure'
         run: |
-          echo "::error::循环制瓶存在失败项（详见上文日志）。已成功部分的瓶块已提交入库；"
+          echo "::error::循环制瓶存在失败项（详见上文日志）。已成功公式已逐个提交入库；"
           echo "请先单独重跑失败的公式（bottle.yml 支持逗号列表），再重跑依赖它们的上层公式。"
           exit 1
 
@@ -444,5 +461,5 @@ jobs:
             echo "- 软件：\`$(paste -sd, /tmp/formulas.txt)\`"
             echo "- runner：\`macos-26-intel\`（Intel + macOS 26）"
             echo "- 瓶根地址：\`$ROOT_URL\`"
-            echo "- 瓶块已提交：\`${{ steps.commit.outputs.changed || 'false' }}\`"
+            echo "- 已逐包提交：\`$(paste -sd, /tmp/committed.txt 2>/dev/null || true)\`"
           } >> "$GITHUB_STEP_SUMMARY"

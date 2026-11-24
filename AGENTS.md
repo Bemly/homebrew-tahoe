@@ -92,7 +92,7 @@ end
 | 约定 | 实现 |
 | --- | --- |
 | 检查与制瓶分离 | 版本检查用 `ubuntu-latest`（Swift 检查器用 `swiftc -O` 编译运行，禁用解释器模式）；制瓶必须跑在 `macos-26-intel` 才产出 `x86_64_tahoe` 标签 |
-| 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名）；遇到依赖外部补丁构建的成品 cask（`antigravity`）且上下游都已就绪时自动触发一次 `patched.yml` |
+| 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名）；公式先暂存到 `watcher/<run-id>` 分支，`bottle.yml` 用 `source_ref` 检出，**每包推瓶成功后立即单独提交该包的新版本+瓶块到 `main`**；遇到依赖外部补丁构建的成品 cask（`antigravity`）且上下游都已就绪时自动触发一次 `patched.yml` |
 | 递归依赖门控 | `bottle.yml` 在 `brew readall` 后递归展开每批公式的**运行时**依赖闭包：本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断（`allow_unbottled_core: true` 仅作临时放行开关） |
 | 重型任务走 CI | `patched.yml` 在 `macos-26-intel` 执行 `antigravity` 构建上传、写回 sidecar sha 并跑 `brew style`/`audit --strict`；开发机只跑轻量验证，避免卡死 |
 | 交叉 sysroot 构建 | `sysroots.yml` 在 `macos-26` / `ubuntu-22.04` 构建 `openssl-macos-arm64` 与 `linux-sysroot-x64/a64` 并发布到 GitHub Release（目标端头库不进 `Formula/` 或 GHCR），默认 `openssl_version` 与 `fork-openssl@4` 对齐 |
@@ -316,11 +316,11 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 ### 7.1 workflow 复核、提交与状态契约
 
 - 改写文件统一过 `ruby -c`；公式先将工作区软链进 Taps 目录并 `brew trust` 再跑 `brew fetch --force`，失败则还原该文件并记入 `failed`，不污染其它包。
-- 非 `dry_run` 时一次性提交到 `main`，若有公式更新则用**一次** `gh workflow run` 触发 `bottle.yml`（只传公式列表），若有 `needs-patched-build` 则触发 `patched.yml`。
+- 非 `dry_run` 时 cask 更新直接提交 `main`；公式更新保存为补丁并提交到临时分支 `watcher/<run-id>-<attempt>`，用**一次** `gh workflow run --ref <branch>` 触发 `bottle.yml`（只传公式列表和 `source_ref`），若有 `needs-patched-build` 则触发 `patched.yml`。`main` 在对应公式出瓶前保持旧版。
 
 | status | 含义 | workflow 处理 |
 | --- | --- | --- |
-| `updated` | 已改写 | 语法 / fetch 复核后提交 |
+| `updated` | 已改写 | 语法 / fetch 复核后：cask 提交 `main`，公式提交暂存分支并触发制瓶 |
 | `needs-patched-build` | 补丁成品依赖已就绪 | 自动触发 `patched.yml` 构建发布 |
 | `waiting-upstream` | 补丁上游尚未适配 | 暂缓跳过（不开告警 issue） |
 | `up-to-date` / `newer-than-brew` | 无需更新 / 本地更新 | 跳过 |
@@ -338,7 +338,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
   - 批内依赖做拓扑排序（被依赖者先出瓶）；安装前清理 runner 预装的冲突 keg（`node@24`、`cmake`、Python 3.11 等）及本批用到的同源依赖。
   - 先 `brew install --only-dependencies` 再 `--build-bottle` + `brew bottle`；版本号取 `brew list --versions`。
   - **推送前删整个包重建**：GitHub 禁止删除最后一个带标签版本，而 `pr-upload` 撞已存在标签会直接报错，因此先通过 `DELETE users/{owner}/packages/container/tahoe%2F<pkg>` 删除旧包再由 `pr-upload` 重建（重建会继承公开状态，后续仍有匿名可拉体检）。
-  - 循环步骤失败时，提交瓶块步骤使用 `if: always()` 先把已成功部分的瓶块提交入库，再由失败门槛步令 job 报错退出。
+  - **逐包提交**：watcher 只把公式候选版本放到临时分支；`bottle.yml` 每包 `pr-upload` 成功后，立即通过独立 main worktree 把该包相对 `origin/main` 的「版本+瓶块」补丁提交并推送。后续包失败或 job 被取消时，已完成包不受影响，未完成包仍保持 `main` 旧版。
 
 ## 9. 新增或修改软件 SOP
 
@@ -346,7 +346,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 2. **编写公式 / Cask**：严格按 §4 写 `Formula/<name>.rb` 或 `Casks/<name>.rb`，显式声明双门槛；不要手填 `bottle do`；所需运行时依赖一律在本仓闭环（同名接管或 `fork-*`）并写全名 `bemly/tahoe/<name>`；若为纯源码拷贝，同步拷贝所需补丁进 `Patches/`。
 3. **登记检查器与文档**：新增 `updater/<name>.swift`（如不锁定版本），并同步更新 `README.md`、`README.zh.md` 与 `AGENTS.md §6` 表格。
 4. **本地轻量验证**：按 §10 运行语法、检查器编译与必要的 fetch/install 测试（**不在开发机跑重型全量 `brew style` / `audit` 或重打包**）。
-5. **提交并触发 CI**：`git add` + `commit` + `push origin main` → 视情况触发 `bottle.yml`（逗号列表或单个）或 `patched.yml`，阻塞等 CI 跑完后再本地 `git pull --ff-only` 验证。
+5. **提交并触发 CI**：普通代码/文档直接 `git add` + `commit` + `push origin main`；watcher 的公式更新由 `watch-updates.yml` 自动暂存并触发 `bottle.yml`，不要绕过暂存流程提前提交公式版本；`patched.yml` 仍按需手动触发。阻塞等 CI 跑完后再本地 `git pull --ff-only` 验证。
 
 ## 10. 本地与 CI 验证边界
 
