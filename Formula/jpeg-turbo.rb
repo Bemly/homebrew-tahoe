@@ -31,8 +31,21 @@ class JpegTurbo < Formula
 
   def install
     dmg = Dir["*.dmg"].fetch(0)
-    system "7z", "x", "-y", "-o#{buildpath}/dmg", dmg
-    pkg = Dir[buildpath/"dmg/**/*.pkg"].fetch(0)
+    pkg = nil
+    sevenzip = Utils.safe_popen_read("which", "7zz").strip
+    if !sevenzip.isEmpty
+      system sevenzip, "x", "-y", "-o#{buildpath}/dmg", dmg
+      pkg = Dir[buildpath/"dmg/**/*.pkg"].fetch(0)
+    else
+      mount = buildpath/"mnt"
+      mount.mkpath
+      begin
+        system "hdiutil", "attach", "-nobrowse", "-readonly", "-mountpoint", mount.to_s, dmg
+        pkg = Dir[mount/"*.pkg"].fetch(0)
+      ensure
+        Utils.safe_popen_read("hdiutil", "detach", mount.to_s)
+      end
+    end
     system "pkgutil", "--expand-full", pkg, buildpath/"pkg"
     payload = Dir[buildpath/"pkg/*.pkg/Payload"].fetch(0)
     root = Pathname(payload)/"opt/libjpeg-turbo"

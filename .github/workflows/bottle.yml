@@ -129,7 +129,15 @@ jobs:
         run: |
           set -euo pipefail
           if grep -Rq 'using: :nounzip' Formula; then
-            brew install p7zip
+            archive="$RUNNER_TEMP/7z2606-mac-x64.tar.xz"
+            curl -fsSL -o "$archive" \
+              "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-mac-x64.tar.xz"
+            echo "3af68b124052da7fc2a246c96b0bea6a68bfee389baa788f4cead1a133445586  $archive" \
+              | shasum -a 256 -c -
+            dest="$RUNNER_TEMP/7zip"
+            mkdir -p "$dest"
+            tar -xJf "$archive" -C "$dest"
+            echo "$dest" >> "$GITHUB_PATH"
           fi
 
       # GHCR 瓶只含本体；依赖必须一并入本源、写全名引用，否则 core 依赖会在用户端
