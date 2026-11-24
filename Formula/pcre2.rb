@@ -11,6 +11,12 @@ class Pcre2 < Formula
     regex(/^pcre2[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "0479550757944ccc40b2fb53e19fb406b115e6307524df113fe01b1bfb3858ad"
+    sha256 cellar: :any, tahoe: "8568cb27211fd436fa8962f0e9792e93c1a8d2fd659d9c6c9d41a3c5dd1becce"
+  end
+
   head do
     url "https://github.com/PCRE2Project/pcre2.git", branch: "main"
 
