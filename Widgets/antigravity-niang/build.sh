@@ -115,7 +115,8 @@ EXPECTED_GEN="$(tr -d '\r' < "$HEADERS" | awk -F': ' 'tolower($1)=="x-goog-gener
 [[ -n "$EXPECTED_SIZE" && -n "$EXPECTED_GEN" ]] || die "官方 GCS 元数据缺少 size/generation：$OFFICIAL_URL"
 PIN_LINE="$(awk -v host="$HOST" '$1==host {print; exit}' "$PIN_FILE" 2>/dev/null || true)"
 if [[ -n "$PIN_LINE" ]]; then
-  read -r PIN_SHA PIN_SIZE PIN_GEN _ <<< "$PIN_LINE"
+  read -r PIN_KEY PIN_SHA PIN_SIZE PIN_GEN _ <<< "$PIN_LINE"
+  [[ "$PIN_KEY" == "$HOST" ]] || die "官方 SHA pin 的宿主版本不匹配：$HOST"
   [[ -z "$OFFICIAL_SHA" || "$OFFICIAL_SHA" == "$PIN_SHA" ]] || die "传入 official-sha 与 pin 不一致：$HOST"
   [[ "$EXPECTED_SIZE" == "$PIN_SIZE" && "$EXPECTED_GEN" == "$PIN_GEN" ]] || die "官方 GCS 对象元数据与 pin 不一致：$HOST"
   OFFICIAL_SHA="$PIN_SHA"
