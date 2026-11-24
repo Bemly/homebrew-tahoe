@@ -26,8 +26,8 @@ class RustAT1911 < Formula
     cargo = Pathname(Dir["**/bin/cargo"].fetch(0))
     cargo_root = cargo.dirname.parent
     bin.install cargo
-    share.install Dir[cargo_root/"share/*"]
     doc.install Dir[cargo_root/"share/doc/cargo/LICENSE-*"]
+    share.install Dir[cargo_root/"share/*"]
 
     resource("rustc").stage do
       rustc = Pathname(Dir["**/bin/rustc"].fetch(0))
@@ -41,7 +41,8 @@ class RustAT1911 < Formula
       (lib/"rustlib").install stdlib.dirname.parent
     end
 
-    chmod 0555, bin/"rustc", bin/"cargo"
+    chmod 0555, bin/"rustc"
+    chmod 0555, bin/"cargo"
     odie "Rust 工具链版本自检失败" unless Utils.safe_popen_read(bin/"rustc", "--version").include?("1.91.1")
   end
 
