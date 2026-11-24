@@ -9,7 +9,8 @@ class Vde < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "06f4845c96f24175867c44377ac4d6b1ced705fcbe4c6ea93f4c9b7256b39eca"
+    manifest_sha256 "d3340af2ffebe191c61d99ce2e609b802f38b99e934bec1edc1a4e9f01351b22"
+    sha256 tahoe: "78ae226587d64cb979fa766f2ff1dfcb24f906b7336cd7cdd4ce01abfd72fb22"
   end
   depends_on "autoconf" => :build
   depends_on "bemly/tahoe/automake" => :build
