@@ -26,17 +26,22 @@ class RustAT1911 < Formula
   deny_network_access!
 
   def install
-    bin.install Dir["cargo/bin/*"]
-    share.install Dir["cargo/share/*"]
+    cargo = Pathname(Dir["**/bin/cargo"].fetch(0))
+    cargo_root = cargo.dirname.parent
+    bin.install cargo
+    share.install Dir[cargo_root/"share/*"]
+    doc.install Dir[cargo_root/"share/doc/cargo/LICENSE-*"]
 
     resource("rustc").stage do
-      bin.install Dir["rustc/bin/*"]
-      lib.install Dir["rustc/lib/*"]
-      doc.install "LICENSE-APACHE", "LICENSE-MIT", "COPYRIGHT"
+      rustc = Pathname(Dir["**/bin/rustc"].fetch(0))
+      rustc_root = rustc.dirname.parent
+      bin.install Dir[rustc_root/"bin/*"]
+      lib.install Dir[rustc_root/"lib/*"]
     end
 
     resource("rust-std").stage do
-      (lib/"rustlib").install Dir["rust-std-*/lib/rustlib/*"]
+      stdlib = Pathname(Dir["**/lib/rustlib/x86_64-apple-darwin/lib"].fetch(0))
+      (lib/"rustlib").install stdlib.dirname.parent
     end
 
     chmod 0555, bin/"rustc", bin/"cargo"
