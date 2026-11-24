@@ -211,6 +211,12 @@ jobs:
             [[ -n "$line" ]] && FORMULAS+=("$line")
           done < /tmp/formulas.txt
           BREW_PREFIX="$(brew --prefix)"
+          # runner 预装的 core curl 动态依赖 libnghttp3/libidn2/libssh2 等；重建这些库时
+          # 先卸载旧 keg 会让 curl 立即 dyld 失败，导致后续源码/瓶下载全部中断。
+          # 制瓶环境改用 macOS 系统 curl，避免下载器被本轮重建的基础设施拖垮。
+          brew uninstall --force --ignore-dependencies curl >/dev/null 2>&1 || true
+          rm -f "${BREW_PREFIX}/bin/curl"
+          hash -r
           # —— 依赖拓扑排序：被依赖者先制瓶 ——
           # 有些公式依赖本 tap 的其它公式（如 deepseek-harness/cmd → node、
           # opencode → ripgrep、qemu → capstone/dtc/libslirp/vde、curl3 → libnghttp3/libngtcp2）。
