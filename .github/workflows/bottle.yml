@@ -125,6 +125,13 @@ jobs:
       - name: 公式体检（防白跑）
         run: brew readall bemly/tahoe
 
+      - name: 准备 DMG 解包工具
+        run: |
+          set -euo pipefail
+          if grep -Rq 'using: :nounzip' Formula; then
+            brew install p7zip
+          fi
+
       # GHCR 瓶只含本体；依赖必须一并入本源、写全名引用，否则 core 依赖会在用户端
       # 现场源码编译（见 AGENTS.md §5 / §11.2）。这里递归展开每批
       # 公式的构建+运行时依赖闭包，开编前就红掉，而不是等用户装瓶时才发现要编译几十分钟。
