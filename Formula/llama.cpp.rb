@@ -23,6 +23,7 @@ class LlamaCpp < Formula
   deny_network_access!
 
   def merge_metal_source(source)
+    source = Pathname(source)
     metal_root = buildpath/"ggml/src/ggml-metal"
     headers = [metal_root/"kernels/common.h"]
     source_text = source.read
