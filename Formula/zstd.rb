@@ -20,6 +20,12 @@ class Zstd < Formula
     strategy :github_latest
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "292dc8c6d055e8f9a8bfe0490618781cb6a22fddc9fd1c2c574d3343d9e72768"
+    sha256 cellar: :any, tahoe: "2e835c2a62db7432421525be7965d258ffa46ab724873742ce7a74579fe4725a"
+  end
+
 
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
