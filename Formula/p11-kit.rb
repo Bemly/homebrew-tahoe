@@ -10,8 +10,8 @@ class P11Kit < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "74ef5cb49fda457e450680e454d96e825b242baa7e9b7f6827d3b92ed0381dda"
-    sha256 tahoe: "aa031d393b3a97dda080152efca4693add7b6b3882440315f24f496c74f59f49"
+    manifest_sha256 "f39917a1a332ccc34d1813434077727034fcfcc8d4704094a333bdaa054b0151"
+    sha256 tahoe: "437caf21b1696d1ac7a5d390a8aa8a43705fb1a84bd0d13fa93cb860fe8923fb"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
