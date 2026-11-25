@@ -38,7 +38,7 @@ class Binwalk < Formula
   depends_on macos: :tahoe
 
   uses_from_macos "bzip2"
-  uses_from_macos "xz"
+  depends_on "bemly/tahoe/xz"
 
   deny_network_access!
 

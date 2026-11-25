@@ -25,7 +25,7 @@ class Dtc < Formula
   depends_on "bemly/tahoe/libyaml"
   depends_on macos: :tahoe
 
-  uses_from_macos "bison" => :build
+  depends_on "bemly/tahoe/bison" => :build
   uses_from_macos "flex" => :build
 
   def install
