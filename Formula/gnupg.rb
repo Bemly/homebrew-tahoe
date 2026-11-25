@@ -20,7 +20,8 @@ class Gnupg < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "203a8b75f84382dacda2b99f9bb596f147c774f07e86e49c25f91825d57b5914"
+    manifest_sha256 "2795f13631dea673267e6f78a240868eff3f7bfe17fbcb2de1a3da2539765345"
+    sha256 tahoe: "8ce61d1221d3e459fd4db53aca7575fdfdb99bbcab7ce65e1c4e50826b6f5746"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
