@@ -62,6 +62,7 @@ done
 taps_dir="$(brew --repository)/Library/Taps/bemly"
 mkdir -p "$taps_dir"
 ln -sfn "$ROOT" "$taps_dir/homebrew-tahoe"
+brew update
 brew trust bemly/tahoe
 brew install --force-bottle bemly/tahoe/llama.cpp bemly/tahoe/sd.cpp bemly/tahoe/audio.cpp
 
