@@ -141,34 +141,78 @@ jobs:
           core_unbottled="/tmp/core_deps_unbottled.txt"
           : > "$tap_missing"
           : > "$core_unbottled"
+          mkdir -p /tmp/core-bottle-cache
+          core_has_bottle() {
+            local dep="$1" cache_key="${1//\//_}"
+            if [[ -f "/tmp/core-bottle-cache/${cache_key}.ok" ]]; then
+              return 0
+            fi
+            if [[ -f "/tmp/core-bottle-cache/${cache_key}.missing" ]]; then
+              return 1
+            fi
+            # brew info --json=v2 对未安装的 core 公式不返回 bottle 元数据；
+            # 统一走 formulae.brew.sh（与 watcher 同源），只认 Intel Tahoe 瓶标签。
+            if curl -fsSL --max-time 20 "https://formulae.brew.sh/api/formula/${dep}.json" 2>/dev/null \
+              | grep -Eq '"(all|x86_64_tahoe|tahoe)"[[:space:]]*:'; then
+              touch "/tmp/core-bottle-cache/${cache_key}.ok"
+              return 0
+            fi
+            touch "/tmp/core-bottle-cache/${cache_key}.missing"
+            return 1
+          }
           for f in "${FORMULAS[@]}"; do
-            while IFS= read -r dep; do
-              [[ -z "$dep" ]] && continue
-              case "$dep" in
-                bemly/tahoe/*)
-                  short="${dep#bemly/tahoe/}"
-                  # 同批公式由拓扑排序在本轮出瓶，此刻还没有瓶块属正常
-                  case " ${FORMULAS[*]} " in
-                    *" $short "*) continue ;;
-                  esac
-                  if [[ ! -f "Formula/${short}.rb" ]]; then
-                    echo "$f -> $dep (Formula 不存在)" >> "$tap_missing"
-                  elif ! grep -Eq '^[[:space:]]*sha256[^#]*tahoe:' "Formula/${short}.rb"; then
-                    echo "$f -> $dep (公式无 tahoe 瓶块)" >> "$tap_missing"
-                  fi
-                  ;;
-                *)
-                  # brew info --json=v2 对未安装的 core 公式不返回 bottle 元数据；
-                  # 统一走 formulae.brew.sh（与 watcher 同源），只认 Intel Tahoe 瓶标签。
-                  if curl -fsSL --max-time 20 "https://formulae.brew.sh/api/formula/$dep.json" 2>/dev/null | grep -Eq '"(all|x86_64_tahoe|tahoe)"[[:space:]]*:'; then
-                    continue
-                  fi
-                  echo "$f -> $dep" >> "$core_unbottled"
-                  ;;
+            queue="bemly/tahoe/$f"
+            visited=""
+            while [[ -n "$queue" ]]; do
+              dep="${queue%% *}"
+              if [[ "$queue" == *" "* ]]; then queue="${queue#* }"; else queue=""; fi
+              case " $visited " in
+                *" $dep "*) continue ;;
               esac
-            done < <(brew deps --tree --include-build --full-name --union "bemly/tahoe/$f" 2>/dev/null \
-              | sed -E 's/^[^A-Za-z0-9]*//; s/ .*$//' \
-              | grep -v -F "bemly/tahoe/$f" | sort -u)
+              visited="$visited $dep"
+              expand_build=false
+              if [[ "$dep" == "bemly/tahoe/$f" ]]; then
+                expand_build=true
+              else
+                case "$dep" in
+                  bemly/tahoe/*)
+                    short="${dep#bemly/tahoe/}"
+                    # 同批公式由拓扑排序在本轮出瓶，且会作为独立目标展开自己的闭包。
+                    case " ${FORMULAS[*]} " in
+                      *" $short "*) continue ;;
+                    esac
+                    if [[ ! -f "Formula/${short}.rb" ]]; then
+                      echo "$f -> $dep (Formula 不存在)" >> "$tap_missing"
+                      continue
+                    fi
+                    if ! grep -Eq '^[[:space:]]*sha256[^#]*tahoe:' "Formula/${short}.rb"; then
+                      echo "$f -> $dep (公式无 tahoe 瓶块)" >> "$tap_missing"
+                      continue
+                    fi
+                    ;;
+                  *)
+                    # std_cmake_args/system "cmake" 会让 brew deps 额外报告裸 cmake；
+                    # 下方预装分支已把实际构建工具换成本 tap cmake，这里不再误报 Core 缺瓶。
+                    if [[ "$dep" == "cmake" ]] \
+                      && grep -q 'system "cmake"' "Formula/${f}.rb" \
+                      && ! grep -Eq 'depends_on "([^"]*/)?cmake"' "Formula/${f}.rb"; then
+                      continue
+                    fi
+                    if ! core_has_bottle "$dep"; then
+                      echo "$f -> $dep" >> "$core_unbottled"
+                      continue
+                    fi
+                    ;;
+                esac
+              fi
+              # 目标本体与本批待构建公式需要完整构建闭包；已瓶化依赖只检查运行时闭包，
+              # 否则会把 vulkan-headers(all) 的构建依赖 cmake 误当成用户端缺失瓶。
+              deps_args=(--full-name)
+              $expand_build && deps_args=(--include-build --full-name)
+              for child in $(brew deps "${deps_args[@]}" "$dep" 2>/dev/null); do
+                [[ "$child" == "$dep" ]] || queue="$queue $child"
+              done
+            done
           done
           sort -u "$tap_missing" -o "$tap_missing"
           sort -u "$core_unbottled" -o "$core_unbottled"

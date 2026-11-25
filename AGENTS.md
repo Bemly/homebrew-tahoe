@@ -95,7 +95,7 @@ end
 | --- | --- |
 | 检查与制瓶分离 | 版本检查用 `ubuntu-latest`（Swift 检查器用 `swiftc -O` 编译运行，禁用解释器模式）；制瓶必须跑在 `macos-26-intel` 才产出 `x86_64_tahoe` 标签 |
 | 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名）；公式候选补丁上传为 Actions artifact，`bottle.yml` 用 `watcher_run_id` 下载并应用到 `main` 工作区，**每包推瓶成功后立即单独提交该包的新版本+瓶块到 `main`**，不创建分支；遇到依赖外部补丁构建的成品 cask（`antigravity`）且上下游都已就绪时自动触发一次 `patched.yml` |
-| 递归依赖门控 | `bottle.yml` 在 `brew readall` 后递归展开每批公式的**构建+运行时**依赖闭包（`brew deps --include-build`）：本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断（`allow_unbottled_core: true` 仅作临时放行开关） |
+| 递归依赖门控 | `bottle.yml` 在 `brew readall` 后递归检查依赖：目标本体与本批待构建公式展开**构建+运行时**闭包，已有瓶的依赖只展开运行时闭包（不再误查 Core 瓶的构建依赖）；本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断；`std_cmake_args` 隐式裸 cmake 由 workflow 预装本仓 cmake 满足（`allow_unbottled_core: true` 仅作临时放行开关） |
 | 重型任务走 CI | `patched.yml` 在 `macos-26-intel` 执行 `antigravity` 构建上传、写回 sidecar sha 并跑 `brew style`/`audit --strict`；开发机只跑轻量验证，避免卡死 |
 | 交叉 sysroot 构建 | `sysroots.yml` 在 `macos-26` / `ubuntu-22.04` 构建 `openssl-macos-arm64` 与 `linux-sysroot-x64/a64` 并发布到 GitHub Release（目标端头库不进 `Formula/` 或 GHCR），默认 `openssl_version` 与 `fork-openssl@4` 对齐 |
 | 控制 GitHub 负载 | `fetch-depth: 1`；brew 流走 `formulae.brew.sh`、github 流走 `HEAD releases/latest` 跳转（不耗 API 限额）；优先读 `checksums.txt`；配 `concurrency` 防并发互踩 |
