@@ -9,6 +9,11 @@ class LlamaCpp < Formula
   license "MIT"
   compatibility_version 1
 
+  # The fork's hybrid memory caller passes a replay argument that the recurrent constructor does not accept.
+  patch do
+    file "Patches/llama.cpp/recurrent-constructor.diff"
+  end
+
   depends_on "bemly/tahoe/cmake" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/pkgconf" => :build

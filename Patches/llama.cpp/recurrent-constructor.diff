@@ -1,0 +1,10 @@
+diff --git a/src/llama-memory-hybrid.cpp b/src/llama-memory-hybrid.cpp
+--- a/src/llama-memory-hybrid.cpp
++++ b/src/llama-memory-hybrid.cpp
+@@ -66,5 +66,4 @@
+         filter_recr == nullptr ?
+             [&](int32_t il) { return hparams.is_recr(il); }
+-            : filter_recr,
+-        replay
++            : filter_recr
+     )) {}
