@@ -13,7 +13,8 @@ class PythonAT315 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "c7debfd0536559d2010dfeefafd118d58eb75f4a20708e045c29236a000125cf"
+    manifest_sha256 "e50b59951e8d0a04533ea05b155feda311f8bf91721d3c47d6566cf59a74d079"
+    sha256 tahoe: "ddd1f928929c84200b115fa4a33fc59798c4a46f56d18c3bdd50c10141ed9489"
   end
 
   # https://devguide.python.org/versions/#versions
