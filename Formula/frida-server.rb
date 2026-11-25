@@ -10,8 +10,8 @@ class FridaServer < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "17e8b5bfb63173e8236decdc4bf90d70c7bd15d5c015f602b34a1b1304374a64"
-    sha256 cellar: :any_skip_relocation, tahoe: "56012c1018aba9c464bbc312ef9f35dc804e31d6d2343091ba4d686198f15c96"
+    manifest_sha256 "aba06eccd6bb3b4e85e1cb88f50a9bf7fd455822c8f88dd93624334d128ea88b"
+    sha256 cellar: :any_skip_relocation, tahoe: "698977ce03a985cca64a9a35faa4b3e092791c52fd89e54213c208d13d41a95d"
   end
 
   # brew 解 .xz 的 UnpackStrategy::Xz 硬依赖 xz 公式（unpack_strategy/xz.rb
