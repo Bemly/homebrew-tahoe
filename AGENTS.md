@@ -405,6 +405,7 @@ brew trust bemly/tahoe
 ### 11.4 GHCR 制瓶
 
 - 传给 `bottle.yml` 的名单绝不能混入 cask 名；批内依赖靠 `bottle.yml` 拓扑排序保证先出瓶。
+- **Python 瓶与消费者分批**：`--build-bottle` 会跳过 `post_install_steps`，同批新建的 Python 瓶因此尚未 bootstrap pip，Mercurial 等消费者会报 `No module named pip`。先单独提交 Python 瓶，再开一批让消费者从已发布 Python 瓶安装并正常执行 bootstrap；不要用 `allow_unbottled_core` 掩盖。
 - **重建 Core curl 的动态依赖前先隔离下载器**：runner 预装的 Core `curl` 链到 `libnghttp3`/`libidn2`/`libssh2` 等；制瓶循环卸载并重建这些库后，brewed curl 会 dyld 失败，导致后续源码与瓶下载全部中断。`bottle.yml` 已在循环前卸载 Core curl 并改用 `/usr/bin/curl`，不要再把该保护移除。
 - 同版本改布局验证必须用 `--build-from-source`（否则本机按有效瓶块倒旧瓶）；删包重建后若本机报错 `Couldn't find manifest matching bottle checksum`，执行 `brew fetch --force --bottle-tag=tahoe <formula>` 刷缓存即可。
 - **依赖回退编译排查顺序**：先用 `brew deps --tree --include-build --full-name --union bemly/tahoe/<formula>` 展开完整闭包，再按以下顺序处理，直到整棵树都只剩瓶：
