@@ -18,8 +18,8 @@ class Aarch64UnknownLinuxGnu < Formula
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/bdw-gc"
   depends_on "bemly/tahoe/python@3.14"
-  depends_on "bemly/tahoe/fork-xz"
-  depends_on "bemly/tahoe/fork-zstd"
+  depends_on "bemly/tahoe/xz"
+  depends_on "bemly/tahoe/zstd"
   depends_on "bemly/tahoe/guile"
   depends_on macos: :tahoe
 
@@ -35,7 +35,7 @@ class Aarch64UnknownLinuxGnu < Formula
            "-change", "/usr/local/opt/python@3.14/Frameworks/Python.framework/Versions/3.14/Python",
                       "#{Formula["bemly/tahoe/python@3.14"].opt_prefix}/Frameworks/Python.framework/Versions/3.14/Python",
            "-change", "/usr/local/opt/xz/lib/liblzma.5.dylib",
-                      "#{Formula["bemly/tahoe/fork-xz"].opt_lib}/liblzma.5.dylib",
+                      "#{Formula["bemly/tahoe/xz"].opt_lib}/liblzma.5.dylib",
            gdb.to_s
 
     # 校验放在 install 尾部：brew 6 已废弃 def post_install（见 AGENTS.md §11.1），

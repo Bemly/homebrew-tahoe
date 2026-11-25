@@ -30,7 +30,7 @@ class Libidn2 < Formula
 
     depends_on "autoconf" => :build
     depends_on "bemly/tahoe/automake" => :build
-    depends_on "bemly/tahoe/fork-gettext" => :build
+    depends_on "bemly/tahoe/gettext" => :build
     depends_on "gengetopt" => :build
     depends_on "help2man" => :build
     depends_on "libtool" => :build
@@ -46,20 +46,20 @@ class Libidn2 < Formula
     end
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libunistring"
   depends_on macos: :tahoe
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
   end
 
   deny_network_access!
 
   def install
     args = ["--disable-silent-rules", "--with-packager=Homebrew"]
-    args << "--with-libintl-prefix=#{formula_opt_prefix("bemly/tahoe/fork-gettext")}" if OS.mac?
+    args << "--with-libintl-prefix=#{formula_opt_prefix("bemly/tahoe/gettext")}" if OS.mac?
 
     if build.head?
       ENV.prepend_path "PATH", formula_opt_libexec("coreutils")/"gnubin" if OS.mac?

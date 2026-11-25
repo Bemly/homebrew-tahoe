@@ -18,14 +18,14 @@ class Nghttp2 < Formula
     depends_on "libtool" => :build
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/c-ares"
   depends_on "bemly/tahoe/jemalloc"
   depends_on "bemly/tahoe/libev"
   depends_on "bemly/tahoe/libnghttp2"
   depends_on macos: :tahoe
-  depends_on "bemly/tahoe/fork-openssl@3"
+  depends_on "bemly/tahoe/openssl@3"
 
   uses_from_macos "libxml2"
 

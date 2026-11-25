@@ -14,7 +14,7 @@ class P11Kit < Formula
     sha256 tahoe: "aa031d393b3a97dda080152efca4693add7b6b3882440315f24f496c74f59f49"
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on arch: :x86_64

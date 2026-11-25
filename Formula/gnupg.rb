@@ -23,11 +23,11 @@ class Gnupg < Formula
     sha256 tahoe: "203a8b75f84382dacda2b99f9bb596f147c774f07e86e49c25f91825d57b5914"
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/gnutls"
   depends_on "bemly/tahoe/libusb"
-  depends_on "bemly/tahoe/fork-readline"
+  depends_on "bemly/tahoe/readline"
   depends_on "bemly/tahoe/libassuan"
   depends_on "bemly/tahoe/libgcrypt"
   depends_on "bemly/tahoe/libgpg-error"
@@ -41,7 +41,7 @@ class Gnupg < Formula
   uses_from_macos "sqlite"
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
   end
 
   on_linux do
@@ -77,7 +77,7 @@ class Gnupg < Formula
                              "--enable-all-tests",
                              "--sysconfdir=#{etc}",
                              "--with-pinentry-pgm=#{formula_opt_bin("bemly/tahoe/pinentry")}/pinentry",
-                             "--with-readline=#{formula_opt_prefix("bemly/tahoe/fork-readline")}",
+                             "--with-readline=#{formula_opt_prefix("bemly/tahoe/readline")}",
                              *std_configure_args
       system "make"
       system "make", "install"

@@ -23,7 +23,7 @@ class Sqlite < Formula
   keg_only :provided_by_macos
 
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-readline"
+  depends_on "bemly/tahoe/readline"
   depends_on macos: :tahoe
 
   on_linux do
@@ -56,8 +56,8 @@ class Sqlite < Formula
       "--enable-readline",
       "--disable-editline",
       "--enable-session",
-      "--with-readline-cflags=-I#{formula_opt_include("bemly/tahoe/fork-readline")}",
-      "--with-readline-ldflags=-L#{formula_opt_lib("bemly/tahoe/fork-readline")} -lreadline",
+      "--with-readline-cflags=-I#{formula_opt_include("bemly/tahoe/readline")}",
+      "--with-readline-ldflags=-L#{formula_opt_lib("bemly/tahoe/readline")} -lreadline",
     ]
     args << "--soname=legacy" if OS.linux?
 

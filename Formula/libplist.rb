@@ -20,7 +20,7 @@ class Libplist < Formula
   depends_on "autoconf" => :build
   depends_on "bemly/tahoe/automake" => :build
   depends_on "libtool" => :build
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

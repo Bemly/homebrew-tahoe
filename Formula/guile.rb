@@ -18,7 +18,7 @@ class Guile < Formula
 
     depends_on "autoconf" => :build
     depends_on "bemly/tahoe/automake" => :build
-    depends_on "bemly/tahoe/fork-gettext" => :build
+    depends_on "bemly/tahoe/gettext" => :build
     uses_from_macos "flex" => :build
 
     on_system :linux, macos: :ventura_or_newer do
@@ -31,8 +31,8 @@ class Guile < Formula
   depends_on "bemly/tahoe/gmp"
   depends_on "libtool"
   depends_on "bemly/tahoe/libunistring"
-  depends_on "bemly/tahoe/fork-pkgconf" # guile-config is a wrapper around pkg-config.
-  depends_on "bemly/tahoe/fork-readline"
+  depends_on "bemly/tahoe/pkgconf" # guile-config is a wrapper around pkg-config.
+  depends_on "bemly/tahoe/readline"
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
@@ -48,12 +48,12 @@ class Guile < Formula
     ENV.append "LDFLAGS", "-Wl,-rpath,#{HOMEBREW_PREFIX}/lib"
 
     # Avoid superenv shim
-    inreplace "meta/guile-config.in", "@PKG_CONFIG@", formula_opt_bin("bemly/tahoe/fork-pkgconf")/"pkg-config"
+    inreplace "meta/guile-config.in", "@PKG_CONFIG@", formula_opt_bin("bemly/tahoe/pkgconf")/"pkg-config"
 
     system "./autogen.sh" unless build.stable?
 
     system "./configure", "--disable-nls",
-                          "--with-libreadline-prefix=#{formula_opt_prefix("bemly/tahoe/fork-readline")}",
+                          "--with-libreadline-prefix=#{formula_opt_prefix("bemly/tahoe/readline")}",
                           "--with-libgmp-prefix=#{formula_opt_prefix("bemly/tahoe/gmp")}",
                           *std_configure_args
     system "make", "install"

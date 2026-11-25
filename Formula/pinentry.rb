@@ -17,7 +17,7 @@ class Pinentry < Formula
     sha256 cellar: :any, tahoe: "586111aeac964971e12aa7e6b5f456f4528dd60d730ed83a43c30a97a3f94b6c"
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libassuan"
   depends_on "bemly/tahoe/libgpg-error"

@@ -25,8 +25,8 @@ class Graphviz < Formula
     depends_on "bemly/tahoe/automake" => :build
   end
 
-  depends_on "bemly/tahoe/fork-bison" => :build
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/bison" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

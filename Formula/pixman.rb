@@ -18,7 +18,7 @@ class Pixman < Formula
 
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
-  depends_on "bemly/tahoe/fork-pkgconf" => :test
+  depends_on "bemly/tahoe/pkgconf" => :test
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 

@@ -25,7 +25,7 @@ class Libnghttp2 < Formula
     depends_on "libtool" => :build
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe
   # this legacy mirror is for user to install from the source when https not working for them

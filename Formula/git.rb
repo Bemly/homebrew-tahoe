@@ -25,8 +25,8 @@ class Git < Formula
     sha256 tahoe: "d33f53ac3cde592f5b4dd53abc2e855a48ba6116f443eb308458b49dfb51e993"
   end
 
-  depends_on "bemly/tahoe/fork-gettext" => :build
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/gettext" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/pcre2"
   depends_on macos: :tahoe
@@ -38,11 +38,11 @@ class Git < Formula
   # https://github.com/Homebrew/homebrew-core/pull/258461
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
   end
 
   on_linux do
-    depends_on "bemly/tahoe/fork-openssl@4" # for git-imap-send (GPL-2.0-or-later), uses CommonCrypto on macOS
+    depends_on "bemly/tahoe/openssl@4" # for git-imap-send (GPL-2.0-or-later), uses CommonCrypto on macOS
     depends_on "zlib-ng-compat"
   end
 
@@ -119,7 +119,7 @@ class Git < Formula
     args += if OS.mac?
       %w[NO_OPENSSL=1 APPLE_COMMON_CRYPTO=1]
     else
-      openssl_prefix = formula_opt_prefix("bemly/tahoe/fork-openssl@4")
+      openssl_prefix = formula_opt_prefix("bemly/tahoe/openssl@4")
 
       %W[NO_APPLE_COMMON_CRYPTO=1 OPENSSLDIR=#{openssl_prefix}]
     end

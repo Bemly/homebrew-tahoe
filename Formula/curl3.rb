@@ -41,13 +41,13 @@ class Curl3 < Formula
   # 不会遮蔽系统 /usr/bin/curl；开发件已裁掉（见类注释），link 出来的全是
   # curl3 专属文件，无 shadowing。
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/brotli"
   depends_on "bemly/tahoe/libpsl"
   depends_on "bemly/tahoe/libssh2"
-  depends_on "bemly/tahoe/fork-openssl@4"
-  depends_on "bemly/tahoe/fork-zstd"
+  depends_on "bemly/tahoe/openssl@4"
+  depends_on "bemly/tahoe/zstd"
   depends_on "bemly/tahoe/libnghttp2"
   depends_on "bemly/tahoe/libnghttp3"
   depends_on "bemly/tahoe/libngtcp2"
@@ -79,7 +79,7 @@ class Curl3 < Formula
       --disable-shared
       --disable-silent-rules
       --enable-proxy-http3
-      --with-ssl=#{formula_opt_prefix("bemly/tahoe/fork-openssl@4")}
+      --with-ssl=#{formula_opt_prefix("bemly/tahoe/openssl@4")}
       --without-ca-bundle
       --without-ca-path
       --with-ca-fallback

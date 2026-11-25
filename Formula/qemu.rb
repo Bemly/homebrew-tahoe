@@ -19,11 +19,11 @@ class Qemu < Formula
     sha256 tahoe: "07b11df404f7f13c3eee776741781fc57a431bd1e71860e4e952f39536bcf602"
   end
 
-  depends_on "bemly/tahoe/fork-bison" => :build # >= 3.0
+  depends_on "bemly/tahoe/bison" => :build # >= 3.0
   depends_on "libtool" => :build
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on "bemly/tahoe/python@3.15" => :build # keep aligned with meson
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/capstone"
@@ -41,7 +41,7 @@ class Qemu < Formula
   depends_on "bemly/tahoe/ncurses"
   depends_on "bemly/tahoe/pixman"
   depends_on "bemly/tahoe/snappy"
-  depends_on "bemly/tahoe/fork-zstd"
+  depends_on "bemly/tahoe/zstd"
 
   uses_from_macos "flex" => :build
   uses_from_macos "bzip2"

@@ -98,7 +98,7 @@ class Bash < Formula
 
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/ncurses"
-  depends_on "bemly/tahoe/fork-readline"
+  depends_on "bemly/tahoe/readline"
   depends_on macos: :tahoe
 
   # We're not using `url :stable` here because we need `url` to be a string
@@ -108,7 +108,7 @@ class Bash < Formula
   # https://github.com/Homebrew/homebrew-core/issues/158667
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
   end
 
   deny_network_access!

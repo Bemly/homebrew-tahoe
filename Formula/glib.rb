@@ -19,10 +19,10 @@ class Glib < Formula
     sha256 tahoe: "33455c41ea302ab71682a29639c0a1768c4ffa88d3b4bba9d6fb8057da50e963"
   end
 
-  depends_on "bemly/tahoe/fork-gettext" => :build
+  depends_on "bemly/tahoe/gettext" => :build
 
-  depends_on "bemly/tahoe/fork-pkgconf" => [:build, :test]
-  depends_on "bemly/tahoe/fork-bison" => :build
+  depends_on "bemly/tahoe/pkgconf" => [:build, :test]
+  depends_on "bemly/tahoe/bison" => :build
 
   depends_on "bemly/tahoe/meson" => :build
   depends_on "bemly/tahoe/ninja" => :build
@@ -42,7 +42,7 @@ class Glib < Formula
   uses_from_macos "python"
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
   end
 
   on_linux do
@@ -145,10 +145,10 @@ class Glib < Formula
     # have a pkgconfig file, so we add gettext lib and include paths here.
     inreplace lib/"pkgconfig/glib-2.0.pc" do |s|
       s.gsub! "Libs: -L${libdir} -lglib-2.0 -lintl",
-              "Libs: -L${libdir} -lglib-2.0 -L#{formula_opt_lib("bemly/tahoe/fork-gettext")} -lintl"
+              "Libs: -L${libdir} -lglib-2.0 -L#{formula_opt_lib("bemly/tahoe/gettext")} -lintl"
       s.gsub! "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include",
               "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include " \
-              "-I#{formula_opt_include("bemly/tahoe/fork-gettext")}"
+              "-I#{formula_opt_include("bemly/tahoe/gettext")}"
     end
   end
 

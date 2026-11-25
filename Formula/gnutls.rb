@@ -33,7 +33,7 @@ class Gnutls < Formula
     sha256 tahoe: "f29137023d1f9386c85551e21b6cf9a8b23aa31dc2cb0440f3a15c43b62ada58"
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on "texinfo" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/gmp"
@@ -50,7 +50,7 @@ class Gnutls < Formula
   # match versions from the tarball links on that directory listing page.
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
   end
 
   # Test performs a TLS handshake with expired.badssl.com

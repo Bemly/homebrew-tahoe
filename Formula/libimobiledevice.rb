@@ -22,7 +22,7 @@ class Libimobiledevice < Formula
   depends_on "autoconf" => :build
   depends_on "bemly/tahoe/automake" => :build
   depends_on "libtool" => :build
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libimobiledevice-glue"
   depends_on "bemly/tahoe/libplist"
@@ -30,10 +30,10 @@ class Libimobiledevice < Formula
   depends_on "bemly/tahoe/libusbmuxd"
   depends_on "bemly/tahoe/libtasn1"
   depends_on macos: :tahoe
-  depends_on "bemly/tahoe/fork-openssl@4"
+  depends_on "bemly/tahoe/openssl@4"
 
   on_linux do
-    depends_on "bemly/tahoe/fork-readline"
+    depends_on "bemly/tahoe/readline"
   end
 
   deny_network_access!

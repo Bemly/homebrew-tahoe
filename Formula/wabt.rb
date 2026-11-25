@@ -31,7 +31,7 @@ class Wabt < Formula
   # 运行时依赖走本源 fork-openssl@4 自瓶（keg_only），避免回落到 core 源码编译。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-  depends_on "bemly/tahoe/fork-openssl@4"
+  depends_on "bemly/tahoe/openssl@4"
 
   uses_from_macos "python" => :build
 

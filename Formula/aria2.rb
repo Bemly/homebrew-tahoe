@@ -10,18 +10,18 @@ class Aria2 < Formula
     root_url "https://ghcr.io/v2/bemly/tahoe"
     sha256 tahoe: "7a0ec4bdbe29a63c791485c9a37bd40b770384abab276741bb43814b5393d7cf"
   end
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/c-ares"
   depends_on "bemly/tahoe/libssh2"
-  depends_on "bemly/tahoe/fork-openssl@4"
+  depends_on "bemly/tahoe/openssl@4"
   depends_on "bemly/tahoe/sqlite"
   depends_on macos: :tahoe
 
   uses_from_macos "libxml2"
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
   end
 
   on_linux do

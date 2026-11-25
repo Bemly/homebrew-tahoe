@@ -19,7 +19,7 @@ class Socat < Formula
 
   depends_on arch: :x86_64
   depends_on macos: :tahoe
-  depends_on "bemly/tahoe/fork-openssl@3"
+  depends_on "bemly/tahoe/openssl@3"
 
   def install
     # NOTE: readline must be disabled as the license is incompatible with GPL-2.0-only,

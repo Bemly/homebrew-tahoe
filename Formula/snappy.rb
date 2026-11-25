@@ -14,7 +14,7 @@ class Snappy < Formula
     sha256 cellar: :any, tahoe: "4fc1a772cea478c74fb0b87a3d64e670fe6851d0a436cb07eb00cd34ae4d7030"
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on macos: :tahoe

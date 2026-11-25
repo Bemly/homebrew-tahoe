@@ -21,15 +21,15 @@ class PythonAT315 < Formula
   disable! date: "2032-11-01", because: :deprecated_upstream
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的构建。
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "ca-certificates" => :no_linkage
   depends_on macos: :tahoe
   depends_on "bemly/tahoe/mpdecimal"
-  depends_on "bemly/tahoe/fork-openssl@4"
+  depends_on "bemly/tahoe/openssl@4"
   depends_on "bemly/tahoe/sqlite"
-  depends_on "bemly/tahoe/fork-xz"
-  depends_on "bemly/tahoe/fork-zstd"
+  depends_on "bemly/tahoe/xz"
+  depends_on "bemly/tahoe/zstd"
 
   uses_from_macos "bzip2"
   uses_from_macos "expat", since: :sequoia

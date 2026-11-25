@@ -20,13 +20,13 @@ class PythonAT311 < Formula
 
   disable! date: "2028-11-01", because: :deprecated_upstream
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
 
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/mpdecimal"
-  depends_on "bemly/tahoe/fork-openssl@3"
+  depends_on "bemly/tahoe/openssl@3"
   depends_on "bemly/tahoe/sqlite"
-  depends_on "bemly/tahoe/fork-xz"
+  depends_on "bemly/tahoe/xz"
   depends_on macos: :tahoe
 
   # setuptools remembers the build flags python is built with and uses them to
@@ -201,7 +201,7 @@ class PythonAT311 < Formula
     inreplace "./Lib/ctypes/macholib/dyld.py" do |f|
       f.gsub! "DEFAULT_LIBRARY_FALLBACK = [",
               "DEFAULT_LIBRARY_FALLBACK = [ '#{HOMEBREW_PREFIX}/lib', " \
-              "'#{formula_opt_lib("bemly/tahoe/fork-openssl@3")}',"
+              "'#{formula_opt_lib("bemly/tahoe/openssl@3")}',"
       f.gsub! "DEFAULT_FRAMEWORK_FALLBACK = [", "DEFAULT_FRAMEWORK_FALLBACK = [ '#{HOMEBREW_PREFIX}/Frameworks',"
     end
 

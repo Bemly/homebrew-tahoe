@@ -20,13 +20,13 @@ class PythonAT314 < Formula
 
   disable! date: "2031-11-01", because: :deprecated_upstream
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/mpdecimal"
-  depends_on "bemly/tahoe/fork-openssl@4"
+  depends_on "bemly/tahoe/openssl@4"
   depends_on "bemly/tahoe/sqlite"
-  depends_on "bemly/tahoe/fork-xz"
-  depends_on "bemly/tahoe/fork-zstd"
+  depends_on "bemly/tahoe/xz"
+  depends_on "bemly/tahoe/zstd"
   depends_on "ca-certificates" => :no_linkage
   depends_on macos: :tahoe
 

@@ -29,19 +29,19 @@ class Wget < Formula
 
     depends_on "autoconf" => :build
     depends_on "bemly/tahoe/automake" => :build
-    depends_on "bemly/tahoe/fork-xz" => :build
+    depends_on "bemly/tahoe/xz" => :build
   end
 
-  depends_on "bemly/tahoe/fork-pkgconf" => :build
+  depends_on "bemly/tahoe/pkgconf" => :build
 
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libidn2"
   depends_on "bemly/tahoe/libpsl"
-  depends_on "bemly/tahoe/fork-openssl@4"
+  depends_on "bemly/tahoe/openssl@4"
   depends_on macos: :tahoe
 
   on_macos do
-    depends_on "bemly/tahoe/fork-gettext"
+    depends_on "bemly/tahoe/gettext"
     depends_on "bemly/tahoe/libunistring"
   end
 
@@ -57,7 +57,7 @@ class Wget < Formula
     system "./bootstrap", "--skip-po" if build.head?
     system "./configure", "--sysconfdir=#{etc}",
                           "--with-ssl=openssl",
-                          "--with-libssl-prefix=#{formula_opt_prefix("bemly/tahoe/fork-openssl@4")}",
+                          "--with-libssl-prefix=#{formula_opt_prefix("bemly/tahoe/openssl@4")}",
                           "--disable-pcre",
                           "--disable-pcre2",
                           "--with-libpsl",
