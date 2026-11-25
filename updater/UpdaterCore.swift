@@ -115,7 +115,7 @@ struct CheckConfig {
     let alwaysUpdate: Bool
     /// 需人工同步原因：非 nil 时检测到新版不自动改写，输出 status=manual-sync
     /// 由 watch-updates.yml 发 `[需人工同步]` issue 告警（适用于含版本耦合
-    /// resource 或 patch_checksum_pairs 的公式，如 git / bash / fork-readline）。
+    /// resource 或 patch_checksum_pairs 的公式，如 git / bash / readline）。
     let manualSyncReason: String?
     /// 补丁成品依赖就绪检查：当产物（如本仓 patched Release）尚未发布时，检查上游补丁依赖
     /// 是否就绪，决定触发 `patched.yml`（status=needs-patched-build）还是暂缓等待（waiting-upstream）。

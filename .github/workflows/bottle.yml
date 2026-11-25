@@ -328,7 +328,7 @@ jobs:
             # macos-26-intel 镜像预装了部分 core keg（如 python@3.14 / gnutls / glib / ncurses 等），
             # 沿 `brew deps --include-build --full-name` 扫描所有本仓 `bemly/tahoe/*` 传递依赖，
             # 若本地已装 keg 不是来自 `bemly/tahoe`，先强卸再交给 install 倒回本源 GHCR 瓶；
-            # 裸名依赖（如 fork-zstd 里的 bare cmake）不在其中，避免误卸预装构建工具。
+            # 裸名 core 依赖不在其中，避免误卸预装构建工具。
             for dep in $(HOMEBREW_NO_ENV_HINTS=1 brew deps --include-build --full-name "bemly/tahoe/$f" 2>/dev/null | sed -n 's|^bemly/tahoe/||p'); do
               if [[ -n "$dep" && -f "Formula/${dep}.rb" ]]; then
                 if ! grep -Eq '"tap":[[:space:]]*"bemly/tahoe"' "${BREW_PREFIX}/opt/${dep}/INSTALL_RECEIPT.json" 2>/dev/null; then
@@ -343,7 +343,7 @@ jobs:
             # （如镜像预装的 ca-certificates）；runner 是一次性环境，强卸安全。
             brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
             # 构建工具走 PATH（llvm/z3，见 AGENTS.md §11.2）：公式里用 system "cmake"
-            # 但刻意不声明 cmake 依赖——树里已有 python/zstd 拖入的裸 cmake，再挂全名会让
+            # 但刻意不声明 cmake 依赖——树里可能已有 core 依赖拖入裸 cmake，再挂全名会让
             # 同一 Cellar 名以两个 full_name 进锁数组，macOS flock 同进程双开自锁。
             # 这里预装本 tap cmake 瓶（幂等，已装即 no-op），构建走 PATH 即可。
             if grep -q 'system "cmake"' "Formula/${f}.rb" && \
