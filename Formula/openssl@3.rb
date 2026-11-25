@@ -13,6 +13,12 @@ class OpensslAT3 < Formula
     regex(/href=.*?openssl[._-]v?(3\.5(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "11ca5d75fef6fcf456b116829b756a417c26a7dd1bc7c37eb2b372280b0a3e62"
+    sha256 tahoe: "3108785e6f7e7db6248140ec23e9830c672ca02fe72028c26121329f0bd3a9e0"
+  end
+
   keg_only :provided_by_macos
 
   deprecate! date: "2030-04-08", because: :unmaintained
