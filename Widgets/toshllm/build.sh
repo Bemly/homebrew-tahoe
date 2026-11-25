@@ -22,8 +22,11 @@ done
 [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || {
   echo "commit must be a 40-character SHA" >&2; exit 2;
 }
-[[ "$upload" != true || -n "${GH_TOKEN:-}" ]] || {
-  echo "GH_TOKEN is required for --upload" >&2; exit 2;
+[[ "${version##*-}" == "${commit:0:8}" ]] || {
+  echo "version short SHA does not match commit" >&2; exit 2;
+}
+[[ -n "${GH_TOKEN:-}" ]] || {
+  echo "GH_TOKEN is required to verify ToshLLM engine pins" >&2; exit 2;
 }
 
 out="$ROOT/.build/toshllm-source"
@@ -35,6 +38,26 @@ curl -fL --retry 3 --retry-delay 3 --max-time 300 \
 tar -xzf "$archive" -C "$out/src"
 src="$out/src/toshllm-$commit"
 [[ -d "$src" ]] || { echo "source directory missing: $src" >&2; exit 1; }
+
+pinned_commit() {
+  ruby -e 'text = File.read(ARGV.fetch(0)); match = text.match(%r{/archive/([0-9a-f]{40})\.tar\.gz}); abort "missing pinned commit" unless match; puts match[1]' "Formula/$1.rb"
+}
+
+tree_json="$(gh api "repos/Bemly/toshllm/git/trees/$commit?recursive=1")"
+for engine in llama.cpp stable-diffusion.cpp audio.cpp; do
+  case "$engine" in
+    llama.cpp) formula="llama.cpp"; path="vendor/llama.cpp" ;;
+    stable-diffusion.cpp) formula="sd.cpp"; path="vendor/stable-diffusion.cpp" ;;
+    audio.cpp) formula="audio.cpp"; path="vendor/audio.cpp" ;;
+  esac
+  expected="$(printf '%s' "$tree_json" | jq -r --arg path "$path" '.tree[] | select(.path == $path) | .sha')"
+  actual="$(pinned_commit "$formula")"
+  [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || { echo "missing ToshLLM gitlink: $path" >&2; exit 1; }
+  [[ "$actual" == "$expected" ]] || {
+    echo "$formula pin mismatch: ToshLLM expects $expected, tap pins $actual" >&2
+    exit 1
+  }
+done
 
 taps_dir="$(brew --repository)/Library/Taps/bemly"
 mkdir -p "$taps_dir"

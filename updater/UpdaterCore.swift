@@ -354,27 +354,15 @@ func gitRemoteBranchHead(repo: String, branch: String) -> String? {
     return nil
 }
 
-private func gitSnapshotVersion(repo: String, sha: String, compareJSON: [String: Any]) -> GitHeadSnapshot? {
-    func date(of commit: [String: Any]) -> String? {
-        guard let details = commit["commit"] as? [String: Any] else { return nil }
-        let author = details["author"] as? [String: Any]
-        let committer = details["committer"] as? [String: Any]
-        let iso = (author?["date"] as? String) ?? (committer?["date"] as? String) ?? ""
-        let parts = String(iso.prefix(10)).split(separator: "-")
-        guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty }) else { return nil }
-        return parts.joined(separator: ".")
-    }
-
-    var commitDate: String?
-    if let commits = compareJSON["commits"] as? [[String: Any]], let last = commits.last {
-        commitDate = date(of: last)
-    }
-    if commitDate == nil,
-       let commit = fetchJSON("https://api.github.com/repos/\(repo)/commits/\(sha)") {
-        commitDate = date(of: commit)
-    }
-    guard let commitDate else { return nil }
-    return GitHeadSnapshot(sha: sha, date: commitDate)
+private func gitSnapshotVersion(repo: String, sha: String) -> GitHeadSnapshot? {
+    guard let commit = fetchJSON("https://api.github.com/repos/\(repo)/commits/\(sha)"),
+          let details = commit["commit"] as? [String: Any] else { return nil }
+    let author = details["author"] as? [String: Any]
+    let committer = details["committer"] as? [String: Any]
+    let iso = (author?["date"] as? String) ?? (committer?["date"] as? String) ?? ""
+    let parts = String(iso.prefix(10)).split(separator: "-")
+    guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty }) else { return nil }
+    return GitHeadSnapshot(sha: sha, date: parts.joined(separator: "."))
 }
 
 private func pinnedGitCommit(in content: String, repo: String) -> String? {
@@ -1310,7 +1298,7 @@ func runGitHeadCheck(config: CheckConfig, repo: String, branch: String,
         emit("current_version=\(local)")
         return
     }
-    guard let snapshot = gitSnapshotVersion(repo: repo, sha: remote, compareJSON: comparison) else {
+    guard let snapshot = gitSnapshotVersion(repo: repo, sha: remote) else {
         print("::warning::无法解析主线 commit 日期，拒绝生成快照版本")
         emit("status=check-failed")
         emit("current_version=\(local)")
@@ -1331,7 +1319,10 @@ func runGitHeadCheck(config: CheckConfig, repo: String, branch: String,
         emit("commit=\(remote)")
     case "ahead":
         if config.isCask {
-            print("\(config.formula) 主线已更新，交由源码成品 workflow 构建：\(snapshot.version)")
+          guard config.formula == "toshllm" else {
+            fail("gitHead cask \(config.formula) 尚未配置源码成品构建")
+          }
+          print("\(config.formula) 主线已更新，交由源码成品 workflow 构建：\(snapshot.version)")
             emit("status=needs-source-build")
             emit("current_version=\(local)")
             emit("new_version=\(snapshot.version)")
@@ -1570,12 +1561,16 @@ func runCheck(_ config: CheckConfig) {
                                    sha256: hintSHA)
     }
     let stable = upstream.version
+    let mirrorList = ProcessInfo.processInfo.environment["FORCE_MIRROR_CASKS"] ?? ""
+    let forceMirror = config.isCask && config.uploadRelease && mirrorList
+        .split(separator: ",")
+        .contains { String($0).trimmingCharacters(in: .whitespacesAndNewlines) == config.formula }
 
     // 3. 版本比较（alwaysUpdate 跳过相等判定：浮动直链/只留最新快照类上游，
     // 内容变化不体现在版本号上，相等也必须走完全链路重验；newer-than 守卫保留）
     if current == stable {
-        if config.alwaysUpdate {
-            print("必触发模式（alwaysUpdate）：版本相同（\(current)）仍继续更新。")
+        if config.alwaysUpdate || forceMirror {
+            print("强制触发模式：版本相同（\(current)）仍继续更新。")
         } else {
             print("已是最新，无需更新。")
             emit("status=up-to-date")
@@ -1591,14 +1586,18 @@ func runCheck(_ config: CheckConfig) {
     }
     // 数值相等但字面不同（如 yt-dlp 本地 "2026.08.19" vs brew "2026.8.19"）：
     // 同一版本，不更新——否则每次都误报并写出 404 URL（见 AGENTS.md §11.3）。
-    // 必触发包不受影响（上式 current == stable 已提前分流，alwaysUpdate 不到此）。
-    if current != stable, compareVersions(current, stable) == 0 {
+    // alwaysUpdate 仍只处理字面相等；手动 forceMirror 也允许数值相等的字面差异。
+    if current != stable, compareVersions(current, stable) == 0, !forceMirror {
         print("已是最新（数值相等，字面差异：本地 \(current) vs 上游 \(stable)），无需更新。")
         emit("status=up-to-date")
         emit("current_version=\(current)")
         return
     }
-    print("发现新版本 : \(current) -> \(stable)")
+    if current == stable {
+        print("强制重新镜像：\(config.formula) \(stable)")
+    } else {
+        print("发现新版本 : \(current) -> \(stable)")
+    }
 
     // 需人工同步的公式（版本耦合 resource / patch_checksum_pairs）：仅告警不自动改写
     if let reason = config.manualSyncReason {

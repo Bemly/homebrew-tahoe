@@ -1,3 +1,5 @@
+require "digest"
+
 class LlamaCpp < Formula
   desc "LLM inference in C/C++ with the Bemly ToshGEMM fork"
   homepage "https://github.com/Bemly/llama.cpp"
@@ -64,6 +66,11 @@ class LlamaCpp < Formula
              "-c", source, "-o", air
       system "xcrun", "metallib", air, "-o", metallib
       air.unlink
+      fingerprint = kernels/"fingerprint"
+      fingerprint.write("") unless fingerprint.exist?
+      File.open(fingerprint, "a") do |file|
+        file.puts "#{name} #{Digest::SHA256.file(source.to_s).hexdigest}"
+      end
     end
   end
 
