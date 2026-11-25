@@ -43,14 +43,14 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 147 个公式（61 个预编译 + 86 个源码）
+├── Formula/                           # 153 个公式（61 个预编译 + 92 个源码）
 ├── Casks/                             # 26 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 162 个检查器入口，与 Formula|Casks 一一同名
+│   └── <name>.swift                   # 167 个检查器入口，与 Formula|Casks 一一同名
 └── .github/workflows/
     ├── watch-updates.yml              # 每日自动 + 手动触发的批量版本 watcher（ubuntu-latest + Swift）
     ├── bottle.yml                     # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
@@ -102,7 +102,7 @@ end
 
 ## 6. 当前收录
 
-> **147 个公式（61 个预编译直引 + 86 个源码包）**，`updater/` 共 162 个检查器（另有 `UpdaterCore.swift`）。
+> **153 个公式（61 个预编译直引 + 92 个源码包）**，`updater/` 共 167 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -199,8 +199,10 @@ end
 | `graphviz` | 16.1.2 | core 拷入（源码） | 零第三方渲染插件；autotools |
 | `guile` | 3.0.11 | core 同名接管（源码） | bdw-gc/gmp/libunistring…；交叉工具链依赖 |
 | `icu4c@78` | 78.3 | core 同名接管（源码） | autotools；`keg_only`；freeling 依赖；`revision` 与 core 同步 |
+| `ideviceinstaller` | 1.2.0 | core 拷入（源码） | iOS app 安装工具；依赖本仓 idevice 栈与 `libzip`；与 core 同名 |
 | `jemalloc` | 5.4.0 | core 同名接管（源码） | autotools；nghttp2 依赖 |
 | `json-c` | 0.19 | core 同名接管（源码） | cmake；gettext 依赖 |
+| `ldid` | 2.1.5 | core 拷入（源码） | Mach-O 签名工具；依赖本仓 `libplist`/openssl@3；上游停更，锁定版本 |
 | `libassuan` | 3.0.2 | core 同名接管（源码） | autotools；`gnupg`/`pinentry` 依赖；依赖 `libgpg-error` |
 | `libev` | 4.33 | core 同名接管（源码） | autotools；nghttp2 依赖 |
 | `libgcrypt` | 1.12.4 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libgpg-error` |
@@ -224,6 +226,7 @@ end
 | `libusb` | 1.0.30 | core 同名接管（源码） | autotools；gnupg/qemu 依赖 |
 | `libusbmuxd` | 2.1.1 | core 拷入（源码） | idevice USB 复用；revision 同步 |
 | `libyaml` | 0.2.5 | core 同名接管（源码） | autotools；dtc 依赖 |
+| `libzip` | 1.12.1 | core 拷入（源码） | ZIP 库与工具；CMake；依赖本仓 `cmake`/`xz`/`zstd`；与 core 同名 |
 | `lzo` | 2.10 | core 同名接管（源码） | autotools；qemu 依赖 |
 | `lz4` | 1.11.1 | core 同名接管（源码） | make + cmake；zstd 依赖 |
 | `make` | 4.4.1 | core 拷入（源码） | 装成 `gmake`；与 core 同名 |
@@ -306,7 +309,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 可传 `mirror_casks`（逗号分隔）：仍全仓扫描，但指定 cask 即使版本相同也会重新下载、
 实算 sha 并上传本仓 Release，适用于同版本迁移 token 或补镜像；文件无变化时不空提交。
 
-1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，按同名匹配 `updater/<name>.swift`（11 个 pinned 包故意无检查器：`afm`、`amd`、`checkra1n`、`cmd`、`ffserver`、`heliport`、`llvm`、`macos-tskmgr`、`neofetch`、`palera1n`、`winstart`）。
+1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，按同名匹配 `updater/<name>.swift`（12 个 pinned 包故意无检查器：`afm`、`amd`、`checkra1n`、`cmd`、`ffserver`、`heliport`、`ldid`、`llvm`、`macos-tskmgr`、`neofetch`、`palera1n`、`winstart`）。
 2. `swiftc -O updater/UpdaterCore.swift updater/<name>.swift` 编译并运行（每包 `timeout 600`）；默认 8 路并发执行（`WATCH_JOBS` 可覆盖），各包写独立日志与 `GITHUB_OUTPUT`；启动时先按队列打印检查序号，主循环再按原队列顺序等待并立即流式输出详细日志和状态，避免交叉输出。
 3. 本地版本优先取顶层 `version` 行（跳过 `fails_with` 块内），否则从 `url` 解析。
 4. 上游来源（优先级 `gitHead` > `customRelease` > `raw` > `github` > `brew`）：
@@ -419,6 +422,8 @@ brew trust bemly/tahoe
   3. 查上游官方或可信 macOS x86_64 预编译包；有则重打包入源并出瓶。
   4. 无预编译时，把依赖源码公式以 core 原名并入本仓，在 CI 上代编译出瓶；**允许固定旧版工具链**，例如本仓 pin 住的 LLVM 19、Rust 1.91.1，只要真实构建与运行验证通过。
   5. 对新入源依赖递归执行同一检查，继续向上处理它的子依赖，形成完整瓶闭包；最后改引用、重出受影响的直接/间接依赖方，并重新监控 Action 确认没有依赖源码构建。
+
+- **Core 工具缺瓶核查**：`ideviceinstaller 1.2.0`、`ldid 2.1.5`、`libzip 1.12.1` 的上游发布资产均只有源码，Core 当前 GHCR manifest 也没有 Intel macOS 层。历史 tag 中虽有旧版 `darwin/amd64` 层，但版本与依赖落后于本仓迁移栈，不能安全复用；三者按当前 Core 公式入源并在 `macos-26-intel` 出 Tahoe 瓶，运行时依赖全部写本仓全名。
 
 ### 11.5 Cask 镜像与声明式 Steps
 

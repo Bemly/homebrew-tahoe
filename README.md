@@ -61,7 +61,7 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **147 formulae** (61 prebuilt + 86 source-built) and **26 casks**.
+> Total: **153 formulae** (61 prebuilt + 92 source-built) and **26 casks**.
 
 ### CLI & Developer Tools — Prebuilt Formulae (61)
 
@@ -129,7 +129,7 @@ brew install --cask bemly/tahoe/antigravity
 | `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
 | `zig` | Zig toolchain, official `zig-x86_64-macos-<ver>.tar.xz` (Intel host); same-name conflict with core |
 
-### Source-Built User Formulae (32)
+### Source-Built User Formulae (38)
 
 Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources and distributed as GHCR bottles.
 
@@ -146,6 +146,8 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `git` | Distributed version control system (`pcre2`/`gettext` on macOS with CommonCrypto); same-name conflict with core |
 | `gnupg` | GNU Privacy Guard (OpenPGP), compiled from core sources using `gnutls`, `libusb`, `readline`, `gettext`, and the GnuPG C library stack; same-name conflict with core |
 | `graphviz` | Graph visualization software, zero-runtime-dependency build (Quartz and built-in plugins provide PDF/PNG/SVG) |
+| `ideviceinstaller` | Install and manage apps on iOS devices, using this tap's complete `libimobiledevice`/`libplist`/`libzip` stack; same-name conflict with core |
+| `ldid` | Manipulate Mach-O code signatures (`ldid`/`ldid2`), built with this tap's `libplist` and `openssl@3`; upstream 2.1.5 is pinned; same-name conflict with core |
 | `libimobiledevice` | iOS device communication tools (`idevice*`), compiled with `libimobiledevice-glue`, `libplist`, `libtatsu`, `libusbmuxd`, `libtasn1`, `openssl@4` |
 | `libimobiledevice-glue` | Glue library for the `libimobiledevice` stack (`libplist`); same-name conflict with core |
 | `libnghttp3` | HTTP/3 C library; bottled dependency of `curl3` |
@@ -154,6 +156,7 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `libslirp` | User-mode networking library (`glib`); bottled dependency of `qemu` |
 | `libtatsu` | Apple TSS library for the `libimobiledevice` stack |
 | `libusbmuxd` | USB multiplexor library for iOS devices |
+| `libzip` | ZIP archive library and tools, built with this tap's `cmake`, `xz`, and `zstd`; same-name conflict with core |
 | `make` | GNU make (installed as `gmake`), mirrored even though core has a tahoe bottle |
 | `mercurial` | Distributed version control system (`hg` + `chg`), built with this tap's `python@3.11`; same-name conflict with core |
 | `meson` | Fast build system, depends on this tap's `ninja` and `python@3.15` so updates never rebuild Python from source; same-name conflict with core |
@@ -172,7 +175,7 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 
 All runtime infrastructure uses its core name and is referenced as `bemly/tahoe/<name>`. These tokens cannot coexist with `homebrew/core`; switch the whole dependency stack rather than mixing individual libraries. `bison`, `openssl@3`, and `readline` remain `keg_only` following core semantics, and OpenSSL 3/4 stay on separate ABI lines.
 
-- **Same-name dependency libraries (54 source-built formulae, totaling 86 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
+- **Same-name dependency libraries (54 source-built formulae, totaling 92 source-built formulae with the 38 above; `boost@1.85` prebuilt is also a same-name dependency)**:
   `abseil`, `bdw-gc`, `bison`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `gettext`, `glib`, `gmp`, `gnu-sed`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `json-c`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libtasn1`, `libunistring`, `libusb`, `libyaml`, `lz4`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `openssl@3`, `openssl@4`, `p11-kit`, `pcre2`, `pinentry`, `pixman`, `pkgconf`, `python@3.14`, `readline`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`, `xz`, `zstd`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
 

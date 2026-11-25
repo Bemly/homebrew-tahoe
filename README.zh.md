@@ -50,7 +50,7 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **147 个公式**（61 个预编译直引 + 86 个源码代编译）与 **26 个 cask**。
+> 共收录 **153 个公式**（61 个预编译直引 + 92 个源码代编译）与 **26 个 cask**。
 
 ### CLI 与开发工具 — 预编译直引公式（61 个）
 
@@ -118,7 +118,7 @@ brew install --cask bemly/tahoe/antigravity
 | `z3` | 高性能定理证明器，官方 macOS x64 预编译包（`z3-<ver>-x64-osx-13.3.zip`，零依赖）；与 core 同名 |
 | `zig` | Zig 工具链，官方 `zig-x86_64-macos-<ver>.tar.xz`（Intel host）；与 core 同名 |
 
-### 源码代编译公式（32 个工具与专用栈）
+### 源码代编译公式（38 个工具与专用栈）
 
 在 `macos-26-intel` CI 上从 `homebrew/core` 或上游源码一次性编译出瓶，经 GHCR 分发。
 
@@ -135,6 +135,8 @@ brew install --cask bemly/tahoe/antigravity
 | `git` | 分布式版本控制系统（macOS 用 CommonCrypto，依赖 `pcre2`/`gettext`）；与 core 同名 |
 | `gnupg` | GNU Privacy Guard（OpenPGP），使用 `gnutls`、`libusb`、`readline`、`gettext` 与 GnuPG C 库全家桶；与 core 同名 |
 | `graphviz` | 图形可视化软件，零运行时依赖构建（Quartz 与内置插件支持 PDF/PNG/SVG） |
+| `ideviceinstaller` | 在 iOS 设备上安装和管理 app，使用本源完整的 `libimobiledevice`/`libplist`/`libzip` 栈；与 core 同名 |
+| `ldid` | 修改 Mach-O 代码签名（`ldid`/`ldid2`），使用本源 `libplist` 与 `openssl@3`；上游 2.1.5 已停更并锁定；与 core 同名 |
 | `libimobiledevice` | iOS 设备通信工具集（`idevice*`），使用本源 `libimobiledevice-glue`、`libplist`、`libtatsu`、`libusbmuxd`、`libtasn1`、`openssl@4` |
 | `libimobiledevice-glue` | `libimobiledevice` 胶水库（`libplist`）；与 core 同名 |
 | `libnghttp3` | HTTP/3 C 库，`curl3` 依赖 |
@@ -143,6 +145,7 @@ brew install --cask bemly/tahoe/antigravity
 | `libslirp` | 用户态网络库（`glib`），`qemu` 依赖 |
 | `libtatsu` | Apple TSS 库，`libimobiledevice` 栈依赖 |
 | `libusbmuxd` | iOS 设备 USB 复用库 |
+| `libzip` | ZIP 归档库与工具，使用本源 `cmake`、`xz`、`zstd` 构建；与 core 同名 |
 | `make` | GNU make（装成 `gmake`）；core 虽有 tahoe 瓶仍镜像 |
 | `mercurial` | 分布式版本控制系统（`hg` + `chg`），使用本 tap 的 `python@3.11` 现编出瓶；与 core 同名 |
 | `meson` | 快速构建系统，依赖本 tap 的 `ninja` + `python@3.15` 出瓶，不再拖 core 的源码 Python；与 core 同名 |
@@ -161,7 +164,7 @@ brew install --cask bemly/tahoe/antigravity
 
 所有运行时基础设施均使用 core 原名，并按 `bemly/tahoe/<name>` 全名引用。这些 token 不能与 `homebrew/core` 共存，必须整栈切换，不能把单个同名库与 Core 版混装。`bison`、`openssl@3`、`readline` 按 core 语义保留 `keg_only`；OpenSSL 3 与 4 继续保持独立 ABI 线。
 
-- **同名接管的运行时依赖（54 个源码库，连同上述 32 个共 86 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
+- **同名接管的运行时依赖（54 个源码库，连同上述 38 个共 92 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
   `abseil`、`bdw-gc`、`bison`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`gettext`、`glib`、`gmp`、`gnu-sed`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`json-c`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libtasn1`、`libunistring`、`libusb`、`libyaml`、`lz4`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`openssl@3`、`openssl@4`、`p11-kit`、`pcre2`、`pinentry`、`pixman`、`pkgconf`、`python@3.14`、`readline`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`、`xz`、`zstd`
   *（注：`vulkan-loader` 仅运行时依赖在 core 中拥有 `all` 瓶的 `vulkan-headers`。）*
 
