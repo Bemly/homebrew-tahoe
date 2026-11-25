@@ -77,6 +77,9 @@ jobs:
     runs-on: macos-26-intel
     timeout-minutes: 360
     steps:
+      - name: 更新 Homebrew
+        run: brew update
+
       - uses: actions/checkout@v5
         with:
           fetch-depth: 1
@@ -99,10 +102,12 @@ jobs:
         if: (!inputs.skip_build) && inputs.package == 'toshllm'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOSH_VERSION: ${{ inputs.version }}
+          TOSH_COMMIT: ${{ inputs.commit }}
         run: |
           args=(--upload)
-          [[ -n "${{ inputs.version }}" ]] && args+=(--version "${{ inputs.version }}")
-          [[ -n "${{ inputs.commit }}" ]] && args+=(--commit "${{ inputs.commit }}")
+          [[ -n "$TOSH_VERSION" ]] && args+=(--version "$TOSH_VERSION")
+          [[ -n "$TOSH_COMMIT" ]] && args+=(--commit "$TOSH_COMMIT")
           Widgets/toshllm/build.sh "${args[@]}"
 
       # 只改工作区（不提交）：把本次产物的版本号与 sha 写进 cask，供下一步 lint
@@ -173,11 +178,15 @@ jobs:
       # lint 绿 + 构建成功才提交（success() 已含「前面没有失败步骤」）。
       - name: 提交 cask 的 version/sha256
         if: success()
+        env:
+          PACKAGE: ${{ inputs.package }}
+          REVISION: ${{ inputs.revision }}
+          VERSION: ${{ inputs.version }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          paths=("Casks/${{ inputs.package }}.rb")
-          if [[ "${{ inputs.package }}" == "antigravity" ]]; then
+          paths=("Casks/$PACKAGE.rb")
+          if [[ "$PACKAGE" == "antigravity" ]]; then
             paths+=("Widgets/antigravity-niang/official-sha256.txt")
           fi
           if git diff --quiet -- "${paths[@]}"; then
@@ -186,10 +195,10 @@ jobs:
           fi
           git --no-pager diff -- "${paths[@]}"
           git add -- "${paths[@]}"
-          if [[ "${{ inputs.package }}" == "antigravity" ]]; then
-            message="patched: 更新补丁包 cask 与官方 SHA pin（antigravity cn${{ inputs.revision }}）"
+          if [[ "$PACKAGE" == "antigravity" ]]; then
+            message="patched: 更新补丁包 cask 与官方 SHA pin（antigravity cn$REVISION）"
           else
-            message="patched: 从 Bemly fork 源码构建 toshllm ${{ inputs.version }}"
+            message="patched: 从 Bemly fork 源码构建 toshllm $VERSION"
           fi
           git commit -m "$message"
           git pull --rebase origin main

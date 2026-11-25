@@ -359,7 +359,7 @@ private func gitSnapshotVersion(repo: String, sha: String) -> GitHeadSnapshot? {
           let details = commit["commit"] as? [String: Any] else { return nil }
     let author = details["author"] as? [String: Any]
     let committer = details["committer"] as? [String: Any]
-    let iso = (author?["date"] as? String) ?? (committer?["date"] as? String) ?? ""
+    let iso = (committer?["date"] as? String) ?? (author?["date"] as? String) ?? ""
     let parts = String(iso.prefix(10)).split(separator: "-")
     guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty }) else { return nil }
     return GitHeadSnapshot(sha: sha, date: parts.joined(separator: "."))
@@ -1298,13 +1298,6 @@ func runGitHeadCheck(config: CheckConfig, repo: String, branch: String,
         emit("current_version=\(local)")
         return
     }
-    guard let snapshot = gitSnapshotVersion(repo: repo, sha: remote) else {
-        print("::warning::无法解析主线 commit 日期，拒绝生成快照版本")
-        emit("status=check-failed")
-        emit("current_version=\(local)")
-        return
-    }
-
     switch relation {
     case "behind":
         print("本地 commit 领先主线，保持不动。")
@@ -1312,12 +1305,24 @@ func runGitHeadCheck(config: CheckConfig, repo: String, branch: String,
         emit("current_version=\(local)")
         emit("commit=\(remote)")
     case "diverged":
+        guard let snapshot = gitSnapshotVersion(repo: repo, sha: remote) else {
+            print("::warning::无法解析主线 commit 日期，拒绝生成快照版本")
+            emit("status=check-failed")
+            emit("current_version=\(local)")
+            return
+        }
         print("::warning::本地 commit 与 \(branch) 主线已分叉，需人工确认后替换")
         emit("status=manual-sync")
         emit("current_version=\(local)")
         emit("new_version=\(snapshot.version)")
         emit("commit=\(remote)")
     case "ahead":
+        guard let snapshot = gitSnapshotVersion(repo: repo, sha: remote) else {
+            print("::warning::无法解析主线 commit 日期，拒绝生成快照版本")
+            emit("status=check-failed")
+            emit("current_version=\(local)")
+            return
+        }
         if config.isCask {
           guard config.formula == "toshllm" else {
             fail("gitHead cask \(config.formula) 尚未配置源码成品构建")
