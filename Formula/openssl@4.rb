@@ -12,6 +12,12 @@ class OpensslAT4 < Formula
     regex(/href=.*?openssl[._-]v?(4(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "54c9aaaa4c116d27b2a065295f31b920728b41184c4a2d506eef33dfb42f942c"
+    sha256 tahoe: "c329ee7347b2e243a5f3427ae17976e4bb24013568d9d1f6371ea36d5a4e5c16"
+  end
+
 
   depends_on arch: :x86_64
   depends_on "ca-certificates" => :no_linkage
