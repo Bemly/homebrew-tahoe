@@ -8,7 +8,8 @@ class Aria2 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "7a0ec4bdbe29a63c791485c9a37bd40b770384abab276741bb43814b5393d7cf"
+    manifest_sha256 "8ede8180a3f258caa80572ce8c2126349a9d4bd8f8c20d06cdbdc743ccbf019b"
+    sha256 tahoe: "7073e911f453f1fd1f5a28a59717d33f7df8d5e08f708ba3a659682c93e5123c"
   end
   depends_on "bemly/tahoe/pkgconf" => :build
   depends_on arch: :x86_64
