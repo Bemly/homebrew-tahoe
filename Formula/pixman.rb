@@ -13,7 +13,8 @@ class Pixman < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "f2bef2a72c333756857b2238509d37820c6220b307eacbb4ecd9ae4d918d7a59"
+    manifest_sha256 "48dd9e98acc8759ce0662b9bf43c9b0e44a71ff0c6c4c55725cdc722fca4a3b2"
+    sha256 cellar: :any, tahoe: "63cc31ac6010ddf8f939317262395989a6ff6f4ebb8d514fa1d46120b3481c89"
   end
 
   depends_on "bemly/tahoe/meson" => :build
