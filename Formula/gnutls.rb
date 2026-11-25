@@ -57,6 +57,9 @@ class Gnutls < Formula
   allow_network_access! :test
 
   def install
+    ENV["PKG_CONFIG"] = formula_opt_bin("bemly/tahoe/pkgconf")/"pkgconf"
+    ENV.prepend_path "PKG_CONFIG_PATH", formula_opt_lib("bemly/tahoe/nettle")/"pkgconfig"
+
     # DANE support is disabled so GnuTLS does not have an indirect dependency on OpenSSL.
     # If the feature is wanted, then can consider shipping as split `gnutls-dane` formula.
     args = %W[
