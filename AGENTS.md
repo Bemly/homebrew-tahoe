@@ -429,7 +429,8 @@ brew trust bemly/tahoe
 ### 11.7 Binwalk / NZBget / Sevenzip 构建与重打包经验
 
 - **上游证据与最终形态**：`nzbget 26.3` 官方提供 `nzbget-<ver>-bin-macos-x64.zip`，直接重打包 CLI/WebUI；`sevenzip 26.06` 官方提供 Intel `7zz`，由 `binwalk`、`nzbget`、`jpeg-turbo` 闭环引用并恢复原名；`binwalk 3.1.0` 无官方 macOS 二进制，但 Cargo 依赖均为纯 Rust，**不链接 LLVM**，无需本仓 LLVM 19。
-- **小型构建基础设施**：GoogleTest 没有官方 macOS 二进制，Abseil 默认 `ABSL_BUILD_TEST_HELPERS=OFF`，本仓关闭 test helpers 并移除该依赖；系统 Bison 2.3 不满足 Graphviz/QEMU 的 ≥3.0，故做最小 `fork-bison` 源码瓶；Core `gnu-sed` 无 Intel Tahoe 瓶，Guile/交叉工具链改用最小源码瓶并显式 prepend `libexec/gnubin`；NASM 官方提供 universal macOS zip，thin x86_64 后直接作为预编译瓶。
+- **小型构建基础设施**：GoogleTest 没有官方 macOS 二进制，Abseil 默认 `ABSL_BUILD_TEST_HELPERS=OFF`，本仓关闭 test helpers 并移除该依赖；系统 Bison 2.3 不满足 Graphviz/QEMU 的 ≥3.0，故做最小 `bison` 源码瓶；Core `gnu-sed` 无 Intel Tahoe 瓶，Guile/交叉工具链改用最小源码瓶并显式 prepend `libexec/gnubin`；NASM 官方提供 universal macOS zip，thin x86_64 后直接作为预编译瓶。
+- **基础库预编译核查**：`bison`、`gettext`、`openssl@3/@4`、`pkgconf`、`readline`、`xz`、`zstd` 上游均无官方 macOS x86_64 安装包；MacPorts 无 `darwin_26.x86_64` 包且采用 `/opt/local` 布局，不能直接重打包。因此保留兼容固定版本在 `macos-26-intel` 源码出瓶；`zstd 1.5.7_1` 的 `libzstd.1` 与现有消费者 ABI 兼容，OpenSSL 3 与 4 继续分别隔离 dylib、模块、cnf、`.pc` 和 CMake 配置。
 - **构建工具链内嵌，不单独出瓶**：Binwalk 公式内用官方 `rustc`/`cargo`/`rust-std` 1.91.1 资源组装临时工具链。曾把 Rust 1.91.1 单独做成公式并制瓶，体积过大导致 hosted runner 失联；用户端不需要该构建工具，最终不回退为独立 Rust 公式。
 - **`nounzip` 与解包路径**：`using: :nounzip` 会禁止解包、只复制压缩文件，Rust 的 `.tar.xz` 绝不能使用；所有组件定位用 `Dir["**/bin/rustc"]` 等通配，兼容 Homebrew 是否自动下降。
 - **`Pathname#install` 是移动语义**：先 `share.install` 后再从源目录读取许可证/配置会失败；许可证先安装，配置从已安装的 `share` 路径读取。`rustc` 组件已创建 `lib/rustlib/x86_64-apple-darwin`（链接器工具），`rust-std` 必须把 target 目录**内容**合并进去，不能再次移动同名目录，否则会嵌套成 `x86_64-apple-darwin/x86_64-apple-darwin`。
