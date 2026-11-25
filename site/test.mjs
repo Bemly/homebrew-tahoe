@@ -102,7 +102,11 @@ test("repository inventory contains exactly the formula and cask files", async (
 test("static build emits bilingual pages and valid internal links", async (context) => {
   const output = await mkdtemp(path.join(root, ".site-test-"));
   context.after(() => rm(output, { recursive: true, force: true }));
-  execFileSync(process.execPath, [path.join(root, "site/build.mjs"), "--output", output], { cwd: root, stdio: "pipe" });
+  execFileSync(process.execPath, [path.join(root, "site/build.mjs"), "--output", output], {
+    cwd: root,
+    stdio: "pipe",
+    env: { ...process.env, BASE_PATH: "/", SITE_URL: "https://brew.bemly.moe", PAGES_CNAME: "brew.bemly.moe" },
+  });
   const packages = JSON.parse(await readFile(path.join(output, "packages.json"), "utf8")).packages;
   assert.ok(packages.length > 0);
   assert.ok(existsSync(path.join(output, "index.html")));
@@ -112,6 +116,7 @@ test("static build emits bilingual pages and valid internal links", async (conte
   assert.ok(existsSync(path.join(output, "cask/index.html")));
   assert.ok(existsSync(path.join(output, "sitemap.xml")));
   assert.ok(existsSync(path.join(output, ".nojekyll")));
+  assert.equal(await readFile(path.join(output, "CNAME"), "utf8"), "brew.bemly.moe\n");
   for (const pkg of packages) {
     assert.ok(existsSync(path.join(output, pkg.type, pkg.token, "index.html")), `${pkg.fullName} detail page exists`);
     assert.ok(existsSync(path.join(output, "zh", pkg.type, pkg.token, "index.html")), `${pkg.fullName} Chinese detail page exists`);
@@ -121,6 +126,9 @@ test("static build emits bilingual pages and valid internal links", async (conte
   assert.match(home, /id="language"/);
   assert.match(home, /id="theme"/);
   assert.match(home, /data-theme="system"/);
+  assert.match(home, /href="\/assets\/site\.css"/);
+  assert.match(home, /href="https:\/\/brew\.bemly\.moe\/"/);
+  assert.doesNotMatch(home, /\/homebrew-tahoe\/assets\//);
   assert.match(chineseHome, /简体中文/);
   assert.match(chineseHome, /专为 Intel Mac/);
   const chinesePackages = await readFile(path.join(output, "zh/packages/index.html"), "utf8");

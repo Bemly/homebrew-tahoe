@@ -56,7 +56,8 @@ async function build() {
   if (output === root || !output.startsWith(`${root}${path.sep}`)) throw new Error("Output must stay inside the repository");
   const config = {
     basePath: normalizeBasePath(argument("base-path", process.env.BASE_PATH ?? "/")),
-    siteUrl: (argument("site-url", process.env.SITE_URL ?? "https://bemly.github.io/homebrew-tahoe")).replace(/\/+$/, ""),
+    siteUrl: (argument("site-url", process.env.SITE_URL ?? "https://brew.bemly.moe")).replace(/\/+$/, ""),
+    cname: argument("cname", process.env.PAGES_CNAME ?? "").trim(),
   };
   const packages = await loadPackages(root);
   validatePackages(packages);
@@ -72,6 +73,7 @@ async function build() {
     "robots.txt": renderRobots(config),
     "packages.json": `${JSON.stringify({ generatedAt, tap: "bemly/tahoe", packages }, null, 2)}\n`,
     ".nojekyll": "",
+    ...(config.cname ? { CNAME: `${config.cname}\n` } : {}),
   };
   for (const pkg of packages) Object.assign(files, renderPackageDetail(config, pkg, generatedAt));
 
