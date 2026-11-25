@@ -13,7 +13,8 @@ class PythonAT311 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "a74bb57d6ab8797d8be51a131c33fa3748d6e824bbdb07d4f5f27fda74e5f4b0"
+    manifest_sha256 "2df57ce5c5966119d913eb0f7cbc0150c67bb551d76d4029424ad5b4486a04b6"
+    sha256 tahoe: "57b19bc01c24a11b1a3e6de015aa08dc2584c0c2e4b8413b7ccdf9e9756bd5fd"
   end
 
   deprecate! date: "2027-11-01", because: :deprecated_upstream
