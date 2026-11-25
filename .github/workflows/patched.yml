@@ -23,6 +23,7 @@ on:
         type: choice
         options:
           - antigravity
+          - toshllm
       revision:
         description: 补丁序号 cn<N>（同宿主版本重打补丁时递增）
         required: false
@@ -30,6 +31,11 @@ on:
         type: string
       version:
         description: 显式锁宿主版本（留空 = 跟官方下载页；上游汉化引擎未跟上时用它锁旧宿主）
+        required: false
+        default: ""
+        type: string
+      commit:
+        description: 自有 fork 的固定 40 位 commit（toshllm 源码构建必填）
         required: false
         default: ""
         type: string
@@ -88,6 +94,16 @@ jobs:
           [[ -n "${{ inputs.cn_ref }}" ]] && args+=(--cn-ref "${{ inputs.cn_ref }}")
           Widgets/antigravity-niang/build.sh "${args[@]}"
 
+      - name: Build toshllm from Bemly fork
+        id: tosh
+        if: (!inputs.skip_build) && inputs.package == 'toshllm'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          args=(--upload)
+          [[ -n "${{ inputs.version }}" ]] && args+=(--version "${{ inputs.version }}")
+          [[ -n "${{ inputs.commit }}" ]] && args+=(--commit "${{ inputs.commit }}")
+          Widgets/toshllm/build.sh "${args[@]}"
 
       # 只改工作区（不提交）：把本次产物的版本号与 sha 写进 cask，供下一步 lint
       # 审「将要提交的那份文件」。构建失败/未选中的包没有 sidecar，cask 保持原样。
@@ -117,6 +133,31 @@ jobs:
             echo "== $cask → version $ver / sha256 $sha"
           }
           write_back antigravity-cn     antigravity        Antigravity
+          write_back_toshllm() {
+            local dir=".build/toshllm-source" cask="toshllm" asset="ToshLLM"
+            local sidecar base ver sha commit
+            sidecar="$(ls "$dir"/*.dmg.sha256 2>/dev/null | head -1)"
+            if [[ -z "$sidecar" ]]; then
+              echo "== ${cask}：无 sidecar（未构建或构建失败），cask 不动"
+              return 0
+            fi
+            sha="$(awk '{print $1}' "$sidecar")"
+            base="$(basename "$sidecar" .sha256)"
+            ver="${base#"$asset"-}"
+            ver="${ver%.dmg}"
+            commit="$(cat "$dir/commit" 2>/dev/null || true)"
+            if [[ ! "$sha" =~ ^[0-9a-f]{64}$ ]] || [[ ! "$ver" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9a-f]{8}$ ]] || [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "toshllm sidecar/version/commit 不合法：$sidecar / $ver / $commit"; return 1
+            fi
+            sed -i '' -E \
+              -e "s|^  version \".*\"|  version \"$ver\"|" \
+              -e "s|^  sha256 \".*\"|  sha256 \"$sha\"|" \
+              -e "s|^  url \".*\"|  url \"https://github.com/Bemly/homebrew-tahoe/releases/download/toshllm-#{version}/ToshLLM-v#{version}.dmg\"|" \
+              -e "s|^  # source: .*|  # source: https://github.com/Bemly/toshllm/archive/$commit.tar.gz|" \
+              "Casks/$cask.rb"
+            echo "== $cask → version $ver / sha256 $sha / commit $commit"
+          }
+          write_back_toshllm
           git --no-pager diff --stat -- Casks/
 
       - name: Lint casks（style + strict audit，CI 跑不占开发机）
@@ -126,8 +167,8 @@ jobs:
           mkdir -p "$taps_dir"
           ln -sfn "$GITHUB_WORKSPACE" "$taps_dir/homebrew-tahoe"
           brew trust bemly/tahoe
-          brew style --cask bemly/tahoe/antigravity
-          brew audit --strict --cask bemly/tahoe/antigravity
+          brew style --cask "bemly/tahoe/${{ inputs.package }}"
+          brew audit --strict --cask "bemly/tahoe/${{ inputs.package }}"
 
       # lint 绿 + 构建成功才提交（success() 已含「前面没有失败步骤」）。
       - name: 提交 cask 的 version/sha256
@@ -135,20 +176,35 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- Casks/ Widgets/antigravity-niang/official-sha256.txt; then
+          paths=("Casks/${{ inputs.package }}.rb")
+          if [[ "${{ inputs.package }}" == "antigravity" ]]; then
+            paths+=("Widgets/antigravity-niang/official-sha256.txt")
+          fi
+          if git diff --quiet -- "${paths[@]}"; then
             echo "cask/pin 无改动，不提交"
             exit 0
           fi
-          git --no-pager diff -- Casks/ Widgets/antigravity-niang/official-sha256.txt
-          git add Casks/antigravity.rb Widgets/antigravity-niang/official-sha256.txt
-          git commit -m "patched: 更新补丁包 cask 与官方 SHA pin（antigravity cn${{ inputs.revision }}）"
+          git --no-pager diff -- "${paths[@]}"
+          git add -- "${paths[@]}"
+          if [[ "${{ inputs.package }}" == "antigravity" ]]; then
+            message="patched: 更新补丁包 cask 与官方 SHA pin（antigravity cn${{ inputs.revision }}）"
+          else
+            message="patched: 从 Bemly fork 源码构建 toshllm ${{ inputs.version }}"
+          fi
+          git commit -m "$message"
           git pull --rebase origin main
           git push origin HEAD:main
 
       - name: 打印 sidecar 与最终 cask 行
         if: always()
         run: |
-          for f in .build/antigravity-cn/*.dmg.sha256; do
-            [[ -f "$f" ]] && { echo "== $f"; cat "$f"; }
-          done
-          grep -n -E '^  (version|sha256) ' Casks/antigravity.rb
+          if [[ "${{ inputs.package }}" == "antigravity" ]]; then
+            for f in .build/antigravity-cn/*.dmg.sha256; do
+              [[ -f "$f" ]] && { echo "== $f"; cat "$f"; }
+            done
+          else
+            for f in .build/toshllm-source/*.dmg.sha256; do
+              [[ -f "$f" ]] && { echo "== $f"; cat "$f"; }
+            done
+          fi
+          grep -n -E '^  (version|sha256) ' "Casks/${{ inputs.package }}.rb"

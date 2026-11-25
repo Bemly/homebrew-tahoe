@@ -1282,7 +1282,6 @@ func runRawDualCheck(config: CheckConfig, content: String, formulaFile: String,
 
 func runGitHeadCheck(config: CheckConfig, repo: String, branch: String,
                      content: String, formulaFile: String) {
-    guard !config.isCask else { fail("gitHead 快照流只支持公式：\(config.formula)") }
     guard let local = pinnedGitCommit(in: content, repo: repo) else {
         fail("\(formulaFile) 的 url 必须固定 \(repo) 的 40 位 commit SHA")
     }
@@ -1331,6 +1330,14 @@ func runGitHeadCheck(config: CheckConfig, repo: String, branch: String,
         emit("new_version=\(snapshot.version)")
         emit("commit=\(remote)")
     case "ahead":
+        if config.isCask {
+            print("\(config.formula) 主线已更新，交由源码成品 workflow 构建：\(snapshot.version)")
+            emit("status=needs-source-build")
+            emit("current_version=\(local)")
+            emit("new_version=\(snapshot.version)")
+            emit("commit=\(remote)")
+            return
+        }
         let downloadURL = "https://github.com/\(repo)/archive/\(remote).tar.gz"
         if !curlHeadOK(downloadURL) {
             print("::warning::主线源码归档不可下载：\(downloadURL)")

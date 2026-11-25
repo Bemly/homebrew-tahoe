@@ -57,6 +57,8 @@ jobs:
           updated_formulae=()
           patched_packages=()
           patched_details=()
+          source_packages=()
+          source_details=()
           waiting=()
           missing=()
           manual_sync=()
@@ -140,6 +142,13 @@ jobs:
               patched_packages+=("$f")
               patched_details+=("$f:$rev:$host")
               echo "  -> $f 上游已就绪（${ver}），待触发 patched.yml 构建发布"
+            elif [[ "$status" == "needs-source-build" ]]; then
+              ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
+              commit="$(grep '^commit=' "$out" | cut -d= -f2 || true)"
+              [[ -n "$commit" ]] || commit="missing"
+              source_packages+=("$f")
+              source_details+=("$f:$ver:$commit")
+              echo "  -> $f 自有 fork 主线已更新（${ver} / ${commit}），待触发源码构建"
             elif [[ "$status" == "waiting-upstream" ]]; then
               ver="$(grep '^new_version=' "$out" | cut -d= -f2 || true)"
               waiting+=("${f}:${ver}")
@@ -177,6 +186,10 @@ jobs:
           if [[ ${#patched_packages[@]} -gt 0 ]]; then
             echo "patched=$(IFS=,; echo "${patched_packages[*]}")" >> "$GITHUB_OUTPUT"
             echo "patched_details=$(IFS=,; echo "${patched_details[*]}")" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ ${#source_packages[@]} -gt 0 ]]; then
+            echo "source_build=$(IFS=,; echo "${source_packages[*]}")" >> "$GITHUB_OUTPUT"
+            echo "source_details=$(IFS=,; echo "${source_details[*]}")" >> "$GITHUB_OUTPUT"
           fi
           if [[ ${#waiting[@]} -gt 0 ]]; then
             echo "waiting=$(IFS=,; echo "${waiting[*]}")" >> "$GITHUB_OUTPUT"
@@ -344,6 +357,26 @@ jobs:
             gh workflow run "Build patched cask artifacts" \
               --repo bemly/homebrew-tahoe \
               "${args[@]}"
+          done
+
+      - name: 触发自有 fork 源码成品构建
+        if: (!inputs.dry_run) && steps.batch.outputs.source_build != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_DETAILS: ${{ steps.batch.outputs.source_details }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra ITEMS <<< "$SOURCE_DETAILS"
+          for item in "${ITEMS[@]}"; do
+            [[ -n "$item" ]] || continue
+            pkg="${item%%:*}"
+            rest="${item#*:}"
+            ver="${rest%%:*}"
+            commit="${rest#*:}"
+            args=(-f package="$pkg" -f version="$ver" -f commit="$commit")
+            echo "触发源码成品构建：package=${pkg} version=${ver} commit=${commit}"
+            gh workflow run "Build patched cask artifacts" \
+              --repo bemly/homebrew-tahoe "${args[@]}"
           done
 
       - name: 上游资源不可用或需人工同步时开 issue 告警
