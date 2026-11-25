@@ -12,7 +12,8 @@ class Wimlib < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "5bc2c22d0b1779acf73471b6577720a5b38c3334ca4ea1421a3b73ebca4816bf"
+    manifest_sha256 "b8180fb529da4b62e97c56e062f41e9eef96cee373de1057c1987a63928ab4fc"
+    sha256 cellar: :any, tahoe: "046f1a260b85c1343c19181c30bc8c9d3b17816d7108b000b81a4780dcbca252"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
