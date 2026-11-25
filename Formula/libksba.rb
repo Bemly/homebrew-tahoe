@@ -13,7 +13,8 @@ class Libksba < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "6307a10a871e3536117581440b89757835442cef821d061b78d85a470b59233b"
+    manifest_sha256 "68f30f694018fedbf86bca6972ac504ea7d4b363ab693c05289806f6c9576cd8"
+    sha256 cellar: :any, tahoe: "86f1de0b39d56577057a80a5d57563381e987f8f7edce5f9b56e5ae3ee59d2b9"
   end
 
   depends_on arch: :x86_64
