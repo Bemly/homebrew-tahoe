@@ -21,7 +21,8 @@ class Wabt < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "ce984267d68f7f58f146091058faf3ccc2c8728c52736aeb6b6c319bd7a065aa"
+    manifest_sha256 "34994069dce009369e1717d72a22de63845a53e48162dc54a9ddf99cac6b1a42"
+    sha256 cellar: :any, tahoe: "294a7caec3dca648e15e4418a38ee087012081f5c663fe172aff7e142657e9bb"
   end
 
   # 构建依赖走本 tap 全名：core 的 cmake 在 Intel Tahoe 无瓶（用户侧只能源码编，
