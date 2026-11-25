@@ -61,11 +61,11 @@ class LlamaCpp < Formula
     kernels.mkpath
     kernel_dir = buildpath/"build/bin/kernels"
     metal_sources = Dir[kernel_dir/"*.metal"].reject do |source|
-      %w[fa_common.metal fa_vec_common.metal].include?(source.basename.to_s)
+      %w[fa_common.metal fa_vec_common.metal].include?(File.basename(source))
     end
     odie "llama.cpp Metal kernels were not generated" if metal_sources.empty?
     metal_sources.each do |source|
-      name = source.basename(".metal").to_s
+      name = File.basename(source, ".metal")
       air = kernels/"#{name}.air"
       metallib = kernels/"#{name}.metallib"
       system "xcrun", "metal", "-O3", "-mmacosx-version-min=14.0", "-std=metal3.1",
