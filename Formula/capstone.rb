@@ -16,7 +16,8 @@ class Capstone < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "d255253e30ba0b5eb950c1d4e04fb78ae1c38f88434ec6fe1cdd04f39467c962"
+    manifest_sha256 "373061a8601707b03a43e50db4deb587489acd190dc83b570fc5ee7a3b61f362"
+    sha256 cellar: :any, tahoe: "ad8dddb5d7ace1e63367de3799bb1eaa20d194e27129c62e095c9ed51d1a1a0c"
   end
   depends_on arch: :x86_64
   depends_on macos: :tahoe
