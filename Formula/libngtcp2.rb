@@ -10,7 +10,8 @@ class Libngtcp2 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "af8a388ae528552b9f36e4ee0cabd36542de156f42c450434f5bee8e47945839"
+    manifest_sha256 "032daf3275c12ab037326e5f16fc40ade8e06e6dd00b1a7c8ac8b0491bd137e2"
+    sha256 cellar: :any, tahoe: "23c8f6c4658b2a377c2708fd86d6fe642570b627131300ca6426c7e5c7061599"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
