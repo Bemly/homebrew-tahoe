@@ -392,7 +392,7 @@ brew trust bemly/tahoe
 
 - **跨 tap 同名互斥**：同名公式或同 token cask 与 core 共用 `Cellar/<name>` / `Caskroom/<token>`，Homebrew 会在安装校验无条件报错，依赖同样适用。本仓运行时依赖已全部同名接管，因此切换到本 tap 时必须先卸载 Core 版及其依赖方，再安装本仓整栈；`keg_only` 只控制符号链接，不能消除 Cellar/token 冲突。公式命名也不可撞 core 的历史改名别名（如 `rustup-init` → `rustup`）。
 - **严禁全名与裸名在递归树共存**：同一软件在依赖树中同时以 `bemly/tahoe/X` 与 `X`（core）出现时，macOS `flock` 同进程双开会自锁卡死（如 `python@3.14` 隐含裸 `cmake`）。冲突的构建工具（如 `llvm`/`z3` 用到的 `cmake`）须摘除 `depends_on`，改在 `install` 顶部用 `ENV.prepend_path "PATH", Formula["bemly/tahoe/cmake"].opt_bin` 并在 `bottle.yml` 预装。
-- **pkg-config shim 必须指向本仓**：`pkgconf` 同名接管后，Homebrew superenv 的 `pkg-config` shim 仍可能指向不存在的 Core `pkg-config` 公式。`bottle.yml` 在构建依赖 `bemly/tahoe/pkgconf` 的公式前显式导出 `PKG_CONFIG=<prefix>/opt/pkgconf/bin/pkgconf`；单公式需要额外锁定 Nettle 等 `.pc` 路径时，再在 `install` 内 prepend `PKG_CONFIG_PATH`。
+- **pkg-config shim 必须指向本仓**：`pkgconf` 同名接管后，Homebrew superenv 的 `pkg-config` shim 仍可能指向不存在的 Core `pkg-config` 公式。`bottle.yml` 在构建依赖 `bemly/tahoe/pkgconf` 的公式前显式导出 `PKG_CONFIG=<prefix>/opt/pkgconf/bin/pkgconf`，并把 superenv shim 的固定目标 `<prefix>/opt/pkg-config/bin/pkg-config` 链接到本仓 `pkgconf`；单公式需要额外锁定 Nettle 等 `.pc` 路径时，再在 `install` 内 prepend `PKG_CONFIG_PATH`。
 - **runner 兼容**：`macos-26-intel` runner 镜像自带的 brew 版本较旧，抄写 core 新公式时须避开新引入的 helper（如 `Formula#python3`），改用 `formula_opt_bin(...)` 等既有 API；且依赖的本地补丁必须一并拷入 `Patches/`。
 - **装后审计与豁免**：`audit --strict` 只在包**已安装**时扫描异架构二进制；随包附带、运行时用不到的文件（如 `deepseek-harness` 内的 `darwin-arm64` 预编译件与 `swift` 工具链内的跨架构运行时库）才进 `audit_exceptions/mismatched_binary_allowlist.json`（glob 须 `/**/*` 结尾），跑不起来的可执行文件直接不装。
 
