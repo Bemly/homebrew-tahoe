@@ -14,7 +14,8 @@ class Pinentry < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "586111aeac964971e12aa7e6b5f456f4528dd60d730ed83a43c30a97a3f94b6c"
+    manifest_sha256 "685323179f122086c99c8a6402902a68f1877a885af569f987a7f24e8eedd8f0"
+    sha256 cellar: :any, tahoe: "1e8c2cc1f0f09a780f5565cd8c6596d2d9399c0d3da8adb7747317e5bec7bf48"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
