@@ -10,7 +10,8 @@ class Meson < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "09aaaaa9af556ba39d6a43c60454cbe56899d18db6dbe685db2759739c7f8674"
+    manifest_sha256 "7314c5fa2c081d9c2c92edcf37fbac4f0762379b3891184d5b7d5283034ab0ed"
+    sha256 cellar: :any_skip_relocation, tahoe: "8bbb8829d423cb16d0dd73dad2eb94cf8a174ea0f3229dd04bd022ace408dc3b"
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的构建。
