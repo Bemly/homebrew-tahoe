@@ -93,7 +93,8 @@ class Bash < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "36dfe75f9a03eb2ae1285d06e3ec3a321e471618da8959b39756006bde8cb280"
+    manifest_sha256 "73962efa3205781038009414703b210ccf550fef46529fe44d442819a0a460eb"
+    sha256 tahoe: "2a847e032857227bef17e1f191bdba2d60edc881c52ac12e13f019f2828b94f0"
   end
 
   depends_on arch: :x86_64
