@@ -9,8 +9,8 @@ class Guile < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "6c4c8c62e7f7ac3b1fe3068ac5f89c41281cb1a4ca299f66aea890ec80956d49"
-    sha256 tahoe: "6260450b9a9ab85c2d8a00012721de44537aefcb3aa80236bb2a38a1aabd5991"
+    manifest_sha256 "3ad76ee095c78578e27c1a3295247941f9ae90de6db14dbcc010485741a2ee7a"
+    sha256 tahoe: "7f498c75c9b8a67c5e9c0f3e82f9f434f80730c2ab12e065a846df4d6941e531"
   end
 
   head do
