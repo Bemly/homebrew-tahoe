@@ -12,8 +12,8 @@ class Libplist < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "4d4966255a203fe1aed54b69c1b1021b27249d9f297aa4cb9b811508139a5d69"
-    sha256 cellar: :any, tahoe: "2d9c30ffde35e4eeb75b72da7929b7dbfdf508c272df1a0ab3a993c403844716"
+    manifest_sha256 "47be954fb7f73f9f67a62c20f09416350be834cacf054efda7d5a97f15546f6f"
+    sha256 cellar: :any, tahoe: "c7cf38e1b2a5637b1c78cbf5e17355961ac363077ce2801d102d73430989e8b4"
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
