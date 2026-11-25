@@ -373,6 +373,13 @@ brew trust bemly/tahoe
 - **CI（重型任务）**：
   - 全仓或大包 `brew style` / `brew audit --strict`、瓶包构建（`bottle.yml`）、`antigravity` 补丁包重打与 lint（`patched.yml`）一律在 GitHub Actions `macos-26-intel` runner 执行，避免拖死 Intel 开发机。
 
+### 10.1 Action 监控硬性检查
+
+- 启动 `bottle.yml` / `patched.yml` 后必须用 `gh run watch` 盯到结束；不能只看成功/失败状态，还要逐个检查 `===== 处理 <formula> =====` 的依赖安装与构建日志。
+- 每个目标公式都要建立来源链：**目标本体 → 直接依赖 → 递归依赖**。允许的源码构建只有目标本体；依赖必须来自本仓 `tahoe` 瓶或 Core 的 `all` / `x86_64_tahoe` / `tahoe` 瓶。
+- 依赖阶段出现 `Installing <dep> from source`、`Building from source`、`cmake --build`、`cargo install`、`make`、Core `llvm`/`rust` 编译，或同一依赖被多次构建，视为**依赖回退编译**；记录完整依赖名、版本、来源和缺失瓶标签，按 §11.4 排查。目标公式自身的 `cargo install` / `cmake` / `make` 不属于问题。
+- 每个包出瓶前在监控记录中写明：依赖闭包是否全部有瓶、是否有裸 Core 工具、是否有全名/裸名冲突。任一项不通过，不能把该包标记为验证完成。
+
 ## 11. 核心规范与避坑清单
 
 ### 11.1 公式解包、权限与版本扫描
@@ -400,6 +407,12 @@ brew trust bemly/tahoe
 - 传给 `bottle.yml` 的名单绝不能混入 cask 名；批内依赖靠 `bottle.yml` 拓扑排序保证先出瓶。
 - **重建 Core curl 的动态依赖前先隔离下载器**：runner 预装的 Core `curl` 链到 `libnghttp3`/`libidn2`/`libssh2` 等；制瓶循环卸载并重建这些库后，brewed curl 会 dyld 失败，导致后续源码与瓶下载全部中断。`bottle.yml` 已在循环前卸载 Core curl 并改用 `/usr/bin/curl`，不要再把该保护移除。
 - 同版本改布局验证必须用 `--build-from-source`（否则本机按有效瓶块倒旧瓶）；删包重建后若本机报错 `Couldn't find manifest matching bottle checksum`，执行 `brew fetch --force --bottle-tag=tahoe <formula>` 刷缓存即可。
+- **依赖回退编译排查顺序**：先用 `brew deps --tree --include-build --full-name --union bemly/tahoe/<formula>` 展开完整闭包，再按以下顺序处理，直到整棵树都只剩瓶：
+  1. 本仓依赖：公式必须存在且有 `tahoe` 瓶；引用写全名 `bemly/tahoe/<name>`，检查是否与裸 Core 同名共存。
+  2. Core 依赖：核对 `formulae.brew.sh` 是否有 `all` / `x86_64_tahoe` / `tahoe` 瓶；无瓶则进入下一步，不能默认让用户源码编译。
+  3. 查上游官方或可信 macOS x86_64 预编译包；有则重打包入源并出瓶。
+  4. 无预编译时，把依赖源码公式并入本仓（必要时 `fork-*`），在 CI 上代编译出瓶；**允许固定旧版工具链**，例如本仓 pin 住的 LLVM 19、Rust 1.91.1，只要真实构建与运行验证通过。
+  5. 对新入源依赖递归执行同一检查，继续向上处理它的子依赖，形成完整瓶闭包；最后改引用、重出受影响的直接/间接依赖方，并重新监控 Action 确认没有依赖源码构建。
 
 ### 11.5 Cask 镜像与声明式 Steps
 
