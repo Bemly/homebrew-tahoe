@@ -152,7 +152,7 @@ jobs:
             fi
             # brew info --json=v2 对未安装的 core 公式不返回 bottle 元数据；
             # 统一走 formulae.brew.sh（与 watcher 同源），只认 Intel Tahoe 瓶标签。
-            if curl -fsSL --max-time 20 "https://formulae.brew.sh/api/formula/${dep}.json" 2>/dev/null \
+            if curl -fsSL --retry 2 --max-time 20 "https://formulae.brew.sh/api/formula/${dep}.json" 2>/dev/null \
               | grep -Eq '"(all|x86_64_tahoe|tahoe)"[[:space:]]*:'; then
               touch "/tmp/core-bottle-cache/${cache_key}.ok"
               return 0
@@ -191,13 +191,6 @@ jobs:
                     fi
                     ;;
                   *)
-                    # std_cmake_args/system "cmake" 会让 brew deps 额外报告裸 cmake；
-                    # 下方预装分支已把实际构建工具换成本 tap cmake，这里不再误报 Core 缺瓶。
-                    if [[ "$dep" == "cmake" ]] \
-                      && grep -q 'system "cmake"' "Formula/${f}.rb" \
-                      && ! grep -Eq 'depends_on "([^"]*/)?cmake"' "Formula/${f}.rb"; then
-                      continue
-                    fi
                     if ! core_has_bottle "$dep"; then
                       echo "$f -> $dep" >> "$core_unbottled"
                       continue
@@ -207,9 +200,13 @@ jobs:
               fi
               # 目标本体与本批待构建公式需要完整构建闭包；已瓶化依赖只检查运行时闭包，
               # 否则会把 vulkan-headers(all) 的构建依赖 cmake 误当成用户端缺失瓶。
-              deps_args=(--full-name)
-              $expand_build && deps_args=(--include-build --full-name)
-              for child in $(brew deps "${deps_args[@]}" "$dep" 2>/dev/null); do
+              deps_args=(--declared --full-name)
+              $expand_build && deps_args=(--declared --include-build --full-name)
+              if ! dep_output="$(brew deps "${deps_args[@]}" "$dep" 2>/dev/null)"; then
+                echo "::error::无法展开依赖：$dep"
+                exit 1
+              fi
+              for child in $dep_output; do
                 [[ "$child" == "$dep" ]] || queue="$queue $child"
               done
             done
