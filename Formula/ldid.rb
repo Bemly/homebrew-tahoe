@@ -16,6 +16,9 @@ class Ldid < Formula
   conflicts_with "ldid-procursus", because: "ldid-procursus installs a conflicting ldid binary"
 
   def install
+    openssl = formula_opt_prefix("bemly/tahoe/openssl@3")
+    ENV.prepend "CPPFLAGS", "-I#{openssl}/include"
+    ENV.prepend "LDFLAGS", "-L#{openssl}/lib"
     ENV.append_to_cflags "-I."
     ENV.append "CXXFLAGS", "-std=c++11"
     linker_flags = %w[lookup2.o -lcrypto -lplist-2.0]
