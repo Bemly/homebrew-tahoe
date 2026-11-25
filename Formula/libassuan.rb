@@ -18,7 +18,8 @@ class Libassuan < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "01844588c83dbfa43c48e4eac7866261fde0d8509adbbc93129698c121235049"
+    manifest_sha256 "a0ef05940e6b96e85c0e726e43d513d5ed8edc132d3e9f28b3457597d919e222"
+    sha256 cellar: :any, tahoe: "03e86b5594b786f4cce458abc9e790b03c5768d72cd1f53c6a45827d14ba66bc"
   end
 
   depends_on arch: :x86_64
