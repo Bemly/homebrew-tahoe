@@ -8,6 +8,12 @@ class Ldid < Formula
   revision 2
   head "git://git.saurik.com/ldid.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "00f18d94d02d2fb55973ea6ae6db085fdd14a5397dfaec0dc0df8b1a994ef574"
+    sha256 cellar: :any, tahoe: "57568339fec37b76b56ca59365dbcce3a665625cd871c7fb2dc73fa8a953ea43"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/libplist"
   depends_on macos: :tahoe
