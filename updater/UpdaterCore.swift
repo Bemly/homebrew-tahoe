@@ -54,6 +54,13 @@ struct UpstreamRelease {
     let sha256: String?
 }
 
+/// 自有 fork 的快照版本：日期 + 主线 commit 短 hash，确保同一天多次提交也可区分。
+struct GitHeadSnapshot {
+    let sha: String
+    let date: String
+    var version: String { "\(date)-\(sha.prefix(8))" }
+}
+
 /// 补丁成品依赖就绪状态（如 antigravity 需等汉化引擎仓库发布对应版本 tag）
 enum PatchedBuildReadiness {
     case ready
@@ -123,6 +130,11 @@ struct CheckConfig {
     /// 分架构独立版本来源：每个 token 各自返回版本与下载直链。
     /// 用于 on_arm / on_intel 块内版本号不同的 cask（如 konsole）。
     let customReleaseByArch: ((String) -> UpstreamRelease?)?
+    /// 自有 fork 主线快照流：公式 url 固定 commit，检查指定分支 HEAD 是否领先。
+    /// 命中后走独立 compare/改写流程，不再按版本号判断。
+    let gitHeadRepo: String?
+    /// 分支名，默认 main。
+    let gitHeadBranch: String?
 
     init(formula: String,
          formulaPath: String = "Formula",
@@ -143,7 +155,9 @@ struct CheckConfig {
           alwaysUpdate: Bool = false,
           manualSyncReason: String? = nil,
           patchedReadinessCheck: ((String) -> PatchedBuildReadiness)? = nil,
-          customReleaseByArch: ((String) -> UpstreamRelease?)? = nil) {
+          customReleaseByArch: ((String) -> UpstreamRelease?)? = nil,
+         gitHeadRepo: String? = nil,
+         gitHeadBranch: String? = nil) {
         self.formula = formula
         self.formulaPath = formulaPath
         self.isCask = isCask
@@ -164,6 +178,8 @@ struct CheckConfig {
         self.manualSyncReason = manualSyncReason
         self.patchedReadinessCheck = patchedReadinessCheck
         self.customReleaseByArch = customReleaseByArch
+        self.gitHeadRepo = gitHeadRepo
+        self.gitHeadBranch = gitHeadBranch
     }
 }
 
@@ -318,6 +334,57 @@ func gitRemoteTags(repo: String) -> [String]? {
         }
     }
     return tags
+}
+
+/// 读取指定分支 HEAD，不走 GitHub API，也不依赖 releases/tag。
+func gitRemoteBranchHead(repo: String, branch: String) -> String? {
+    guard let git = which("git"), !branch.isEmpty,
+          !branch.contains(where: { $0.isWhitespace }) else { return nil }
+    let ref = "refs/heads/\(branch)"
+    let (status, out) = run(git, ["ls-remote", "--exit-code",
+                                  "https://github.com/\(repo).git", ref])
+    guard status == 0 else { return nil }
+    for line in out.components(separatedBy: CharacterSet.newlines) {
+        let fields = line.split(whereSeparator: { $0.isWhitespace })
+        guard fields.count >= 2, String(fields[1]) == ref,
+              fields[0].count == 40,
+              fields[0].allSatisfy({ $0.isHexDigit }) else { continue }
+        return String(fields[0]).lowercased()
+    }
+    return nil
+}
+
+private func gitSnapshotVersion(repo: String, sha: String, compareJSON: [String: Any]) -> GitHeadSnapshot? {
+    func date(of commit: [String: Any]) -> String? {
+        guard let details = commit["commit"] as? [String: Any] else { return nil }
+        let author = details["author"] as? [String: Any]
+        let committer = details["committer"] as? [String: Any]
+        let iso = (author?["date"] as? String) ?? (committer?["date"] as? String) ?? ""
+        let parts = String(iso.prefix(10)).split(separator: "-")
+        guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty }) else { return nil }
+        return parts.joined(separator: ".")
+    }
+
+    var commitDate: String?
+    if let commits = compareJSON["commits"] as? [[String: Any]], let last = commits.last {
+        commitDate = date(of: last)
+    }
+    if commitDate == nil,
+       let commit = fetchJSON("https://api.github.com/repos/\(repo)/commits/\(sha)") {
+        commitDate = date(of: commit)
+    }
+    guard let commitDate else { return nil }
+    return GitHeadSnapshot(sha: sha, date: commitDate)
+}
+
+private func pinnedGitCommit(in content: String, repo: String) -> String? {
+    let repoPattern = NSRegularExpression.escapedPattern(for: repo)
+    let pattern = #"https://github\.com/"# + repoPattern
+        + #"/archive/(?:refs/tags/)?([0-9a-f]{40})(?:\.tar\.gz)?"#
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+          let match = regex.firstMatch(in: content, range: fullRange(content)),
+          let range = Range(match.range(at: 1), in: content) else { return nil }
+    return String(content[range]).lowercased()
 }
 
 /// 下载到临时文件（发布包可能几百 MB，走文件不走管道）
@@ -1213,10 +1280,114 @@ func runRawDualCheck(config: CheckConfig, content: String, formulaFile: String,
     emit("bottle_stale=\(bottleStale)")
 }
 
+func runGitHeadCheck(config: CheckConfig, repo: String, branch: String,
+                     content: String, formulaFile: String) {
+    guard !config.isCask else { fail("gitHead 快照流只支持公式：\(config.formula)") }
+    guard let local = pinnedGitCommit(in: content, repo: repo) else {
+        fail("\(formulaFile) 的 url 必须固定 \(repo) 的 40 位 commit SHA")
+    }
+    print("自有 fork : \(repo)")
+    print("固定 commit : \(local)")
+    guard let remote = gitRemoteBranchHead(repo: repo, branch: branch) else {
+        print("::warning::无法读取 \(repo) 的 \(branch) HEAD")
+        emit("status=check-failed")
+        emit("current_version=\(local)")
+        return
+    }
+    print("主线 commit : \(remote)")
+    if local == remote {
+        print("已与 \(branch) 主线一致，无需更新。")
+        emit("status=up-to-date")
+        emit("current_version=\(local)")
+        emit("commit=\(remote)")
+        return
+    }
+
+    let compareURL = "https://api.github.com/repos/\(repo)/compare/\(local)...\(remote)"
+    guard let comparison = fetchJSON(compareURL),
+          let relation = comparison["status"] as? String else {
+        print("::warning::无法确认 commit 祖先关系（GitHub compare 限流或 commit 不存在）")
+        emit("status=check-failed")
+        emit("current_version=\(local)")
+        return
+    }
+    guard let snapshot = gitSnapshotVersion(repo: repo, sha: remote, compareJSON: comparison) else {
+        print("::warning::无法解析主线 commit 日期，拒绝生成快照版本")
+        emit("status=check-failed")
+        emit("current_version=\(local)")
+        return
+    }
+
+    switch relation {
+    case "behind":
+        print("本地 commit 领先主线，保持不动。")
+        emit("status=newer-than-brew")
+        emit("current_version=\(local)")
+        emit("commit=\(remote)")
+    case "diverged":
+        print("::warning::本地 commit 与 \(branch) 主线已分叉，需人工确认后替换")
+        emit("status=manual-sync")
+        emit("current_version=\(local)")
+        emit("new_version=\(snapshot.version)")
+        emit("commit=\(remote)")
+    case "ahead":
+        let downloadURL = "https://github.com/\(repo)/archive/\(remote).tar.gz"
+        if !curlHeadOK(downloadURL) {
+            print("::warning::主线源码归档不可下载：\(downloadURL)")
+            emit("status=upstream-missing")
+            emit("current_version=\(local)")
+            emit("new_version=\(snapshot.version)")
+            emit("commit=\(remote)")
+            return
+        }
+        print("本地落后主线，下载源码归档并计算 sha256：\(snapshot.version)")
+        guard let tmp = curlDownload(downloadURL), let sha = sha256(ofFile: tmp) else {
+            fail("无法获取 \(downloadURL) 的 sha256")
+        }
+        try? FileManager.default.removeItem(atPath: tmp)
+        guard sha.range(of: #"^[0-9a-f]{64}$"#, options: .regularExpression) != nil else {
+            fail("得到的 sha256 不合法：\(sha)")
+        }
+        guard let current = currentVersion(in: content) else {
+            fail("无法从 \(formulaFile) 解析当前快照版本")
+        }
+        let (newContent, bottleStale) = rewriteFormula(
+            content, newURL: downloadURL, newVersion: snapshot.version,
+            oldVersion: current, sha: sha)
+        guard newContent.contains("url \"\(downloadURL)\""),
+              newContent.contains("sha256 \"\(sha)\""),
+              newContent.contains("version \"\(snapshot.version)\"") else {
+            fail("fork commit/version/sha256 未成功更新")
+        }
+        do {
+            try newContent.write(toFile: formulaFile, atomically: true, encoding: .utf8)
+        } catch {
+            fail("写回 \(formulaFile) 失败：\(error)")
+        }
+        print("公式已更新：\(current) -> \(snapshot.version)（\(local.prefix(8)) -> \(remote.prefix(8))）")
+        emit("status=updated")
+        emit("current_version=\(current)")
+        emit("new_version=\(snapshot.version)")
+        emit("sha256=\(sha)")
+        emit("commit=\(remote)")
+        emit("bottle_stale=\(bottleStale)")
+    default:
+        print("::warning::未知 compare 状态：\(relation)")
+        emit("status=check-failed")
+        emit("current_version=\(local)")
+    }
+}
+
 func runCheck(_ config: CheckConfig) {
     let formulaFile = "\(config.formulaPath)/\(config.formula).rb"
     guard let content = try? String(contentsOfFile: formulaFile, encoding: .utf8) else {
         fail("找不到文件：\(formulaFile)（须在仓库根目录运行）")
+    }
+    if let repo = config.gitHeadRepo {
+        runGitHeadCheck(config: config, repo: repo,
+                        branch: config.gitHeadBranch ?? "main",
+                        content: content, formulaFile: formulaFile)
+        return
     }
     if let releaseForArch = config.customReleaseByArch {
         guard let tokens = config.archArtifacts, !tokens.isEmpty else {
