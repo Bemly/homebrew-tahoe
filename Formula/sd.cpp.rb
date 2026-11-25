@@ -52,7 +52,7 @@ class SdCpp < Formula
     end
     odie "sd.cpp Metal kernels were not generated" if metal_sources.empty?
     airs = metal_sources.map do |source|
-      name = source.basename(".metal").to_s.delete_prefix("ggml-metal-embed-")
+      name = File.basename(source, ".metal").delete_prefix("ggml-metal-embed-")
       air = libexec/"bin/#{name}.air"
       system "xcrun", "metal", "-O3", "-mmacosx-version-min=14.0", "-std=metal3.1",
              "-DGGML_METAL_EMBED_LIBRARY", "-DGGML_METAL_HAS_BF16",
