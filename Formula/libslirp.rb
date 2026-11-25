@@ -14,7 +14,8 @@ class Libslirp < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "449919f73bef8bbe6a950e375a37a0253b8ac6abc7edb55c90423ae013a4fd78"
+    manifest_sha256 "2df308b3a9753d8ec7f0dfa18302f83fbcbc7b06db6bb720e5cda214800edfba"
+    sha256 cellar: :any, tahoe: "9770eafd77950e0f0118327525b497815303b3635b034a6165d99d6b8d4df111"
   end
 
   depends_on "bemly/tahoe/meson" => :build
