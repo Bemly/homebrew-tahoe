@@ -7,6 +7,12 @@ class Ideviceinstaller < Formula
   revision 1
   head "https://github.com/libimobiledevice/ideviceinstaller.git", branch: "master"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "84f52f1ae00da3c33fd00f49108641c7973fbcf8b00690d321908d26929f1a8e"
+    sha256 cellar: :any, tahoe: "aed157a27dd57ed89781612d5cfa1fb8b40f86577681f995c81f5f79706d472b"
+  end
+
   depends_on "autoconf" => :build
   depends_on "bemly/tahoe/automake" => :build
   depends_on "libtool" => :build
