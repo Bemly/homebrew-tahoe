@@ -41,7 +41,7 @@ class Wget < Formula
 
   on_macos do
     depends_on "bemly/tahoe/fork-gettext"
-    depends_on "bemly/tahoe/fork-libunistring"
+    depends_on "bemly/tahoe/libunistring"
   end
 
   on_linux do

@@ -47,7 +47,7 @@ class Libidn2 < Formula
 
   depends_on "bemly/tahoe/fork-pkgconf" => :build
   depends_on arch: :x86_64
-  depends_on "bemly/tahoe/fork-libunistring"
+  depends_on "bemly/tahoe/libunistring"
   depends_on macos: :tahoe
 
   on_macos do

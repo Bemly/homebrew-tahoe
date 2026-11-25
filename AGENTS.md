@@ -43,7 +43,7 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 147 个公式（含 10 个 fork-*）
+├── Formula/                           # 147 个公式（含 8 个 fork-*）
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
@@ -102,7 +102,7 @@ end
 
 ## 6. 当前收录
 
-> **147 个公式（61 个预编译直引 + 76 个源码包 + 10 个 `fork-*`）**，`updater/` 共 161 个检查器（另有 `UpdaterCore.swift`）。
+> **147 个公式（61 个预编译直引 + 78 个源码包 + 8 个 `fork-*`）**，`updater/` 共 161 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -191,8 +191,9 @@ end
 | `git` | 2.56.1 | core 拷入（源码） | make；`pcre2`/`fork-gettext`（macOS 用 CommonCrypto，`fork-openssl@4` 仅在 `on_linux`）；与 core 同名 |
 | `glib` | 2.90.1 | core 同名接管（源码） | meson；libslirp/qemu 依赖；`pcre2`/`fork-gettext` |
 | `gmp` | 6.3.0 | core 同名接管（源码） | autotools；gnutls/guile/nettle 依赖 |
+| `gnu-sed` | 4.10 | core 同名接管（源码） | 最小源码瓶；Guile 与交叉工具链构建依赖 |
 | `gnupg` | 2.5.24 | core 同名接管（源码） | autotools；依赖本 tap `gnutls`/`libusb`/`fork-readline`/`fork-gettext` + 同名 GnuPG C 库全家桶；`revision` 与 core 同步 |
-| `gnutls` | 3.8.14 | core 同名接管（源码） | autotools；`libidn2`/`nettle`/`p11-kit`/`gmp`/`libtasn1`/`fork-libunistring`/`fork-gettext` |
+| `gnutls` | 3.8.14 | core 同名接管（源码） | autotools；`libidn2`/`nettle`/`p11-kit`/`gmp`/`libtasn1`/`libunistring`/`fork-gettext` |
 | `graphviz` | 16.1.2 | core 拷入（源码） | 零第三方渲染插件；autotools |
 | `guile` | 3.0.11 | core 同名接管（源码） | bdw-gc/gmp/libunistring…；交叉工具链依赖 |
 | `icu4c@78` | 78.3 | core 同名接管（源码） | autotools；`keg_only`；freeling 依赖；`revision` 与 core 同步 |
@@ -217,6 +218,7 @@ end
 | `libssh2` | 1.11.1 | core 同名接管（源码） | autotools；aria2/curl3 依赖；fork-openssl@4 |
 | `libtatsu` | 1.1.1 | core 拷入（源码） | TSS 库；revision 与 core 同步 |
 | `libtasn1` | 4.21.0 | core 同名接管（源码） | autotools；gnutls/libimobiledevice/p11-kit 依赖 |
+| `libunistring` | 1.5 | core 同名接管（源码） | autotools；fork-gettext/gnutls/guile/libidn2/wget 依赖 |
 | `libusb` | 1.0.30 | core 同名接管（源码） | autotools；gnupg/qemu 依赖 |
 | `libusbmuxd` | 2.1.1 | core 拷入（源码） | idevice USB 复用；revision 同步 |
 | `libyaml` | 0.2.5 | core 同名接管（源码） | autotools；dtc 依赖 |
@@ -251,16 +253,14 @@ end
 | `wget` | 1.25.0 | core 拷入（源码） | `libidn2`/`libpsl`/fork-openssl@4/fork-gettext |
 | `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
 
-### 6.3 `fork-*` 依赖层（10 个）
+### 6.3 `fork-*` 依赖层（8 个）
 
-Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 44 个源码包标为 `core 同名接管`）。`fork-*` 走 brew JSON 全量流，补丁随 `Patches/` 入库。
+Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 46 个源码包标为 `core 同名接管`）。`fork-*` 走 brew JSON 全量流，补丁随 `Patches/` 入库。
 
 | fork 公式 | 对应 core | 版本 | 说明 |
 | --- | --- | --- | --- |
 | `fork-bison` | `bison` | 3.8.2 | 最小源码瓶；系统 bison 2.3 不满足 Graphviz/QEMU ≥3.0；`keg_only` |
-| `fork-gnu-sed` | `gnu-sed` | 4.10 | 最小源码瓶；Guile 与交叉工具链构建依赖；`keg_only` |
 | `fork-gettext` | `gettext` | 1.0 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-libunistring` | `libunistring` | 1.5 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-openssl@3` | `openssl@3` | 3.5.9 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-openssl@4` | `openssl@4` | 4.1.0 | 源码现编；`keg_only`；依赖方写全名 |
 | `fork-pkgconf` | `pkgconf` | 3.0.11 | 源码现编；`keg_only`；依赖方写全名 |
@@ -416,7 +416,7 @@ brew trust bemly/tahoe
 ### 11.7 Binwalk / NZBget / Sevenzip 构建与重打包经验
 
 - **上游证据与最终形态**：`nzbget 26.3` 官方提供 `nzbget-<ver>-bin-macos-x64.zip`，直接重打包 CLI/WebUI；`sevenzip 26.06` 官方提供 Intel `7zz`，由 `binwalk`、`nzbget`、`jpeg-turbo` 闭环引用并恢复原名；`binwalk 3.1.0` 无官方 macOS 二进制，但 Cargo 依赖均为纯 Rust，**不链接 LLVM**，无需本仓 LLVM 19。
-- **小型构建基础设施**：GoogleTest 没有官方 macOS 二进制，Abseil 默认 `ABSL_BUILD_TEST_HELPERS=OFF`，本仓关闭 test helpers 并移除该依赖；系统 Bison 2.3 不满足 Graphviz/QEMU 的 ≥3.0，故做最小 `fork-bison` 源码瓶；Core `gnu-sed` 无 Intel Tahoe 瓶，Guile/交叉工具链改用最小 `fork-gnu-sed` 并显式 prepend `libexec/gnubin`；NASM 官方提供 universal macOS zip，thin x86_64 后直接作为预编译瓶。
+- **小型构建基础设施**：GoogleTest 没有官方 macOS 二进制，Abseil 默认 `ABSL_BUILD_TEST_HELPERS=OFF`，本仓关闭 test helpers 并移除该依赖；系统 Bison 2.3 不满足 Graphviz/QEMU 的 ≥3.0，故做最小 `fork-bison` 源码瓶；Core `gnu-sed` 无 Intel Tahoe 瓶，Guile/交叉工具链改用最小源码瓶并显式 prepend `libexec/gnubin`；NASM 官方提供 universal macOS zip，thin x86_64 后直接作为预编译瓶。
 - **构建工具链内嵌，不单独出瓶**：Binwalk 公式内用官方 `rustc`/`cargo`/`rust-std` 1.91.1 资源组装临时工具链。曾把 Rust 1.91.1 单独做成公式并制瓶，体积过大导致 hosted runner 失联；用户端不需要该构建工具，最终不回退为独立 Rust 公式。
 - **`nounzip` 与解包路径**：`using: :nounzip` 会禁止解包、只复制压缩文件，Rust 的 `.tar.xz` 绝不能使用；所有组件定位用 `Dir["**/bin/rustc"]` 等通配，兼容 Homebrew 是否自动下降。
 - **`Pathname#install` 是移动语义**：先 `share.install` 后再从源目录读取许可证/配置会失败；许可证先安装，配置从已安装的 `share` 路径读取。`rustc` 组件已创建 `lib/rustlib/x86_64-apple-darwin`（链接器工具），`rust-std` 必须把 target 目录**内容**合并进去，不能再次移动同名目录，否则会嵌套成 `x86_64-apple-darwin/x86_64-apple-darwin`。

@@ -19,7 +19,7 @@ class Libpsl < Formula
 
   on_system :linux, macos: :monterey_or_older do
     depends_on "bemly/tahoe/libidn2"
-    depends_on "bemly/tahoe/fork-libunistring"
+    depends_on "bemly/tahoe/libunistring"
   end
 
   deny_network_access!

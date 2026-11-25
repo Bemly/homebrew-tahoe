@@ -1,4 +1,4 @@
-class ForkLibunistring < Formula
+class Libunistring < Formula
   desc "C string library for manipulating Unicode strings"
   homepage "https://www.gnu.org/software/libunistring/"
   url "https://ftpmirror.gnu.org/libunistring/libunistring-1.5.tar.gz"
@@ -7,13 +7,6 @@ class ForkLibunistring < Formula
   sha256 "5b0ecd46cbf225375f20ab4056197e66a7ac590e2684c069af407ae3383c9d81"
   license any_of: ["GPL-2.0-or-later", "LGPL-3.0-or-later"]
   compatibility_version 1
-
-  bottle do
-    root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "e5eb1377332fbc3d408f550183108967b1ff2ee98a3cf323db41dbdf081c8610"
-  end
-
-  keg_only "forked dependency of bemly/tahoe; avoid symlink conflicts with homebrew/core"
 
   depends_on arch: :x86_64
   depends_on macos: :tahoe

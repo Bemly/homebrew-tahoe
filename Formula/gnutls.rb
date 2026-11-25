@@ -39,7 +39,7 @@ class Gnutls < Formula
   depends_on "bemly/tahoe/gmp"
   depends_on "bemly/tahoe/libidn2"
   depends_on "bemly/tahoe/libtasn1"
-  depends_on "bemly/tahoe/fork-libunistring"
+  depends_on "bemly/tahoe/libunistring"
   depends_on "bemly/tahoe/nettle"
   depends_on "bemly/tahoe/p11-kit"
   depends_on "ca-certificates" => :no_linkage

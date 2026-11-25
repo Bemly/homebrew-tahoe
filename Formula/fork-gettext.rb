@@ -20,7 +20,7 @@ class ForkGettext < Formula
 
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/json-c"
-  depends_on "bemly/tahoe/fork-libunistring"
+  depends_on "bemly/tahoe/libunistring"
   depends_on macos: :tahoe # for spit
 
   uses_from_macos "curl" # for spit
@@ -42,7 +42,7 @@ class ForkGettext < Formula
     ENV["am_cv_func_iconv_works"] = "yes" if OS.mac? && MacOS.version >= :sequoia
 
     args = [
-      "--with-libunistring-prefix=#{formula_opt_prefix("bemly/tahoe/fork-libunistring")}",
+      "--with-libunistring-prefix=#{formula_opt_prefix("bemly/tahoe/libunistring")}",
       "--disable-silent-rules",
       "--with-included-glib",
       "--with-included-libcroco",

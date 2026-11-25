@@ -26,11 +26,11 @@ class Guile < Formula
     end
   end
 
-  depends_on "bemly/tahoe/fork-gnu-sed" => :build
+  depends_on "bemly/tahoe/gnu-sed" => :build
   depends_on "bemly/tahoe/bdw-gc"
   depends_on "bemly/tahoe/gmp"
   depends_on "libtool"
-  depends_on "bemly/tahoe/fork-libunistring"
+  depends_on "bemly/tahoe/libunistring"
   depends_on "bemly/tahoe/fork-pkgconf" # guile-config is a wrapper around pkg-config.
   depends_on "bemly/tahoe/fork-readline"
   depends_on arch: :x86_64
@@ -43,7 +43,7 @@ class Guile < Formula
   deny_network_access!
 
   def install
-    ENV.prepend_path "PATH", Formula["bemly/tahoe/fork-gnu-sed"].opt_libexec/"gnubin"
+    ENV.prepend_path "PATH", Formula["bemly/tahoe/gnu-sed"].opt_libexec/"gnubin"
     # So we can find libraries with (dlopen).
     ENV.append "LDFLAGS", "-Wl,-rpath,#{HOMEBREW_PREFIX}/lib"
 

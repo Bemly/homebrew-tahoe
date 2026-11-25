@@ -50,7 +50,7 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **147 个公式**（61 个预编译直引 + 76 个源码代编译 + 10 个 `fork-*` 依赖层）与 **25 个 cask**。
+> 共收录 **147 个公式**（61 个预编译直引 + 78 个源码代编译 + 8 个 `fork-*` 依赖层）与 **25 个 cask**。
 
 ### CLI 与开发工具 — 预编译直引公式（61 个）
 
@@ -154,18 +154,18 @@ brew install --cask bemly/tahoe/antigravity
 | `socat` | SOcket CAT 中继工具（`fork-openssl@3`），源码现编出瓶 |
 | `vde` | 虚拟分布式以太网（Clang 26 下加 `-std=gnu17`），`qemu` 依赖 |
 | `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等，`fork-openssl@4`；上游 macOS 包仅 arm64） |
-| `wget` | 命令行下载工具（`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`）；与 core 同名 |
+| `wget` | 命令行下载工具（`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`libunistring`）；与 core 同名 |
 | `wimlib` | 创建 / 解包 / 修改 WIM 映像的库与 `wimlib-imagex` 工具（macOS 零运行时依赖，`fork-pkgconf` 构建） |
 
-### 运行时依赖层 — 同名接管（44 个源码库）与 `fork-*`（10 个）
+### 运行时依赖层 — 同名接管（46 个源码库）与 `fork-*`（8 个）
 
 `homebrew/core` 中无 `x86_64_tahoe` 瓶的运行时依赖，按「无 core 依赖方则同名接管、有 core 依赖方则保留改名 `fork-*`」打包出瓶：
 
-- **同名接管的运行时依赖（44 个源码库，连同上述 32 个共 76 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
-  `abseil`、`bdw-gc`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gmp`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`json-c`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libtasn1`、`libusb`、`libyaml`、`lz4`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pcre2`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
+- **同名接管的运行时依赖（46 个源码库，连同上述 32 个共 78 个源码代编译公式；`boost@1.85` 预编译包亦属同名依赖）**：
+  `abseil`、`bdw-gc`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`glib`、`gmp`、`gnu-sed`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`json-c`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libtasn1`、`libunistring`、`libusb`、`libyaml`、`lz4`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`p11-kit`、`pcre2`、`pinentry`、`pixman`、`python@3.14`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`
   *（注：`vulkan-loader` 仅运行时依赖在 core 中拥有 `all` 瓶的 `vulkan-headers`。）*
-- **改名且 `keg_only` 的 `fork-*` 依赖（10 个）** *（不与 `homebrew/core` 冲突，按全名 `bemly/tahoe/fork-*` 引用）*：
-  `fork-bison`、`fork-gnu-sed`、`fork-gettext`、`fork-libunistring`、`fork-openssl@3`、`fork-openssl@4`、`fork-pkgconf`、`fork-readline`、`fork-xz`、`fork-zstd`
+- **改名且 `keg_only` 的 `fork-*` 依赖（8 个）** *（不与 `homebrew/core` 冲突，按全名 `bemly/tahoe/fork-*` 引用）*：
+  `fork-bison`、`fork-gettext`、`fork-openssl@3`、`fork-openssl@4`、`fork-pkgconf`、`fork-readline`、`fork-xz`、`fork-zstd`
 
 ### 桌面应用与输入法 — Cask（25 个）
 
@@ -202,7 +202,7 @@ brew install --cask bemly/tahoe/antigravity
 Homebrew 禁止同时安装来自不同 tap 的同名公式或同 token cask——它们共用同一份
 `Cellar/<name>` 或 `Caskroom/<token>` 目录。
 
-除改名且 `keg_only` 的 `fork-*`（10 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
+除改名且 `keg_only` 的 `fork-*`（8 个）与本仓独有包（`curl3`、`ffplay`、`ffprobe`、
 `ffserver`、`antigravity-cli`、`aarch64-unknown-linux-gnu`、`x86_64-unknown-linux-gnu`、
 `llvm-mingw`、`cmd`、`deepseek-harness`、`frida-server`、`mufetch`、`sst`、`torpedo`
 以及本仓独有 cask）外，**凡与 `homebrew/core` 同名的软件都必须先卸载另一方**

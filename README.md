@@ -61,7 +61,7 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **147 formulae** (61 prebuilt + 76 source-built + 10 `fork-*` dependency forks) and **25 casks**.
+> Total: **147 formulae** (61 prebuilt + 78 source-built + 8 `fork-*` dependency forks) and **25 casks**.
 
 ### CLI & Developer Tools — Prebuilt Formulae (61)
 
@@ -165,18 +165,18 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `socat` | SOcket CAT relay tool (`fork-openssl@3`), compiled from source |
 | `vde` | Virtual distributed Ethernet (`-std=gnu17` for Clang 26), bottled dependency of `qemu` |
 | `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends, `fork-openssl@4`; upstream macOS asset is arm64-only) |
-| `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`fork-libunistring`); same-name conflict with core |
+| `wget` | Internet file retriever (`libidn2`/`libpsl`/`fork-openssl@4`/`fork-gettext`/`libunistring`); same-name conflict with core |
 | `wimlib` | Library and `wimlib-imagex` tools for WIM images (zero macOS runtime dependencies, built with `fork-pkgconf`) |
 
-### Runtime Dependency Layer — Same-Name Takeovers (44 source libraries) & `fork-*` (10)
+### Runtime Dependency Layer — Same-Name Takeovers (46 source libraries) & `fork-*` (8)
 
 Runtime dependencies that lack `x86_64_tahoe` bottles in `homebrew/core` are either taken over under their core name (when no `homebrew/core` dependents remain on a typical setup) or kept renamed as `keg_only` `fork-*` packages:
 
-- **Same-name dependency libraries (44 source-built formulae, totaling 76 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
-  `abseil`, `bdw-gc`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gmp`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `json-c`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libtasn1`, `libusb`, `libyaml`, `lz4`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pcre2`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
+- **Same-name dependency libraries (46 source-built formulae, totaling 78 source-built formulae with the 32 above; `boost@1.85` prebuilt is also a same-name dependency)**:
+  `abseil`, `bdw-gc`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `glib`, `gmp`, `gnu-sed`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `json-c`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libtasn1`, `libunistring`, `libusb`, `libyaml`, `lz4`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `p11-kit`, `pcre2`, `pinentry`, `pixman`, `python@3.14`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
-- **Renamed `keg_only` `fork-*` packages (10)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
-  `fork-bison`, `fork-gnu-sed`, `fork-gettext`, `fork-libunistring`, `fork-openssl@3`, `fork-openssl@4`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
+- **Renamed `keg_only` `fork-*` packages (8)** *(do not conflict with `homebrew/core`, referenced via `bemly/tahoe/fork-*`)*:
+  `fork-bison`, `fork-gettext`, `fork-openssl@3`, `fork-openssl@4`, `fork-pkgconf`, `fork-readline`, `fork-xz`, `fork-zstd`
 
 ### Desktop Apps & Input Methods — Casks (25)
 
@@ -214,7 +214,7 @@ Homebrew forbids installing formulae or casks with the same name/token from two
 different taps at the same time — they share the same `Cellar/<name>` or `Caskroom/<token>`
 directory.
 
-Except for renamed `keg_only` `fork-*` packages (10) and tap-exclusive packages (`curl3`,
+Except for renamed `keg_only` `fork-*` packages (8) and tap-exclusive packages (`curl3`,
 `ffplay`, `ffprobe`, `ffserver`, `antigravity-cli`, `aarch64-unknown-linux-gnu`,
 `x86_64-unknown-linux-gnu`, `llvm-mingw`, `cmd`, `deepseek-harness`, `frida-server`,
 `mufetch`, `sst`, `torpedo`, and tap-only casks), **any package sharing a name with
