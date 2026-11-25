@@ -134,7 +134,7 @@ jobs:
           }
           write_back antigravity-cn     antigravity        Antigravity
           write_back_toshllm() {
-            local dir=".build/toshllm-source" cask="toshllm" asset="ToshLLM"
+            local dir=".build/toshllm-source" cask="toshllm" asset="ToshLLM-v"
             local sidecar base ver sha commit
             sidecar="$(ls "$dir"/*.dmg.sha256 2>/dev/null | head -1)"
             if [[ -z "$sidecar" ]]; then
