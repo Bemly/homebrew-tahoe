@@ -11,6 +11,12 @@ class Libzip < Formula
     regex(/href=.*?libzip[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "21f3282ce206810566d555ea6c37161a0a07fe8c39b1cb21c1fd3f53f5851963"
+    sha256 cellar: :any, tahoe: "2c3033bcaff96dfecd294c8a1fe4e6550bd583410f5109db722d3cf4cb09f90d"
+  end
+
   depends_on "bemly/tahoe/cmake" => :build
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/xz"
