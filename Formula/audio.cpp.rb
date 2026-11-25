@@ -7,6 +7,12 @@ class AudioCpp < Formula
   license "Apache-2.0"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "1dfdb5d8a0fa1c7a86bc1b8773a499c7cda41ab9896faf386adc7ad01d40448d"
+    sha256 cellar: :any_skip_relocation, tahoe: "617cdeab91fff18c4dda11880f4d076516f7f9b9256561fb5bd2d833b10aa210"
+  end
+
   depends_on "bemly/tahoe/cmake" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/pkgconf" => :build
