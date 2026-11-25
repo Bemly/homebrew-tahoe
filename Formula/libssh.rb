@@ -11,8 +11,8 @@ class Libssh < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "a2b4dfa28ea430bee24670c3850a3b782ae9b2f13a0e2ad329c3600412b0b5c0"
-    sha256 cellar: :any, tahoe: "900d8f8d202445d143ea4475a385462c5826bd1f6af02da6d69f115fcfb24e49"
+    manifest_sha256 "c4f934ee4c239f4398455b7e0c980e5730980a2b83e35f0adbc5f4ee6a1cf2a0"
+    sha256 cellar: :any, tahoe: "16aaa2ffee802dcc04a7b886e1f6fd08390be9dab50fa5589ba5e5a5dfe9ea3e"
   end
 
   depends_on "bemly/tahoe/cmake" => :build
