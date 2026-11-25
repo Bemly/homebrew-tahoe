@@ -44,13 +44,13 @@ homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
 ├── Formula/                           # 147 个公式（61 个预编译 + 86 个源码）
-├── Casks/                             # 25 个 cask（桌面 app / 输入法）
+├── Casks/                             # 26 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 161 个检查器入口，与 Formula|Casks 一一同名
+│   └── <name>.swift                   # 162 个检查器入口，与 Formula|Casks 一一同名
 └── .github/workflows/
     ├── watch-updates.yml              # 每日自动 + 手动触发的批量版本 watcher（ubuntu-latest + Swift）
     ├── bottle.yml                     # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
@@ -102,7 +102,7 @@ end
 
 ## 6. 当前收录
 
-> **147 个公式（61 个预编译直引 + 86 个源码包）**，`updater/` 共 161 个检查器（另有 `UpdaterCore.swift`）。
+> **147 个公式（61 个预编译直引 + 86 个源码包）**，`updater/` 共 162 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -267,7 +267,7 @@ end
 
 `bison`、`openssl@3`、`readline` 按 core 语义保留 `keg_only`；`openssl@3` 与 `openssl@4` 是不同 ABI 线，禁止互换或合并。所有同名依赖仍走 brew JSON 全量流，版本耦合补丁（如 readline）继续走 `manualSyncReason`。
 
-### 6.4 cask（25 个，桌面 app / 输入法）
+### 6.4 cask（26 个，桌面 app / 输入法）
 
 cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本仓 GitHub Release、改写 `Casks/<name>.rb`，**不触发 `bottle.yml`**。
 
@@ -276,7 +276,8 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | `afm` | 2026.09.15 | arm64 | 输入法；用户级 `~/Library/Input Methods`；arm64 破例；不检查更新 |
 | `amd` | 2026.09.18 | universal | 自有软件；app + `obcli`；本地构建镜像；不检查更新 |
 | `antigravity` | 2.34.0-5887025308631040-cn1 | Intel | 官方 darwin-x64 + 汉化/补充词典/页内 DOM 挂件/禁自更新；`patched.yml` 构建并传 `.sha256` sidecar；customRelease 动态读官方下载页判新 |
-| `blender-5x` | 5.2.2 | Intel | Intel 社区构建；github 流；镜像 |
+| `blender` | 5.3.0-beta | Intel | 社区 Beta；Atom 动态取最新 beta，不锁版本；镜像；与 core 同名互斥 |
+| `blender@lts` | 5.2.2 | Intel | 社区稳定版；github 流；镜像；与 core 同名互斥 |
 | `brewui` | 0.6.0 | universal | universal；github 流；镜像 |
 | `checkra1n` | 0.12.4 | Intel | core cask 已 disable；镜像；不检查更新 |
 | `doubao-ime` | 1.1.1 | universal | 输入法；custom API；声明式 steps；镜像 |
@@ -301,7 +302,9 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 
 ## 7. Watcher 工作原理
 
-`watch-updates.yml`（只有全量模式）在 `ubuntu-latest` 上运行：
+`watch-updates.yml`（只有全量模式）在 `ubuntu-latest` 上运行。手动 `workflow_dispatch`
+可传 `mirror_casks`（逗号分隔）：仍全仓扫描，但指定 cask 即使版本相同也会重新下载、
+实算 sha 并上传本仓 Release，适用于同版本迁移 token 或补镜像；文件无变化时不空提交。
 
 1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，按同名匹配 `updater/<name>.swift`（11 个 pinned 包故意无检查器：`afm`、`amd`、`checkra1n`、`cmd`、`ffserver`、`heliport`、`llvm`、`macos-tskmgr`、`neofetch`、`palera1n`、`winstart`）。
 2. `swiftc -O updater/UpdaterCore.swift updater/<name>.swift` 编译并运行（每包 `timeout 600`）；默认 8 路并发执行（`WATCH_JOBS` 可覆盖），各包写独立日志与 `GITHUB_OUTPUT`；启动时先按队列打印检查序号，主循环再按原队列顺序等待并立即流式输出详细日志和状态，避免交叉输出。

@@ -50,7 +50,7 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **147 个公式**（61 个预编译直引 + 86 个源码代编译）与 **25 个 cask**。
+> 共收录 **147 个公式**（61 个预编译直引 + 86 个源码代编译）与 **26 个 cask**。
 
 ### CLI 与开发工具 — 预编译直引公式（61 个）
 
@@ -165,14 +165,15 @@ brew install --cask bemly/tahoe/antigravity
   `abseil`、`bdw-gc`、`bison`、`brotli`、`c-ares`、`dynet`、`eigen@3`、`gettext`、`glib`、`gmp`、`gnu-sed`、`gnutls`、`guile`、`icu4c@78`、`jemalloc`、`json-c`、`libassuan`、`libev`、`libgcrypt`、`libgpg-error`、`libidn2`、`libksba`、`libnghttp2`、`libpng`、`libpsl`、`libssh`、`libssh2`、`libtasn1`、`libunistring`、`libusb`、`libyaml`、`lz4`、`lzo`、`mpdecimal`、`ncurses`、`nettle`、`npth`、`openssl@3`、`openssl@4`、`p11-kit`、`pcre2`、`pinentry`、`pixman`、`pkgconf`、`python@3.14`、`readline`、`simdjson`、`snappy`、`spirv-tools`、`sqlite`、`svt-av1`、`vulkan-loader`、`xz`、`zstd`
   *（注：`vulkan-loader` 仅运行时依赖在 core 中拥有 `all` 瓶的 `vulkan-headers`。）*
 
-### 桌面应用与输入法 — Cask（25 个）
+### 桌面应用与输入法 — Cask（26 个）
 
 | Cask | 架构 | 说明 |
 | --- | --- | --- |
 | `afm` | arm64 | AFM 拼音输入法（仅 Apple Silicon 的自有软件例外）；装进 `~/Library/Input Methods` 并自动启用输入源；锁定版本 |
 | `amd` | universal | 自有歌词汉化下载器 + `obcli` 命令行；镜像到本仓 Release；锁定版本 |
 | `antigravity` | Intel | Google Antigravity 智能体 IDE，**分发的是打补丁后的成品**：解包官方 Intel dmg → 静态改写 `app.asar`（中文汉化 + 补充词典 + 页内 Gemini 伴生挂件 + 禁用自动更新）→ ad-hoc 重签，安装后自动清掉 quarantine；由 `Widgets/antigravity-niang/build.sh` 复现构建；与 core 未打补丁同名 cask 不能共存 |
-| `blender-5x` | Intel | Blender 5.x Intel 优化社区构建；镜像到本仓 Release；会与 core 的 `blender` 共用 `/Applications/Blender.app` |
+| `blender` | Intel | 非官方 Blender Beta Intel 社区构建；动态跟随上游最新 beta，不锁版本；镜像到本仓 Release；与 core 的 `blender` 同 token |
+| `blender@lts` | Intel | 非官方稳定版 Blender Intel 社区构建；镜像到本仓 Release；与 core 的 `blender@lts` 同 token |
 | `brewui` | universal | Homebrew 官方图形界面（`Homebrew-<ver>.zip`）；从 GitHub Release 镜像 |
 | `checkra1n` | Intel | checkm8 越狱工具（core 同名 cask 因 Gatekeeper 已被 disable）；镜像；锁定版本 |
 | `doubao-ime` | universal | 豆包 AI 输入法；装进用户级 `~/Library/Input Methods`（免 sudo）并自动写入系统输入源启用；镜像 |
@@ -233,8 +234,9 @@ brew uninstall --cask --force antigravity
 brew install --cask bemly/tahoe/antigravity
 ```
 
-`blender-5x` 虽不同 token，但同样会装进 `/Applications/Blender.app` 与 core 的
-`blender` 冲突。
+`blender` 跟随社区 Beta 通道，`blender@lts` 跟随稳定版，两者都不锁版本。它们共用
+`/Applications/Blender.app`，彼此以及各自的 core 同名 cask 都不能共存；切换前必须先
+卸载另一份。
 
 ## GHCR 瓶
 

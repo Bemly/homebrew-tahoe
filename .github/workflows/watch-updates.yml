@@ -22,6 +22,11 @@ on:
         required: false
         default: false
         type: boolean
+      mirror_casks:
+        description: 强制重新镜像的 cask（逗号分隔；仍会全仓扫描）
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -51,6 +56,7 @@ jobs:
         id: batch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_MIRROR_CASKS: ${{ inputs.mirror_casks }}
         run: |
           set -euo pipefail
           updated=()
@@ -300,12 +306,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [[ ${#updated_casks[@]} -gt 0 ]]; then
             git add Casks/*.rb
-            git commit -m "watcher: batch bump ${cask_list}"
-            if ! git push origin HEAD:main; then
-              git pull --rebase origin main
-              git push origin HEAD:main
+            if git diff --cached --quiet; then
+              echo "cask 资产已镜像，文件无变化，无需提交：${cask_list}"
+            else
+              git commit -m "watcher: batch bump ${cask_list}"
+              if ! git push origin HEAD:main; then
+                git pull --rebase origin main
+                git push origin HEAD:main
+              fi
+              echo "已提交 cask 更新：${cask_list}"
             fi
-            echo "已提交 cask 更新：${cask_list}"
           fi
           if [[ ${#updated_formulae[@]} -gt 0 ]]; then
             echo "公式候选补丁已准备，等待上传 artifact 后触发单次批量制瓶：${formula_list}"

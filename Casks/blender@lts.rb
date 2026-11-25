@@ -1,16 +1,16 @@
-cask "blender-5x" do
+cask "blender@lts" do
   version "5.2.2"
   sha256 "8515b592d033c1e620e28c5c5708d35683a08f084dadcbcb7220c47303e3fe0e"
 
-  # 镜像到本仓 Release（tag blender-5x-<ver>，资产名沿用上游 basename）：
+  # 镜像到本仓 Release（tag blender@lts-<ver>，资产名沿用上游 basename）：
   # 本 tap 政策是所有 cask 都镜像最新版；url 用 #{version} 双插值（tag 与资产名
   # 都带版本），否则 audit 会因"URL 无版本"要求 sha256 :no_check（文件名尾部的
   # x86_64 会让版本检测抓到 "64"，wireshark/zcode 同例）。
-  # 版本更新由 updater/blender-5x.swift 跟上游 GitHub releases（UpdaterCore
+  # 版本更新由 updater/blender@lts.swift 跟上游 GitHub releases（UpdaterCore
   # github 流），有更新时下载、上传 Release、改写本文件（brewui 同机制）。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/blender-5x-#{version}/Blender-#{version}-macOS-x86_64-AMD.dmg"
-  name "Blender 5x Intel"
-  desc "3D creation suite, Intel-optimized community build"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/blender@lts-#{version}/Blender-#{version}-macOS-x86_64-AMD.dmg"
+  name "Blender LTS"
+  desc "3D creation suite, unofficial stable Intel community build"
   homepage "https://github.com/jaguarus83/blender-5x-intel-mac-builds"
 
   # Intel-only（本 tap 首个 x86_64 门槛 cask）：包内 Blender 二进制为 thin
@@ -27,7 +27,8 @@ cask "blender-5x" do
       在 /Applications 里右键 Blender.app → 打开 → 仍要打开，
       之后即可正常启动。
 
-    与 core 的 blender cask 及任何已装的 Blender.app 同名同 ID，
-    不能共存——先备份并移除旧版，再装本 cask。
+    与 core 的 blender@lts cask 同 token、同 bundle ID，且都会安装到
+    /Applications/Blender.app；本 tap 的 blender beta 也会占用同一路径。
+    都不能共存——先备份并移除旧版，再装本 cask。
   EOS
 end

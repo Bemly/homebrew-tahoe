@@ -61,7 +61,7 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **147 formulae** (61 prebuilt + 86 source-built) and **25 casks**.
+> Total: **147 formulae** (61 prebuilt + 86 source-built) and **26 casks**.
 
 ### CLI & Developer Tools — Prebuilt Formulae (61)
 
@@ -176,14 +176,15 @@ All runtime infrastructure uses its core name and is referenced as `bemly/tahoe/
   `abseil`, `bdw-gc`, `bison`, `brotli`, `c-ares`, `dynet`, `eigen@3`, `gettext`, `glib`, `gmp`, `gnu-sed`, `gnutls`, `guile`, `icu4c@78`, `jemalloc`, `json-c`, `libassuan`, `libev`, `libgcrypt`, `libgpg-error`, `libidn2`, `libksba`, `libnghttp2`, `libpng`, `libpsl`, `libssh`, `libssh2`, `libtasn1`, `libunistring`, `libusb`, `libyaml`, `lz4`, `lzo`, `mpdecimal`, `ncurses`, `nettle`, `npth`, `openssl@3`, `openssl@4`, `p11-kit`, `pcre2`, `pinentry`, `pixman`, `pkgconf`, `python@3.14`, `readline`, `simdjson`, `snappy`, `spirv-tools`, `sqlite`, `svt-av1`, `vulkan-loader`, `xz`, `zstd`
   *(Note: `vulkan-loader` depends only on `vulkan-headers`, which ships an `all` bottle in `homebrew/core`.)*
 
-### Desktop Apps & Input Methods — Casks (25)
+### Desktop Apps & Input Methods — Casks (26)
 
 | Cask | Arch | Notes |
 | --- | --- | --- |
 | `afm` | arm64 | AFM pinyin input method (Apple Silicon-only exception); installs into `~/Library/Input Methods` and auto-enables input source; pinned |
 | `amd` | universal | AMD lyrics downloader + `obcli` CLI; mirrored to this repo's releases; pinned |
 | `antigravity` | Intel | Google Antigravity IDE, **shipped as a patched artifact**: unpacks official Intel dmg, patches `app.asar` (Chinese localization + extra model-name dictionary + in-page Gemini companion widget; disables auto-update), re-signs ad-hoc, clears quarantine on install; built reproducibly by `Widgets/antigravity-niang/build.sh`; shares token with core's unpatched cask |
-| `blender-5x` | Intel | Blender 5.x Intel-optimized community build; mirrored to this repo's releases; shares `/Applications/Blender.app` with core's `blender` |
+| `blender` | Intel | Unofficial Blender beta Intel community build; dynamically tracks the newest upstream beta without a version pin; mirrored to this repo's releases; shares token with core's `blender` |
+| `blender@lts` | Intel | Unofficial stable Blender Intel community build; mirrored to this repo's releases; shares token with core's `blender@lts` |
 | `brewui` | universal | Official Homebrew graphical interface (`Homebrew-<ver>.zip`); mirrored from GitHub releases |
 | `checkra1n` | Intel | checkm8 jailbreak app (core's cask is disabled over Gatekeeper); mirrored; pinned |
 | `doubao-ime` | universal | Doubao AI input method; installs into `~/Library/Input Methods` (user-level, no sudo) and auto-enables system input source; mirrored |
@@ -246,8 +247,10 @@ brew uninstall --cask --force antigravity
 brew install --cask bemly/tahoe/antigravity
 ```
 
-`blender-5x` uses a different token, but also installs into `/Applications/Blender.app`
-and conflicts with core's `blender` cask.
+`blender` tracks the community beta channel, while `blender@lts` tracks stable
+releases; neither checker pins a version. They share `/Applications/Blender.app`
+and cannot coexist with each other or with the corresponding core cask, so
+uninstall the other version before switching.
 
 ## GHCR bottles
 
