@@ -9,8 +9,8 @@ class X8664UnknownLinuxGnu < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "d796bb30ab27450389ec28603de4736e493e3667b2dc6a2b456f824b2797aeca"
-    sha256 tahoe: "ddf8a9c2960390dfa97f1f14d012edeeb8cb69a6c8d70a338b5c2ae6774b7411"
+    manifest_sha256 "5235ac31affcc8f8fdd36405e67c481c11d770dbd1d79ca1f88bdffbb12f50c0"
+    sha256 tahoe: "c73070bb332c20ea86d1485865336118183966d98509c3b60dfbd36186349b38"
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
