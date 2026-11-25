@@ -14,7 +14,8 @@ class Socat < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "d199936f0761a27d6805ae260c2cdda54e94d283b7ef290701608fe65955d013"
+    manifest_sha256 "7895d367841524df364ca2d14f2ad9a48d0a64c2613f608700150048adafa7dd"
+    sha256 cellar: :any, tahoe: "0a8bb59470432999d4e98d4234b1fdbd9e29032e8f23915bff73d525624c4e8c"
   end
 
   depends_on arch: :x86_64
