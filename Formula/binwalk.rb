@@ -7,8 +7,8 @@ class Binwalk < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "90d9814e674c0cbd5585c3b3e79f5b693d3ef32a51b931355c84a84731abd045"
-    sha256 cellar: :any_skip_relocation, tahoe: "014845ee1a026a8d19501a40e7453748fb762040f763ec4c81c9997c3d3a555e"
+    manifest_sha256 "e4acf29701c244e3043905030268ed5662eb7c320c875bbdc5bd72f731326523"
+    sha256 cellar: :any_skip_relocation, tahoe: "cfbff7ae4016d3920e6f96e68266b31f166d9c6503b435348dd3299cc08cdc6a"
   end
 
   resource "rustc" do
