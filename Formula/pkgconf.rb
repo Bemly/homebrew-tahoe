@@ -13,6 +13,12 @@ class Pkgconf < Formula
     regex(/href=.*?pkgconf[._-]v?(\d+\.\d+(?:\.[1-8]?\d(?:\.\d+)*)?)\.t/i)
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "096be32dd83d3ab5e9465fcb62e9de66513e3b1ec8d5bd442c52c49180313cfe"
+    sha256 tahoe: "1349e45b2a5e0c10e47ce28b58afe1c8303de059a4d7694fd11d5020c9875fae"
+  end
+
 
   head do
     url "https://github.com/pkgconf/pkgconf.git", branch: "main"
