@@ -44,6 +44,12 @@ class Readline < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "26b27d3070b25b6f19f60d7cd60508c7b16231c032c665c7affea700224d7fe3"
+    sha256 cellar: :any, tahoe: "0f59ccc635631e5c5fda9ce6e8ba0b8b0b0c4b1f51dc937e4e085b2bb45af65d"
+  end
+
   keg_only :shadowed_by_macos, "macOS provides BSD libedit"
 
   depends_on arch: :x86_64
