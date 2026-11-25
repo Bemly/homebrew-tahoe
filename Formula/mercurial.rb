@@ -9,7 +9,8 @@ class Mercurial < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "0de87d24ea05036ae42b4baf129b1b3879b66a047559d742c22e625a64bcbce3"
+    manifest_sha256 "ae5f016991f1f13856e4aa17eb5c0d3ad5292d59d98f6efe9a3da96c15e773a5"
+    sha256 tahoe: "3e8b8a35793883a9a289da145c0e094338ae3e7edb5479c7cc2c7ccbd5254003"
   end
 
   depends_on arch: :x86_64
