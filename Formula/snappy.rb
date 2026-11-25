@@ -10,8 +10,8 @@ class Snappy < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "310f4544d4953079f33ae0b150436343a56d8b186827f87f3067fff2f8266361"
-    sha256 cellar: :any, tahoe: "4fc1a772cea478c74fb0b87a3d64e670fe6851d0a436cb07eb00cd34ae4d7030"
+    manifest_sha256 "4b1a8df6cad84e871b67a10bf492904d7d3940acada2ba00e0194b47fd716727"
+    sha256 cellar: :any, tahoe: "a42e855c2d4466bf578ad79d366675825e650e7acab8907a92bf05c09e838e6f"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
