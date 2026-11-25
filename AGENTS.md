@@ -35,7 +35,7 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 | 仓库名 | `bemly/homebrew-tahoe` | GitHub 仓库名必须带 `homebrew-` 前缀，`brew tap bemly/tahoe` 才能简写解析 |
 | 公式 / Cask 目录 | `Formula/` / `Casks/` | 标准 Homebrew 布局 |
 | 依赖引用全名 | `bemly/tahoe/<name>` | 指向本 tap 的依赖必须写全名（裸名永远解析到 core） |
-| 依赖改名 | `fork-<core>` | core 有依赖方、不能同名接管时改名并设 `keg_only`；无 core 依赖方则直接同名接管（见 6.3） |
+| 依赖改名 | 默认同名接管 | 本仓运行时依赖统一使用 core 原名并写全名；`keg_only` 按 core 语义保留。跨 tap 同名包不能共存，切换时必须卸载 Core 版（见 6.3） |
 
 ## 3. 目录结构
 
@@ -43,14 +43,14 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 147 个公式（含 8 个 fork-*）
+├── Formula/                           # 147 个公式（61 个预编译 + 86 个源码）
 ├── Casks/                             # 25 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 155 个检查器入口，与 Formula|Casks 一一同名
+│   └── <name>.swift                   # 161 个检查器入口，与 Formula|Casks 一一同名
 └── .github/workflows/
     ├── watch-updates.yml              # 每日自动 + 手动触发的批量版本 watcher（ubuntu-latest + Swift）
     ├── bottle.yml                     # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
@@ -97,18 +97,18 @@ end
 | 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名）；公式候选补丁上传为 Actions artifact，`bottle.yml` 用 `watcher_run_id` 下载并应用到 `main` 工作区，**每包推瓶成功后立即单独提交该包的新版本+瓶块到 `main`**，不创建分支；遇到依赖外部补丁构建的成品 cask（`antigravity`）且上下游都已就绪时自动触发一次 `patched.yml` |
 | 递归依赖门控 | `bottle.yml` 在 `brew readall` 后用 `brew deps --declared` 递归检查依赖：目标本体与本批待构建公式展开**构建+运行时**闭包，已有瓶的依赖只展开运行时闭包（不再误查 Core 瓶的构建依赖，也不受本机旧安装回执污染）；本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断；`std_cmake_args` 隐式裸 cmake 由 workflow 预装本仓 cmake 满足（`allow_unbottled_core: true` 仅作临时放行开关） |
 | 重型任务走 CI | `patched.yml` 在 `macos-26-intel` 执行 `antigravity` 构建上传、写回 sidecar sha 并跑 `brew style`/`audit --strict`；开发机只跑轻量验证，避免卡死 |
-| 交叉 sysroot 构建 | `sysroots.yml` 在 `macos-26` / `ubuntu-22.04` 构建 `openssl-macos-arm64` 与 `linux-sysroot-x64/a64` 并发布到 GitHub Release（目标端头库不进 `Formula/` 或 GHCR），默认 `openssl_version` 与 `fork-openssl@4` 对齐 |
+| 交叉 sysroot 构建 | `sysroots.yml` 在 `macos-26` / `ubuntu-22.04` 构建 `openssl-macos-arm64` 与 `linux-sysroot-x64/a64` 并发布到 GitHub Release（目标端头库不进 `Formula/` 或 GHCR），默认 `openssl_version` 与 `openssl@4` 对齐 |
 | 控制 GitHub 负载 | `fetch-depth: 1`；brew 流走 `formulae.brew.sh`、github 流走 `HEAD releases/latest` 跳转（不耗 API 限额）；优先读 `checksums.txt`；配 `concurrency` 防并发互踩 |
 
 ## 6. 当前收录
 
-> **147 个公式（61 个预编译直引 + 78 个源码包 + 8 个 `fork-*`）**，`updater/` 共 161 个检查器（另有 `UpdaterCore.swift`）。
+> **147 个公式（61 个预编译直引 + 86 个源码包）**，`updater/` 共 161 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
 | 软件 | 版本 | 来源 | 备注 |
 | --- | --- | --- | --- |
-| `aarch64-unknown-linux-gnu` | 15.2.0 | messense 交叉工具链 GitHub Releases | 只收 Intel host 段；交叉到 aarch64 Linux；github 流 + `.sha256` sidecar；运行时依赖走本源 `guile`/`python@3.14`/`fork-*` |
+| `aarch64-unknown-linux-gnu` | 15.2.0 | messense 交叉工具链 GitHub Releases | 只收 Intel host 段；交叉到 aarch64 Linux；github 流 + `.sha256` sidecar；运行时依赖走本源 `guile`/`python@3.14`/`xz`/`zstd` |
 | `antigravity-cli` | 1.5.14 | Google GCS `antigravity-public` 的 `cli_mac_x64.tar.gz`（按构建号分目录） | 扁平裸二进制装成 `agy`；customRelease 跟官方 auto-updater manifest（只给 sha512，核心回退下载实算）；core 无同名公式 |
 | `boost@1.85` | 1.85.0 | MarkusJx/prebuilt-boost GitHub `boost-<ver>-macos-13-clang-static+shared-x86.tar.gz` | 第三方预编译 static+shared；dylib 补 `@rpath` + ad-hoc 重签；与 core 同名；freeling 依赖 |
 | `bun` | 1.4.5 | GitHub `bun-darwin-x64.zip` | 单二进制 + `bunx` 软链；显式 version 行；github 流（tag `bun-v`）+ `SHASUMS256.txt`；与 core 同名 |
@@ -164,7 +164,7 @@ end
 | `starship` | 1.27.0 | GitHub `starship-x86_64-apple-darwin.tar.gz` | 单二进制 + 生成补全；github 流；与 core 同名 |
 | `swift` | 6.4.2 | swift.org 官方 `swift-<ver>-RELEASE-osx.pkg` | 重打包只暴露 `swift`/`swiftc`；customRelease |
 | `torpedo` | 0.0.13 | anomalyco raw（Intel 段） | 无版本命令，不做版本自检 |
-| `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译（Intel host） | 203MB；`.sha256` sidecar；运行时依赖走本源 `guile`/`python@3.14`/`fork-*` |
+| `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译（Intel host） | 203MB；`.sha256` sidecar；运行时依赖走本源 `guile`/`python@3.14`/`xz`/`zstd` |
 | `xcodegen` | 2.48.0 | GitHub `xcodegen.zip` | 官方 universal 预编译（二进制 + `SettingPresets`）；github 流；与 core 同名 |
 | `yt-dlp` | 2026.10.26 | GitHub `yt-dlp_macos` 单二进制 | universal；零依赖；brew 模板流 |
 | `z3` | 5.3.3 | 官方 `z3-<ver>-x64-osx-13.3.zip` | 预编译；显式 version（URL 会扫成 13.3） |
@@ -175,55 +175,57 @@ end
 | 软件 | 版本 | 来源 | 备注 |
 | --- | --- | --- | --- |
 | `abseil` | 20260817.0 | core 拷入（源码） | 本仓 CMake；不构建 test helpers，移除 googletest 依赖；与 core 同名 |
-| `aria2` | 1.37.0 | core 拷入（源码） | autotools；`c-ares`/`libssh2`/`sqlite`/fork-openssl@4 |
+| `aria2` | 1.37.0 | core 拷入（源码） | autotools；`c-ares`/`libssh2`/`sqlite`/openssl@4 |
 | `automake` | 1.20 | core 拷入（源码） | 纯 autotools；无运行时依赖 |
-| `bash` | 5.3.20 | core 拷入（源码） | `ncurses`/fork-readline/fork-gettext；与 core 同名 |
+| `bash` | 5.3.20 | core 拷入（源码） | `ncurses`/readline/gettext；与 core 同名 |
 | `bdw-gc` | 8.2.12 | core 同名接管（源码） | CMake；guile 与交叉工具链依赖 |
+| `bison` | 3.8.2 | core 同名接管（源码） | 最小源码瓶；系统 bison 2.3 不满足 Graphviz/QEMU ≥3.0；`keg_only :provided_by_macos` |
 | `binwalk` | 3.1.0 | 上游源码 tar.gz | 内嵌官方 Rust 1.91.1 rustc/cargo/rust-std 构建资源；backport `7zz`；运行时依赖本仓 `sevenzip`；与 core 同名 |
 | `brotli` | 1.2.1 | core 同名接管（源码） | cmake；curl3 依赖 |
 | `c-ares` | 1.34.9 | core 同名接管（源码） | cmake；aria2/nghttp2 依赖 |
-| `capstone` | 5.0.9 | core 拷入（源码） | cmake；fork-gettext；qemu 依赖 |
-| `curl3` | 8.23.0 | core 拷入（源码） | 改名 + `--enable-proxy-http3`；纯客户端；`brotli`/`libpsl`/`libssh2`/`libidn2` + fork-* 依赖 |
+| `capstone` | 5.0.9 | core 拷入（源码） | cmake；gettext；qemu 依赖 |
+| `curl3` | 8.23.0 | core 拷入（源码） | 改名 + `--enable-proxy-http3`；纯客户端；`brotli`/`libpsl`/`libssh2`/`libidn2`/`openssl@4`/`zstd` |
 | `dtc` | 1.8.1 | core 拷入（源码） | meson；依赖 `libyaml`；qemu 依赖 |
 | `dynet` | 2.1.2 | core 同名接管（源码） | cmake；`eigen@3` 依赖；freeling 依赖；`revision` 与 core 同步；上游 2020 停更 |
 | `eigen@3` | 3.4.1 | core 同名接管（源码） | cmake；`keg_only :versioned_formula`；`dynet` 依赖 |
 | `freeling` | 4.2.1 | core 同名接管（源码） | cmake；解捆自带 dynet/eigen；依赖本 tap `boost@1.85`/`icu4c@78`/`dynet`；`revision` 与 core 同步 |
-| `git` | 2.56.1 | core 拷入（源码） | make；`pcre2`/`fork-gettext`（macOS 用 CommonCrypto，`fork-openssl@4` 仅在 `on_linux`）；与 core 同名 |
-| `glib` | 2.90.1 | core 同名接管（源码） | meson；libslirp/qemu 依赖；`pcre2`/`fork-gettext` |
+| `gettext` | 1.0 | core 同名接管（源码） | autotools；libintl/libasprintf；依赖本 tap `json-c`/`libunistring` |
+| `git` | 2.56.1 | core 拷入（源码） | make；`pcre2`/`gettext`（macOS 用 CommonCrypto，`openssl@4` 仅在 `on_linux`）；与 core 同名 |
+| `glib` | 2.90.1 | core 同名接管（源码） | meson；libslirp/qemu 依赖；`pcre2`/`gettext` |
 | `gmp` | 6.3.0 | core 同名接管（源码） | autotools；gnutls/guile/nettle 依赖 |
 | `gnu-sed` | 4.10 | core 同名接管（源码） | 最小源码瓶；Guile 与交叉工具链构建依赖 |
-| `gnupg` | 2.5.24 | core 同名接管（源码） | autotools；依赖本 tap `gnutls`/`libusb`/`fork-readline`/`fork-gettext` + 同名 GnuPG C 库全家桶；`revision` 与 core 同步 |
-| `gnutls` | 3.8.14 | core 同名接管（源码） | autotools；`libidn2`/`nettle`/`p11-kit`/`gmp`/`libtasn1`/`libunistring`/`fork-gettext` |
+| `gnupg` | 2.5.24 | core 同名接管（源码） | autotools；依赖本 tap `gnutls`/`libusb`/`readline`/`gettext` + 同名 GnuPG C 库全家桶；`revision` 与 core 同步 |
+| `gnutls` | 3.8.14 | core 同名接管（源码） | autotools；`libidn2`/`nettle`/`p11-kit`/`gmp`/`libtasn1`/`libunistring`/`gettext` |
 | `graphviz` | 16.1.2 | core 拷入（源码） | 零第三方渲染插件；autotools |
 | `guile` | 3.0.11 | core 同名接管（源码） | bdw-gc/gmp/libunistring…；交叉工具链依赖 |
 | `icu4c@78` | 78.3 | core 同名接管（源码） | autotools；`keg_only`；freeling 依赖；`revision` 与 core 同步 |
 | `jemalloc` | 5.4.0 | core 同名接管（源码） | autotools；nghttp2 依赖 |
-| `json-c` | 0.19 | core 同名接管（源码） | cmake；fork-gettext 依赖 |
+| `json-c` | 0.19 | core 同名接管（源码） | cmake；gettext 依赖 |
 | `libassuan` | 3.0.2 | core 同名接管（源码） | autotools；`gnupg`/`pinentry` 依赖；依赖 `libgpg-error` |
 | `libev` | 4.33 | core 同名接管（源码） | autotools；nghttp2 依赖 |
 | `libgcrypt` | 1.12.4 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libgpg-error` |
-| `libgpg-error` | 1.61 | core 同名接管（源码） | autotools；GnuPG 全家桶基础库；依赖 `fork-gettext` |
+| `libgpg-error` | 1.61 | core 同名接管（源码） | autotools；GnuPG 全家桶基础库；依赖 `gettext` |
 | `libidn2` | 2.3.8 | core 同名接管（源码） | autotools；curl3/gnutls/libpsl/wget 依赖 |
 | `libimobiledevice` | 1.4.0 | core 拷入（源码） | idevice 栈主包；30+ 工具；全部依赖自瓶化 |
 | `libimobiledevice-glue` | 1.3.3 | core 拷入（源码） | 依赖 `libplist` |
 | `libksba` | 1.9.1 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libgpg-error` |
 | `libnghttp2` | 1.71.0 | core 同名接管（源码） | lib-only；curl3/nghttp2 依赖 |
 | `libnghttp3` | 1.19.0 | core 拷入（源码） | cmake；curl3 依赖 |
-| `libngtcp2` | 1.26.0 | core 拷入（源码） | cmake；fork-openssl@4 |
+| `libngtcp2` | 1.26.0 | core 拷入（源码） | cmake；openssl@4 |
 | `libplist` | 2.8.1 | core 拷入（源码） | idevice 栈叶子 |
 | `libpng` | 1.6.59 | core 同名接管（源码） | autotools；qemu 依赖 |
 | `libpsl` | 0.23.3 | core 同名接管（源码） | autotools；curl3/wget 依赖 |
 | `libslirp` | 4.9.7 | core 拷入（源码） | meson；`glib`；qemu 依赖 |
-| `libssh` | 0.12.2 | core 同名接管（源码） | cmake；fork-openssl@4 |
-| `libssh2` | 1.11.1 | core 同名接管（源码） | autotools；aria2/curl3 依赖；fork-openssl@4 |
+| `libssh` | 0.12.2 | core 同名接管（源码） | cmake；openssl@4 |
+| `libssh2` | 1.11.1 | core 同名接管（源码） | autotools；aria2/curl3 依赖；openssl@4 |
 | `libtatsu` | 1.1.1 | core 拷入（源码） | TSS 库；revision 与 core 同步 |
 | `libtasn1` | 4.21.0 | core 同名接管（源码） | autotools；gnutls/libimobiledevice/p11-kit 依赖 |
-| `libunistring` | 1.5 | core 同名接管（源码） | autotools；fork-gettext/gnutls/guile/libidn2/wget 依赖 |
+| `libunistring` | 1.5 | core 同名接管（源码） | autotools；gettext/gnutls/guile/libidn2/wget 依赖 |
 | `libusb` | 1.0.30 | core 同名接管（源码） | autotools；gnupg/qemu 依赖 |
 | `libusbmuxd` | 2.1.1 | core 拷入（源码） | idevice USB 复用；revision 同步 |
 | `libyaml` | 0.2.5 | core 同名接管（源码） | autotools；dtc 依赖 |
 | `lzo` | 2.10 | core 同名接管（源码） | autotools；qemu 依赖 |
-| `lz4` | 1.11.1 | core 同名接管（源码） | make + cmake；fork-zstd 依赖 |
+| `lz4` | 1.11.1 | core 同名接管（源码） | make + cmake；zstd 依赖 |
 | `make` | 4.4.1 | core 拷入（源码） | 装成 `gmake`；与 core 同名 |
 | `mercurial` | 7.2.4 | core 拷入（源码） | `pip install` + `contrib/chg`；依赖本 tap `python@3.11`（避开 Python 3.15 反爬补丁）；与 core 同名 |
 | `meson` | 1.12.1 | core 拷入（pip 安装） | 依赖本 tap `ninja` + `python@3.15`；与 core 同名 |
@@ -231,42 +233,39 @@ end
 | `ncurses` | 6.6 | core 同名接管（源码） | autotools；`keg_only :provided_by_macos`；bash/qemu 依赖 |
 | `neofetch` | 7.1.0 | GitHub archive tag（纯脚本） | 已归档最后一版；不检查更新 |
 | `nettle` | 4.0 | core 同名接管（源码） | autotools；gnutls 依赖；gmp |
-| `nghttp2` | 1.71.0 | core 拷入（源码） | `--enable-app`；`c-ares`/jemalloc/libev/libnghttp2/fork-openssl@3 |
+| `nghttp2` | 1.71.0 | core 拷入（源码） | `--enable-app`；`c-ares`/jemalloc/libev/libnghttp2/openssl@3 |
 | `npth` | 1.8 | core 同名接管（源码） | autotools；`gnupg` 依赖；零运行时依赖 |
 | `p11-kit` | 0.26.6 | core 同名接管（源码） | meson；gnutls 依赖；libtasn1 |
+| `openssl@3` | 3.5.9 | core 同名接管（源码） | 固定 3.5 线；`keg_only :provided_by_macos`；Python 3.11/nghttp2/socat 依赖 |
+| `openssl@4` | 4.1.0 | core 同名接管（源码） | 固定 4.1 线；Python 3.14/3.15、curl3、wget 等依赖；与 3.x ABI 隔离 |
 | `pcre2` | 10.49 | core 同名接管（源码） | autotools；git/glib 依赖 |
 | `pinentry` | 1.3.3 | core 同名接管（源码） | autotools；`gnupg` 依赖；依赖 `libassuan`/`libgpg-error` |
 | `pixman` | 0.46.4 | core 同名接管（源码） | meson；qemu 依赖 |
-| `python@3.11` | 3.11.18 | core 拷入（源码） | `mpdecimal`/`sqlite`/fork-openssl@3/fork-xz；与 core 同名 |
-| `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；交叉工具链依赖 |
-| `python@3.15` | 3.15.2 | core 拷入（源码） | `mpdecimal`/`sqlite`/fork-openssl@4/fork-xz/fork-zstd；meson 依赖；与 core 同名 |
-| `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；`glib`/`gnutls`/`jpeg-turbo`/`libpng`/`libusb`/`lzo`/`ncurses`/`pixman`/`capstone`/`dtc`/`libslirp`/`vde`/fork-zstd |
+| `pkgconf` | 3.0.11 | core 同名接管（源码） | autotools；提供 `pkgconf` 与 `pkg-config` 兼容入口 |
+| `python@3.11` | 3.11.18 | core 拷入（源码） | `mpdecimal`/`sqlite`/openssl@3/xz；与 core 同名 |
+| `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/openssl@4/xz/zstd；交叉工具链依赖 |
+| `python@3.15` | 3.15.2 | core 拷入（源码） | `mpdecimal`/`sqlite`/openssl@4/xz/zstd；meson 依赖；与 core 同名 |
+| `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；`glib`/`gnutls`/`jpeg-turbo`/`libpng`/`libusb`/`lzo`/`ncurses`/`pixman`/`capstone`/`dtc`/`libslirp`/`vde`/zstd |
+| `readline` | 8.3.6 | core 同名接管（源码） | 8.3 + 官方 001–006 补丁；`keg_only :shadowed_by_macos`；人工同步小版本 |
 | `simdjson` | 5.3.0 | core 同名接管（源码） | 本 tap `cmake` |
-| `snappy` | 1.3.1 | core 同名接管（源码） | cmake；fork-pkgconf 构建 |
-| `socat` | 1.8.1.3 | core 拷入（源码） | fork-openssl@3；test 走回环 |
+| `snappy` | 1.3.1 | core 同名接管（源码） | cmake；pkgconf 构建 |
+| `socat` | 1.8.1.3 | core 拷入（源码） | openssl@3；test 走回环 |
 | `spirv-tools` | 1.4.363.0 | core 同名接管（源码） | cmake；`glslang` 等着色器工具链依赖；零运行时依赖（`spirv-headers` 为纯构建依赖 `all` 瓶） |
-| `sqlite` | 3.54.1 | core 同名接管（源码） | autotools；`keg_only :provided_by_macos`；aria2/python 依赖；fork-readline |
+| `sqlite` | 3.54.1 | core 同名接管（源码） | autotools；`keg_only :provided_by_macos`；aria2/python 依赖；readline |
 | `svt-av1` | 4.3.0 | core 同名接管（源码） | cmake |
 | `vde` | 2.3.3 | core 拷入（源码） | 2016 旧代码需 `-std=gnu17` |
 | `vulkan-loader` | 1.4.363.0 | core 同名接管（源码） | cmake；Vulkan ICD Loader；运行时仅依赖 core `vulkan-headers`（`all` 瓶） |
-| `wabt` | 1.0.42 | core 拷入（源码） | cmake；fork-openssl@4 |
-| `wget` | 1.25.0 | core 拷入（源码） | `libidn2`/`libpsl`/fork-openssl@4/fork-gettext |
-| `wimlib` | 1.14.5 | core 拷入（源码） | autotools；fork-pkgconf 构建 |
+| `wabt` | 1.0.42 | core 拷入（源码） | cmake；openssl@4 |
+| `wget` | 1.25.0 | core 拷入（源码） | `libidn2`/`libpsl`/openssl@4/gettext |
+| `wimlib` | 1.14.5 | core 拷入（源码） | autotools；pkgconf 构建 |
+| `xz` | 5.8.4 | core 同名接管（源码） | autotools；liblzma 与命令行工具；零第三方运行时依赖 |
+| `zstd` | 1.5.7_1 | core 同名接管（源码） | 固定兼容版本；cmake；依赖本 tap `cmake`/`lz4`/`xz` |
 
-### 6.3 `fork-*` 依赖层（8 个）
+### 6.3 同名接管与 Core 共存边界
 
-Homebrew 禁止跨 tap 安装同名包：本机或生态中仍有 core 依赖方的底层依赖不能同名接管，因此保留改名 `fork-<core>` + `keg_only`，本仓公式按全名 `bemly/tahoe/fork-<core>` 引用；已无 core 依赖方的依赖公式已在 §6.1 / §6.2 中以原名接管（`boost@1.85` 走预编译、`abseil` 与其余 46 个源码包标为 `core 同名接管`）。`fork-*` 走 brew JSON 全量流，补丁随 `Patches/` 入库。
+本仓的 54 个源码运行时依赖统一使用 core 原名并写全名 `bemly/tahoe/<name>`，不再保留 `fork-*` 层。Homebrew 禁止跨 tap 同时安装同名公式：Core 仍有大量反向依赖，因此用户必须从 Core 整栈切换到本 tap，不能把单个同名库与 Core 版混装。
 
-| fork 公式 | 对应 core | 版本 | 说明 |
-| --- | --- | --- | --- |
-| `fork-bison` | `bison` | 3.8.2 | 最小源码瓶；系统 bison 2.3 不满足 Graphviz/QEMU ≥3.0；`keg_only` |
-| `fork-gettext` | `gettext` | 1.0 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-openssl@3` | `openssl@3` | 3.5.9 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-openssl@4` | `openssl@4` | 4.1.0 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-pkgconf` | `pkgconf` | 3.0.11 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-readline` | `readline` | 8.3.6 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-xz` | `xz` | 5.8.4 | 源码现编；`keg_only`；依赖方写全名 |
-| `fork-zstd` | `zstd` | 1.5.7 | 源码现编；`keg_only`；依赖方写全名 |
+`bison`、`openssl@3`、`readline` 按 core 语义保留 `keg_only`；`openssl@3` 与 `openssl@4` 是不同 ABI 线，禁止互换或合并。所有同名依赖仍走 brew JSON 全量流，版本耦合补丁（如 readline）继续走 `manualSyncReason`。
 
 ### 6.4 cask（25 个，桌面 app / 输入法）
 
@@ -315,10 +314,10 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | `raw` | 源 tap 公式 raw 文本 `version` | GoReleaser 结构（`rawDualArch` 同步双块） | opencode、sst、torpedo |
 | `github` | `HEAD releases/latest` 跳转 tag | 剥 `githubTagPrefix` 套 `downloadURL` 模板 | fzf、chisel、brewui、frida-server、交叉工具链 |
 | `brew` 模板式 | `api/formula/<brewName>.json` | 自拼 `downloadURL` / `checksumsURL`（无清单则实算） | gh、node 家族、fastfetch、cmake |
-| `brew` 全量式 | 同上 | JSON 的 `urls.stable.url` / `.checksum` | `fork-*`、qemu 链、ripgrep、python 家族 |
+| `brew` 全量式 | 同上 | JSON 的 `urls.stable.url` / `.checksum` | 同名依赖层、qemu 链、ripgrep、python 家族 |
 | `brew` cask | `api/cask/<brewName>.json` | 自给 x64 `downloadURL` 模板，sha 实算 | zcode、lody、github-copilot-app |
 
-5. 版本按数值段比较（含预发布后缀 < 正式版；`alwaysUpdate` 例外）；设置了 `manualSyncReason` 的包（`git` / `bash` / `fork-readline`）检测到新版时不自动改写，输出 `status=manual-sync` 触发 issue 告警；设置了 `patchedReadinessCheck` 的补丁成品 cask（`antigravity`）在 Release 尚未产出时检测上游依赖 tag，已就绪则发 `status=needs-patched-build` 自动触发 `patched.yml`，未就绪则发 `status=waiting-upstream` 暂缓等待；`HEAD` 探测失败时先用 1 字节 Range GET 复验，两者均不可达才发 `status=upstream-missing` 并开 `automated-alert` issue。
+5. 版本按数值段比较（含预发布后缀 < 正式版；`alwaysUpdate` 例外）；设置了 `manualSyncReason` 的包（`git` / `bash` / `readline`）检测到新版时不自动改写，输出 `status=manual-sync` 触发 issue 告警；设置了 `patchedReadinessCheck` 的补丁成品 cask（`antigravity`）在 Release 尚未产出时检测上游依赖 tag，已就绪则发 `status=needs-patched-build` 自动触发 `patched.yml`，未就绪则发 `status=waiting-upstream` 暂缓等待；`HEAD` 探测失败时先用 1 字节 Range GET 复验，两者均不可达才发 `status=upstream-missing` 并开 `automated-alert` issue。
 6. 改写前先在内存通过自检再落盘：同步 `url`、`mirror`（含 `vX.Y/` 段）、顶层 `version`、`sha256`，摘除公式旧 `bottle do` 块并折叠相邻多余空行，并在版本升级时清掉旧的 `revision N`；`uploadRelease: true` 的 cask 同步上传本仓 Release 并清掉该 cask 的旧 Release。
 
 ### 7.1 workflow 复核、提交与状态契约
@@ -351,7 +350,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 ## 9. 新增或修改软件 SOP
 
 1. **调研原料**：优先找上游 **macOS amd64** 预编译包，并核对架构、版本、SHA/签名和安装布局；已有预编译公式不得随意改回源码。无预编译或预编译不可用时，记录原因后从 core 原文拷贝源码公式（`lib` 前缀公式在 `Formula/lib/`）。
-2. **编写公式 / Cask**：严格按 §4 写 `Formula/<name>.rb` 或 `Casks/<name>.rb`，显式声明双门槛；不要手填 `bottle do`；所需运行时依赖一律在本仓闭环（同名接管或 `fork-*`）并写全名 `bemly/tahoe/<name>`；若为纯源码拷贝，同步拷贝所需补丁进 `Patches/`。
+2. **编写公式 / Cask**：严格按 §4 写 `Formula/<name>.rb` 或 `Casks/<name>.rb`，显式声明双门槛；不要手填 `bottle do`；所需运行时依赖一律在本仓闭环并写全名 `bemly/tahoe/<name>`，不得与裸 Core 名混用；若为纯源码拷贝，同步拷贝所需补丁进 `Patches/`。
 3. **登记检查器与文档**：新增 `updater/<name>.swift`（如不锁定版本），并同步更新 `README.md`、`README.zh.md` 与 `AGENTS.md §6` 表格。
 4. **本地轻量验证**：按 §10 运行语法、检查器编译与必要的 fetch/install 测试（**不在开发机跑重型全量 `brew style` / `audit` 或重打包**）。
 5. **提交并触发 CI**：普通代码/文档直接 `git add` + `commit` + `push origin main`；watcher 的公式更新由 `watch-updates.yml` 自动暂存并触发 `bottle.yml`，不要绕过暂存流程提前提交公式版本；`patched.yml` 仍按需手动触发。阻塞等 CI 跑完后再本地 `git pull --ff-only` 验证。
@@ -391,7 +390,7 @@ brew trust bemly/tahoe
 
 ### 11.2 依赖闭环与同名冲突
 
-- **跨 tap 同名互斥**：同名公式或同 token cask 与 core 共用 `Cellar/<name>` / `Caskroom/<token>`，Homebrew 会在安装校验无条件报错，依赖同样适用。因此除改名 `fork-*`（`keg_only`）与本仓独有包外，同源软件安装/切换前必须先卸载另一方；公式命名也不可撞 core 的历史改名别名（如 `rustup-init` → `rustup`）。
+- **跨 tap 同名互斥**：同名公式或同 token cask 与 core 共用 `Cellar/<name>` / `Caskroom/<token>`，Homebrew 会在安装校验无条件报错，依赖同样适用。本仓运行时依赖已全部同名接管，因此切换到本 tap 时必须先卸载 Core 版及其依赖方，再安装本仓整栈；`keg_only` 只控制符号链接，不能消除 Cellar/token 冲突。公式命名也不可撞 core 的历史改名别名（如 `rustup-init` → `rustup`）。
 - **严禁全名与裸名在递归树共存**：同一软件在依赖树中同时以 `bemly/tahoe/X` 与 `X`（core）出现时，macOS `flock` 同进程双开会自锁卡死（如 `python@3.14` 隐含裸 `cmake`）。冲突的构建工具（如 `llvm`/`z3` 用到的 `cmake`）须摘除 `depends_on`，改在 `install` 顶部用 `ENV.prepend_path "PATH", Formula["bemly/tahoe/cmake"].opt_bin` 并在 `bottle.yml` 预装。
 - **runner 兼容**：`macos-26-intel` runner 镜像自带的 brew 版本较旧，抄写 core 新公式时须避开新引入的 helper（如 `Formula#python3`），改用 `formula_opt_bin(...)` 等既有 API；且依赖的本地补丁必须一并拷入 `Patches/`。
 - **装后审计与豁免**：`audit --strict` 只在包**已安装**时扫描异架构二进制；随包附带、运行时用不到的文件（如 `deepseek-harness` 内的 `darwin-arm64` 预编译件与 `swift` 工具链内的跨架构运行时库）才进 `audit_exceptions/mismatched_binary_allowlist.json`（glob 须 `/**/*` 结尾），跑不起来的可执行文件直接不装。
@@ -400,7 +399,7 @@ brew trust bemly/tahoe
 
 - **Swift 编译规则**：`updater/` 必须用 `swiftc -O` 编译执行；检查器构造实参必须严格与 `CheckConfig.init` 声明同序；HTTP header 解析统一用 `CharacterSet.newlines` 兼容 runner curl 的纯 `\r` 分隔；`github` 流只认含 `/tag/` 的 `Location` 跳转。
 - **版本解析与比较**：解析与改写 `version` 时跳过 `fails_with ... do ... end` 块；数字段按数值判等（兼容去零/补零，如 `yt-dlp`），预发布后缀小于正式版；raw 流先截 `on_linux` 并识别 `intel?` 块。
-- **sha 与改写安全**：brew JSON 的 `urls.stable.checksum` 只属于源码包（仅全量式可用），模板式必须读 `checksums.txt`（注意 `*` 前缀不匹配时置 `nil`）或下载实算；`customRelease` 与全量式整条替换 `url` 行（因此原本使用 `#{version}` 插值的镜像 cask 在 watcher 跑过后会变字面量，需保持插值时按需改回），模板式同步替换 `url` 与 `mirror` 版本子串及 `vX.Y/` 目录段；改写时摘除 `bottle do` 并折叠相邻多余空行、版本变更时清掉旧 `revision N`，且在内存自检通过后才落盘；含版本耦合资源/补丁列表的公式（`git`、`bash`、`fork-readline`）通过 `manualSyncReason` 走 `status=manual-sync` 告警，无 `status` 输出一律视为失败还原。
+- **sha 与改写安全**：brew JSON 的 `urls.stable.checksum` 只属于源码包（仅全量式可用），模板式必须读 `checksums.txt`（注意 `*` 前缀不匹配时置 `nil`）或下载实算；`customRelease` 与全量式整条替换 `url` 行（因此原本使用 `#{version}` 插值的镜像 cask 在 watcher 跑过后会变字面量，需保持插值时按需改回），模板式同步替换 `url` 与 `mirror` 版本子串及 `vX.Y/` 目录段；改写时摘除 `bottle do` 并折叠相邻多余空行、版本变更时清掉旧 `revision N`，且在内存自检通过后才落盘；含版本耦合资源/补丁列表的公式（`git`、`bash`、`readline`）通过 `manualSyncReason` 走 `status=manual-sync` 告警，无 `status` 输出一律视为失败还原。
 
 ### 11.4 GHCR 制瓶
 
@@ -411,7 +410,7 @@ brew trust bemly/tahoe
   1. 本仓依赖：公式必须存在且有 `tahoe` 瓶；引用写全名 `bemly/tahoe/<name>`，检查是否与裸 Core 同名共存。
   2. Core 依赖：核对 `formulae.brew.sh` 是否有 `all` / `x86_64_tahoe` / `tahoe` 瓶；无瓶则进入下一步，不能默认让用户源码编译。
   3. 查上游官方或可信 macOS x86_64 预编译包；有则重打包入源并出瓶。
-  4. 无预编译时，把依赖源码公式并入本仓（必要时 `fork-*`），在 CI 上代编译出瓶；**允许固定旧版工具链**，例如本仓 pin 住的 LLVM 19、Rust 1.91.1，只要真实构建与运行验证通过。
+  4. 无预编译时，把依赖源码公式以 core 原名并入本仓，在 CI 上代编译出瓶；**允许固定旧版工具链**，例如本仓 pin 住的 LLVM 19、Rust 1.91.1，只要真实构建与运行验证通过。
   5. 对新入源依赖递归执行同一检查，继续向上处理它的子依赖，形成完整瓶闭包；最后改引用、重出受影响的直接/间接依赖方，并重新监控 Action 确认没有依赖源码构建。
 
 ### 11.5 Cask 镜像与声明式 Steps
