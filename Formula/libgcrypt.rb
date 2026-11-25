@@ -13,7 +13,8 @@ class Libgcrypt < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "b2aeeef16249ae79dc547ff7d1a5da1920b26e04fffb774c5b886a8c85881f71"
+    manifest_sha256 "229a4ddd4fa42dbb13dfc7833cd0ea92a477555f724e664c62b03712ebe1fbff"
+    sha256 cellar: :any, tahoe: "00e57c1f47119dce4f6698c02365924c67f38c0fbf68cae09777b3b4667befb9"
   end
 
   depends_on arch: :x86_64
