@@ -8,6 +8,12 @@ class Libunistring < Formula
   license any_of: ["GPL-2.0-or-later", "LGPL-3.0-or-later"]
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "b72e68a98f7a25824478c5bd20fc3e23870a7cfea75d070d3baf7645842f0c20"
+    sha256 cellar: :any, tahoe: "749b210e17ad2389caf5ba00760f9b80a28ada9a32b7b4478edebe36db9bf823"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
