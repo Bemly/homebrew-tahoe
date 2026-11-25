@@ -47,6 +47,7 @@ homebrew-tahoe/
 ├── Casks/                             # 26 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
+├── Widgets/toshllm/                  # ToshLLM 源码构建、引擎 pin 校验、dmg 上传与 sidecar
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
@@ -96,7 +97,7 @@ end
 | 检查与制瓶分离 | 版本检查用 `ubuntu-latest`（Swift 检查器用 `swiftc -O` 编译运行，禁用解释器模式）；制瓶必须跑在 `macos-26-intel` 才产出 `x86_64_tahoe` 标签 |
 | 一次 runner 出多瓶 | `watch-updates.yml` 仅扫全仓，仅触发**一次** `bottle.yml`（逗号列表传入公式，绝不逐个触发、绝不传 cask 名）；公式候选补丁上传为 Actions artifact，`bottle.yml` 用 `watcher_run_id` 下载并应用到 `main` 工作区，**每包推瓶成功后立即单独提交该包的新版本+瓶块到 `main`**，不创建分支；遇到依赖外部补丁构建的成品 cask（`antigravity`）且上下游都已就绪时自动触发一次 `patched.yml` |
 | 递归依赖门控 | `bottle.yml` 在 `brew readall` 后用 `brew deps --declared` 递归检查依赖：目标本体与本批待构建公式展开**构建+运行时**闭包，已有瓶的依赖只展开运行时闭包（不再误查 Core 瓶的构建依赖，也不受本机旧安装回执污染）；本仓依赖必须已有 `tahoe` 瓶（同批由拓扑排序出瓶者豁免），core 依赖经 formulae.brew.sh API 查无 `tahoe`/`x86_64_tahoe`/`all` 瓶即阻断；`std_cmake_args` 隐式裸 cmake 由 workflow 预装本仓 cmake 满足（`allow_unbottled_core: true` 仅作临时放行开关） |
-| 重型任务走 CI | `patched.yml` 在 `macos-26-intel` 执行 `antigravity` 构建上传、写回 sidecar sha 并跑 `brew style`/`audit --strict`；开发机只跑轻量验证，避免卡死 |
+| 重型任务走 CI | `patched.yml` 在 `macos-26-intel` 执行 `antigravity` 补丁构建与 `toshllm` 源码构建，上传 Release、写回 sidecar sha 并跑 `brew style`/`audit --strict`；开发机只跑轻量验证，避免卡死 |
 | 交叉 sysroot 构建 | `sysroots.yml` 在 `macos-26` / `ubuntu-22.04` 构建 `openssl-macos-arm64` 与 `linux-sysroot-x64/a64` 并发布到 GitHub Release（目标端头库不进 `Formula/` 或 GHCR），默认 `openssl_version` 与 `openssl@4` 对齐 |
 | 控制 GitHub 负载 | `fetch-depth: 1`；brew 流走 `formulae.brew.sh`、github 流走 `HEAD releases/latest` 跳转（不耗 API 限额）；优先读 `checksums.txt`；配 `concurrency` 防并发互踩 |
 
@@ -176,6 +177,7 @@ end
 | --- | --- | --- | --- |
 | `abseil` | 20260817.0 | core 拷入（源码） | 本仓 CMake；不构建 test helpers，移除 googletest 依赖；与 core 同名 |
 | `aria2` | 1.37.0 | core 拷入（源码） | autotools；`c-ares`/`libssh2`/`sqlite`/openssl@4 |
+| `audio.cpp` | 2026.11.24-0894a7cb | Bemly fork 固定 commit | CMake + in-tree ggml；Metal、三组 ASR 模型、Silero VAD 与预编译 metallib；gitHead 跟踪 main |
 | `automake` | 1.20 | core 拷入（源码） | 纯 autotools；无运行时依赖 |
 | `bash` | 5.3.20 | core 拷入（源码） | `ncurses`/readline/gettext；与 core 同名 |
 | `bdw-gc` | 8.2.12 | core 同名接管（源码） | CMake；guile 与交叉工具链依赖 |
@@ -227,6 +229,7 @@ end
 | `libusbmuxd` | 2.1.1 | core 拷入（源码） | idevice USB 复用；revision 同步 |
 | `libyaml` | 0.2.5 | core 同名接管（源码） | autotools；dtc 依赖 |
 | `libzip` | 1.12.1 | core 拷入（源码） | ZIP 库与工具；CMake；依赖本仓 `cmake`/`xz`/`zstd`；与 core 同名 |
+| `llama.cpp` | 2026.11.24-6a6de2cd | Bemly fork 固定 commit | CMake + in-tree ggml；Metal server/bench/perplexity、动态 MoE 与内核指纹；gitHead 跟踪 main |
 | `lzo` | 2.10 | core 同名接管（源码） | autotools；qemu 依赖 |
 | `lz4` | 1.11.1 | core 同名接管（源码） | make + cmake；zstd 依赖 |
 | `make` | 4.4.1 | core 拷入（源码） | 装成 `gmake`；与 core 同名 |
@@ -249,6 +252,7 @@ end
 | `python@3.14` | 3.14.10 | core 同名接管（源码） | `mpdecimal`/`sqlite`/openssl@4/xz/zstd；交叉工具链依赖 |
 | `python@3.15` | 3.15.2 | core 拷入（源码） | `mpdecimal`/`sqlite`/openssl@4/xz/zstd；meson 依赖；与 core 同名 |
 | `qemu` | 11.1.3 | 上游源码 tar.xz | CI 代编译 68 目标；`glib`/`gnutls`/`jpeg-turbo`/`libpng`/`libusb`/`lzo`/`ncurses`/`pixman`/`capstone`/`dtc`/`libslirp`/`vde`/zstd |
+| `sd.cpp` | 2026.11.24-62953820 | Bemly fork 固定 commit | CMake + patched in-tree ggml；Metal CLI/server、关闭 WebP/WebM/前端、预编译 default.metallib；gitHead 跟踪 main |
 | `readline` | 8.3.6 | core 同名接管（源码） | 8.3 + 官方 001–006 补丁；`keg_only :shadowed_by_macos`；人工同步小版本 |
 | `simdjson` | 5.3.0 | core 同名接管（源码） | 本 tap `cmake` |
 | `snappy` | 1.3.1 | core 同名接管（源码） | cmake；pkgconf 构建 |
@@ -297,7 +301,7 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 | `palera1n` | 3.0.0-beta.2 | universal | universal dmg；不检查更新 |
 | `qoder` | 0.5.17 | Intel | qoder.cn 更新日志；镜像；与 core 同名 |
 | `qwen-ime` | 1.2.60.60 | universal | 上游下载 API；镜像 |
-| `toshllm` | 0.88.0 | Intel | github 流；app 自带更新器 |
+| `toshllm` | 2026.11.24-ffbf427d | Intel | Bemly fork 源码构建；gitHead 检测 main，落后时触发 `patched.yml`；校验三引擎 gitlink 后打 dmg |
 | `winstart` | 0.13.6 | universal | 本地包人工发版；不检查更新 |
 | `wireshark` | 4.4.20 | Intel | Sparkle appcast Intel 项；镜像；ChmodBPF |
 | `workbuddy` | 5.11.3.43806934 | Intel | Electron 更新接口；镜像 |
@@ -448,6 +452,12 @@ brew trust bemly/tahoe
 - **Cargo 环境**：显式设置 `ENV["RUSTC"]` 指向内嵌 `rustc`，并 prepend 工具链 `bin`；只改 PATH 仍会被 Homebrew rustc shim 拦截。`std_cargo_args` 已包含 `--locked` 与 `--offline`，不得重复传 `--locked`。
 - **NZBget 细节**：官方 zip 唯一顶层是 `NZBGet.app`，daemon 根目录用 `Dir["**/Resources/daemon/usr/local"]` 定位；官方配置已是 `DirectWrite=no`、`ArticleCache=700`，只改 `SevenZipCmd`/`UnrarCmd` 为 `7zz`。`-V` 查询运行中的服务器，本地版本自检必须用 `--version`。
 - **验证闭环**：CI 用 `macos-26-intel` 真实编译 Binwalk；本地只用 `brew readall`、`brew fetch` 和临时工具链编译探针。出瓶后执行 `brew fetch --force --bottle-tag=tahoe` 实拉校验，并核对 GHCR 匿名 tags。
+
+### 11.8 ToshLLM 源码 cask 与 Metal 引擎
+
+- `toshllm` 保持 cask：`gitHead` 只比较 Bemly fork 的 pinned commit 与 `main` HEAD，主线领先时输出 `needs-source-build`，由 `patched.yml` 构建 dmg 并回填 Release URL/version/sha；分叉转人工同步。
+- `Widgets/toshllm/build.sh` 校验版本短 SHA 与 commit 一致，并读取 ToshLLM git tree 的 `vendor/llama.cpp`、`vendor/stable-diffusion.cpp`、`vendor/audio.cpp` gitlink，与三个公式 pin 完全一致才允许打包；不一致直接失败，避免同一 ToshLLM commit 随引擎瓶演进产出不同 App。
+- 三个引擎公式关闭 OpenSSL/OpenMP/WebP/WebM/pnpm 前端等可选外部依赖，使用 in-tree ggml、Metal 和系统 Accelerate；`bottle.yml` 先确保 Metal Toolchain 可用。llama 的内核目录必须带 `fingerprint`，sd/audio 的 `default.metallib` 在 CI 预编译。
 
 ## 12. 后续演进
 

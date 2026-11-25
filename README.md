@@ -136,6 +136,7 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | Package | Notes |
 | --- | --- |
 | `aria2` | Multi-protocol download utility (`c-ares`/`libssh2`/`sqlite`/openssl@4/gettext); same-name conflict with core |
+| `audio.cpp` | Bemly fork snapshot with Metal ggml, three ASR model groups, Silero VAD assets and precompiled `default.metallib`; `gitHead` tracks `main` |
 | `automake` | GNU Automake build tool (runtime depends on `autoconf`); same-name conflict with core |
 | `bash` | GNU Bash 5.3 (`ncurses`/readline/gettext); same-name conflict with core |
 | `binwalk` | Firmware analysis and embedded-file extraction, built with embedded official Rust 1.91.1 rustc/cargo/rust-std resources; `7zz` backport and runtime dependency on this tap's `sevenzip`; same-name conflict with core |
@@ -157,6 +158,7 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `libtatsu` | Apple TSS library for the `libimobiledevice` stack |
 | `libusbmuxd` | USB multiplexor library for iOS devices |
 | `libzip` | ZIP archive library and tools, built with this tap's `cmake`, `xz`, and `zstd`; same-name conflict with core |
+| `llama.cpp` | Bemly fork snapshot with Metal ggml, dynamic MoE, server/bench/perplexity and fingerprinted precompiled kernels; `gitHead` tracks `main` |
 | `make` | GNU make (installed as `gmake`), mirrored even though core has a tahoe bottle |
 | `mercurial` | Distributed version control system (`hg` + `chg`), built with this tap's `python@3.11`; same-name conflict with core |
 | `meson` | Fast build system, depends on this tap's `ninja` and `python@3.15` so updates never rebuild Python from source; same-name conflict with core |
@@ -165,6 +167,7 @@ Compiled once on `macos-26-intel` CI from `homebrew/core` or upstream sources an
 | `python@3.11` | Python 3.11 interpreter (`mpdecimal`/`sqlite`/`openssl@3`/`xz`); used by `mercurial`; same-name conflict with core |
 | `python@3.15` | Python 3.15 interpreter (`mpdecimal`/`sqlite`/`openssl@4`/`xz`/`zstd`); used by `meson`; same-name conflict with core |
 | `qemu` | Generic machine emulator and virtualizer (68 targets, full tap dependency closure bottled on CI) |
+| `sd.cpp` | Bemly Stable Diffusion fork snapshot with patched Metal ggml, CLI/server and precompiled `default.metallib`; optional WebP/WebM/frontend disabled; `gitHead` tracks `main` |
 | `socat` | SOcket CAT relay tool (`openssl@3`), compiled from source |
 | `vde` | Virtual distributed Ethernet (`-std=gnu17` for Clang 26), bottled dependency of `qemu` |
 | `wabt` | WebAssembly Binary Toolkit (`wat2wasm`/`wasm2wat` and friends, `openssl@4`; upstream macOS asset is arm64-only) |
@@ -204,7 +207,7 @@ All runtime infrastructure uses its core name and is referenced as `bemly/tahoe/
 | `palera1n` | universal | checkm8 jailbreak app (universal dmg); mirrored; pinned |
 | `qoder` | Intel | Alibaba Qoder CN (China edition) AI coding platform; mirrored; shares token with core's international `qoder` cask |
 | `qwen-ime` | universal | Qwen AI input method; installs into `~/Library/Input Methods` (user-level, no sudo) and auto-enables system input source; mirrored |
-| `toshllm` | Intel | ToshLLM local LLM runner with Metal acceleration for Intel + AMD GPUs (notarized, self-updating); mirrored |
+| `toshllm` | Intel | Source-built from the Bemly fork with pinned llama.cpp/sd.cpp/audio.cpp engines; `gitHead` rebuilds the dmg when `main` advances |
 | `winstart` | universal | Metro-style app launcher; mirrored to this repo's releases; pinned |
 | `wireshark` | Intel | Network protocol analyzer (official Intel dmg; Intel builds stop at 4.4.x); ships `tshark`/`editcap` shims; mirrored |
 | `workbuddy` | Intel | Tencent WorkBuddy AI office workspace (Electron desktop app); mirrored; tracked via its update feed |

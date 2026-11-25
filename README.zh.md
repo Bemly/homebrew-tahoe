@@ -125,6 +125,7 @@ brew install --cask bemly/tahoe/antigravity
 | 软件 | 说明 |
 | --- | --- |
 | `aria2` | 多协议下载工具（`c-ares`/`libssh2`/`sqlite`/`openssl@4`/`gettext`）；与 core 同名 |
+| `audio.cpp` | Bemly fork 快照，Metal ggml、三组 ASR 模型、Silero VAD 与预编译 `default.metallib`；`gitHead` 跟踪 `main` |
 | `automake` | GNU Automake 构建工具（运行时依赖 `autoconf`）；与 core 同名 |
 | `bash` | GNU Bash 5.3（`ncurses`/`readline`/`gettext`）；与 core 同名 |
 | `binwalk` | 固件分析与嵌入式文件提取，内嵌官方 Rust 1.91.1 rustc/cargo/rust-std 构建资源；backport `7zz` 并依赖本仓 `sevenzip`；与 core 同名 |
@@ -146,6 +147,7 @@ brew install --cask bemly/tahoe/antigravity
 | `libtatsu` | Apple TSS 库，`libimobiledevice` 栈依赖 |
 | `libusbmuxd` | iOS 设备 USB 复用库 |
 | `libzip` | ZIP 归档库与工具，使用本源 `cmake`、`xz`、`zstd` 构建；与 core 同名 |
+| `llama.cpp` | Bemly fork 快照，Metal ggml、动态 MoE、server/bench/perplexity 与带指纹的预编译内核；`gitHead` 跟踪 `main` |
 | `make` | GNU make（装成 `gmake`）；core 虽有 tahoe 瓶仍镜像 |
 | `mercurial` | 分布式版本控制系统（`hg` + `chg`），使用本 tap 的 `python@3.11` 现编出瓶；与 core 同名 |
 | `meson` | 快速构建系统，依赖本 tap 的 `ninja` + `python@3.15` 出瓶，不再拖 core 的源码 Python；与 core 同名 |
@@ -154,6 +156,7 @@ brew install --cask bemly/tahoe/antigravity
 | `python@3.11` | Python 3.11 解释器（`mpdecimal`/`sqlite`/`openssl@3`/`xz`）；`mercurial` 依赖；与 core 同名 |
 | `python@3.15` | Python 3.15 解释器（`mpdecimal`/`sqlite`/`openssl@4`/`xz`/`zstd`）；`meson` 依赖；与 core 同名 |
 | `qemu` | 通用模拟器/虚拟机（全量 68 目标，完整依赖闭包已在本仓出瓶） |
+| `sd.cpp` | Bemly Stable Diffusion fork 快照，patched Metal ggml、CLI/server 与预编译 `default.metallib`；关闭 WebP/WebM/前端；`gitHead` 跟踪 `main` |
 | `socat` | SOcket CAT 中继工具（`openssl@3`），源码现编出瓶 |
 | `vde` | 虚拟分布式以太网（Clang 26 下加 `-std=gnu17`），`qemu` 依赖 |
 | `wabt` | WebAssembly Binary Toolkit（`wat2wasm`/`wasm2wat` 等，`openssl@4`；上游 macOS 包仅 arm64） |
@@ -193,7 +196,7 @@ brew install --cask bemly/tahoe/antigravity
 | `palera1n` | universal | checkm8 越狱工具（universal dmg）；镜像；锁定版本 |
 | `qoder` | Intel | 阿里巴巴 Qoder CN（国内版）AI 编程平台；镜像；与 core 国际版 `qoder` 同名互斥 |
 | `qwen-ime` | universal | 千问输入法；装进用户级 `~/Library/Input Methods`（免 sudo）并自动写入系统输入源启用；镜像 |
-| `toshllm` | Intel | ToshLLM 本地 LLM 运行器（Intel Mac + AMD GPU Metal 加速，公证签名，自带更新器）；镜像 |
+| `toshllm` | 2026.11.24-ffbf427d | Intel | 从 Bemly fork 源码构建，锁定三个 Metal 引擎；`gitHead` 检测 `main` 并触发 dmg 重构建 |
 | `winstart` | universal | Metro 风应用启动器；镜像到本仓 Release；锁定版本 |
 | `wireshark` | Intel | 网络协议分析器（官方 Intel dmg；Intel 构建停在 4.4 系）；附 `tshark`/`editcap` 命令垫片；镜像 |
 | `workbuddy` | Intel | 腾讯 WorkBuddy AI 办公工作台（Electron 桌面 app）；镜像；版本由更新接口获取 |
