@@ -13,7 +13,8 @@ class LibgpgError < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "493b41ca0b7221e2918d2cb11107c470e02891434415dfd06efad582351d2f6e"
+    manifest_sha256 "d5e7b659f1978867d4a28af606db16690442e8117b92f0857817d75cbdb249ab"
+    sha256 tahoe: "3e6bf6b81274691f5ba707d51cb33b44117630dfc321073bd2ceb9fdfedc45d7"
   end
 
   depends_on arch: :x86_64
