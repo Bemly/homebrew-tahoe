@@ -12,8 +12,8 @@ class LibimobiledeviceGlue < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "dca6e20d9ca27e1df72108da0f25cfc74c33c2ab5afa7f2f11e08e6da21f649b"
-    sha256 cellar: :any, tahoe: "11c08a533117737add2632d55757fa3d558dcd0cab1260cd559dbed0e718b8ce"
+    manifest_sha256 "8a1e49e3aa386d45e06245e2a42b0da43d045be580231f0edc0357e8dcab748c"
+    sha256 cellar: :any, tahoe: "34d863624108ac7af973f0c3c7d16adf44ac504fa4bab1a58fd735ae0d0b9973"
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
