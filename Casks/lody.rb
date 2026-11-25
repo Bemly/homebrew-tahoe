@@ -1,6 +1,6 @@
 cask "lody" do
-  version "0.115.1"
-  sha256 "35a012222d2d5c45b44d41408579f853c077ea68059fb12c02eaa31cd962816d"
+  version "0.116.1"
+  sha256 "9a5a0c14a565d3b78c3ffa10af8d9d959f9fa65a762123a1ad6d6728d925a7ca"
 
   # 镜像到本仓 Release（tag lody-<ver>，资产名沿用上游 basename）：
   # 本 tap 政策是所有 cask 都镜像最新版；url 用 #{version} 双插值（tag 与资产名
@@ -8,7 +8,7 @@ cask "lody" do
   # 上游按架构分包，core cask 默认 URL 是 arm64；本 tap 只取 Intel x64 dmg。
   # 版本更新由 updater/lody.swift 跟 core cask 版本（brewCask 流），有更新时
   # 下载、上传 Release、改写本文件。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/lody-0.115.1/Lody-0.115.1-x64.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/lody-0.116.1/Lody-0.116.1-x64.dmg"
   name "Lody"
   desc "Share coding agent sessions across desktop and mobile"
   homepage "https://lody.ai/"

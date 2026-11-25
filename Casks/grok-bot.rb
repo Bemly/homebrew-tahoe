@@ -1,6 +1,6 @@
 cask "grok-bot" do
-  version "1.2.3"
-  sha256 "20cf073ef8a1eead46c3599c0623eba12c54dd3bba18ab12f03b474e640920fb"
+  version "1.3.0"
+  sha256 "c1b709667650228b4579ae2946332f29f21a467965df8eec153a18222f888646"
 
   # 镜像到本仓 Release（tag grok-bot-<ver>，资产名沿用上游 basename）：
   # 本 tap 政策是所有 cask 都镜像最新版；url 用 #{version} 双插值（tag 与资产名
@@ -8,7 +8,7 @@ cask "grok-bot" do
   # _x64 同 darwin-amd64 一样会致盲版本检测，见 AGENTS.md §11.1）。
   # 版本更新由 updater/grok-bot.swift 跟 cursor 下载页（customRelease 抓取），
   # 有更新时下载、上传 Release、改写本文件。
-  url "https://github.com/Bemly/homebrew-tahoe/releases/download/grok-bot-1.2.3/Grok_Bot_1.2.3_x64.dmg"
+  url "https://github.com/Bemly/homebrew-tahoe/releases/download/grok-bot-1.3.0/Grok_Bot_1.3.0_x64.dmg"
   name "Grok Bot"
   desc "AI teammates you can give real work to"
   homepage "https://cursor.com/cn/download/bot"
