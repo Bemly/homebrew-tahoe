@@ -17,11 +17,10 @@ class Ldid < Formula
 
   def install
     openssl = formula_opt_prefix("bemly/tahoe/openssl@3")
-    ENV.prepend "CPPFLAGS", "-I#{openssl}/include"
-    ENV.prepend "LDFLAGS", "-L#{openssl}/lib"
     ENV.append_to_cflags "-I."
-    ENV.append "CXXFLAGS", "-std=c++11"
-    linker_flags = %w[lookup2.o -lcrypto -lplist-2.0]
+    ENV.append "CXXFLAGS", "-std=c++11 -I#{openssl}/include"
+    linker_flags = ["lookup2.o", "-L#{openssl}/lib", "-lcrypto",
+                    "-L#{formula_opt_lib("bemly/tahoe/libplist")}", "-lplist-2.0"]
 
     system "make", "lookup2.o"
     system "make", "ldid", "LDLIBS=#{linker_flags.join(" ")}"
