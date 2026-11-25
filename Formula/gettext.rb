@@ -10,6 +10,12 @@ class Gettext < Formula
   ]
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "59069ec812f184229ee5dea95648488831c6b0207ddd3b9aca43cf1515e255b2"
+    sha256 tahoe: "ac8e185641937014a6eecedc3dc2fa7726426fe020ac7b13d3fb16ecea596c4c"
+  end
+
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/json-c"
   depends_on "bemly/tahoe/libunistring"
