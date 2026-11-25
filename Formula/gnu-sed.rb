@@ -7,6 +7,12 @@ class GnuSed < Formula
   license "GPL-3.0-or-later"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "c39827c09501c2de1e101e42a8d6dc7ed2b29f132b6f8edaf4b602227cb15874"
+    sha256 tahoe: "56f4518c98f6fad8c0447f0735b30b0e387801b584e22fc4723183fbdfa3a959"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
