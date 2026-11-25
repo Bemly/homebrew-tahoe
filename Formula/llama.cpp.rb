@@ -9,6 +9,12 @@ class LlamaCpp < Formula
   license "MIT"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "807ddbec8203245ff15111dccf9dc18547fd2333331df1a74fcd4de1a66ee67d"
+    sha256 cellar: :any_skip_relocation, tahoe: "7b57d4176b5654eb953b078a02d1820f20bf9f9f1c0ae155c17bcb58a99e655a"
+  end
+
   # The fork's hybrid memory caller passes a replay argument that the recurrent constructor does not accept.
   patch do
     file "Patches/llama.cpp/recurrent-constructor.diff"
