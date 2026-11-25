@@ -14,7 +14,8 @@ class Libnghttp2 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "4eb398ffb6cc2d0a73308f05d7ec34d5cf3fb464ebc7237f132a0f6321efe0c8"
+    manifest_sha256 "97cce51373a9abe39536dde0590c8b5354f7abc6827eb60c59b7160b5deb28c5"
+    sha256 cellar: :any, tahoe: "79c11295f14d1a4a625721ea656feeace5ffbe7022307e2926449ba62e2024ee"
   end
 
   head do
