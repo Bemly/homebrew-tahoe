@@ -9,6 +9,12 @@ class Bison < Formula
   version_scheme 1
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "69937bcd4cfaa1959c942f7e2d0daa484e5aad461569daedf5a3d67c0c7e8245"
+    sha256 cellar: :any, tahoe: "a54d1e00fefcc83e21203b67fe0644cbf859eb493620a10bd4bd8198f6d3b666"
+  end
+
   keg_only :provided_by_macos
 
   uses_from_macos "m4"
