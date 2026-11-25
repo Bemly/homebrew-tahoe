@@ -16,7 +16,8 @@ class Qemu < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "07b11df404f7f13c3eee776741781fc57a431bd1e71860e4e952f39536bcf602"
+    manifest_sha256 "4630c8a4b73d353b7881007fd48f5c02ea2e0ae50b02c01fc842fa80785ca7d1"
+    sha256 tahoe: "515c8f782999d16dcf60f2fd3cb79cb26ce910850087a0db850aa2afca2366db"
   end
 
   depends_on "bemly/tahoe/bison" => :build # >= 3.0
