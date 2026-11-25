@@ -32,7 +32,7 @@ function validatePackages(packages) {
     const key = `${pkg.type}:${pkg.token}`;
     if (seen.has(key)) errors.push(`Duplicate package: ${key}`);
     seen.add(key);
-    for (const field of ["token", "fullName", "desc", "homepage", "version", "sourcePath"]) {
+    for (const field of ["token", "fullName", "desc", "descZh", "homepage", "version", "sourcePath"]) {
       if (!pkg[field]) errors.push(`${key} is missing ${field}`);
     }
     if (!pkg.names.length) errors.push(`${key} has no display name`);

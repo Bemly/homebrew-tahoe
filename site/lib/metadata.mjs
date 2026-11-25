@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { packageDescriptionsZh } from "./package-zh.mjs";
 
 const CALL_METHODS = new Set([
   "desc", "homepage", "url", "version", "license", "depends_on", "uses_from_macos",
@@ -304,12 +305,12 @@ function parseCalls(source, type) {
       let statement = line;
       let end = index;
       let balance = bracketBalance(statement);
-      while (balance > 0 && end + 1 < lines.length) {
+      while ((balance > 0 || /,\s*$/.test(statement)) && end + 1 < lines.length) {
         end += 1;
         statement += `\n${stripComment(lines[end]).trim()}`;
         balance = bracketBalance(statement);
       }
-      const args = new ArgumentParser(callMatch[2]).parse();
+      const args = new ArgumentParser(statement.slice(callMatch[1].length).trim()).parse();
       calls.push({ method: callMatch[1], args, line: index + 1, context: stack.at(-1) });
       index = end + 1;
       continue;
@@ -503,7 +504,9 @@ function parseMetadata(source, token, type, sourcePath) {
   const archCall = callValue(calls, "arch", [baseContext]);
   const archHash = hashEntries(archCall?.args ?? []);
   const intelArch = scalar(archHash.intel) || "x86_64";
-  const explicitVersion = versionCall ? versionCall.args.map(scalar).find(Boolean) ?? "" : "";
+  const declaredVersion = versionCall ? versionCall.args.map(scalar).find(Boolean) ?? "" : "";
+  const urlTag = scalar(hashEntries(urlCall?.args ?? []).tag).replace(/^v/, "");
+  const explicitVersion = declaredVersion || urlTag;
   const urlTemplate = firstString(urlCall);
   const url = resolveUrl(urlTemplate, explicitVersion, intelArch);
   const version = explicitVersion || detectVersion(url);
@@ -532,7 +535,7 @@ function parseMetadata(source, token, type, sourcePath) {
     homepage,
     version,
     revision,
-    url: url.includes("#{") ? "" : url,
+    url: /^https?:\/\//.test(url) && !url.includes("#{") ? url : "",
     license: parseLicense(calls),
     architectures: inferArchitectures(calls, url, type, archHash),
     macos,
@@ -558,7 +561,9 @@ export async function loadPackages(root) {
       const token = entry.name.slice(0, -3);
       const sourcePath = `${directory}/${entry.name}`;
       const source = await readFile(path.join(root, sourcePath), "utf8");
-      packages.push(parseMetadata(source, token, type, sourcePath));
+      const pkg = parseMetadata(source, token, type, sourcePath);
+      pkg.descZh = packageDescriptionsZh[token];
+      packages.push(pkg);
     }
   }
   return packages.sort((left, right) => left.token.localeCompare(right.token, "en", { numeric: true, sensitivity: "base" }));

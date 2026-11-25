@@ -251,6 +251,10 @@ function canonicalUrl(config, lang, route = "") {
   return `${config.siteUrl}${routeUrl(config, lang, route)}`;
 }
 
+function packageDescription(pkg, lang) {
+  return lang === "zh" ? pkg.descZh : pkg.desc;
+}
+
 function typeLabel(pkg, copy) {
   return pkg.type === "formula" ? copy.formula : copy.cask;
 }
@@ -378,7 +382,7 @@ function packageCard(pkg, config, lang, copy) {
   const status = pkg.disabled ? copy.disabled : pkg.deprecated ? copy.deprecated : "";
   return `<article class="package-card">
     <div class="package-card-heading"><a href="${href}">${escapeHtml(pkg.token)}</a><span class="version-badge">${escapeHtml(pkg.version)}</span></div>
-    <p>${escapeHtml(pkg.desc)}</p>
+    <p>${escapeHtml(packageDescription(pkg, lang))}</p>
     <div class="package-card-meta"><span>${escapeHtml(typeLabel(pkg, copy))}</span><span>${escapeHtml(architectureLabel(pkg, copy))}</span>${status ? `<span class="status-badge">${escapeHtml(status)}</span>` : ""}</div>
     <code>${escapeHtml(installCommand(pkg))}</code>
   </article>`;
@@ -433,7 +437,7 @@ export function renderHome(config, packages, generatedAt) {
 }
 
 function searchText(pkg) {
-  return [pkg.token, ...pkg.names, pkg.desc, pkg.version, ...pkg.license, ...pkg.dependencies.map((dependency) => dependency.name)].join(" ").toLocaleLowerCase();
+  return [pkg.token, ...pkg.names, pkg.desc, pkg.descZh, pkg.version, ...pkg.license, ...pkg.dependencies.map((dependency) => dependency.name)].join(" ").toLocaleLowerCase();
 }
 
 function packageRow(pkg, config, lang, copy) {
@@ -443,7 +447,7 @@ function packageRow(pkg, config, lang, copy) {
     <th scope="row"><a href="${href}"${status ? ` class="${status}"` : ""}>${escapeHtml(pkg.token)}</a></th>
     <td class="version-data">${escapeHtml(pkg.version)}${pkg.revision ? `<small>_${pkg.revision}</small>` : ""}</td>
     <td><span class="type-badge ${pkg.type}">${escapeHtml(typeLabel(pkg, copy))}</span></td>
-    <td>${escapeHtml(pkg.desc)}</td>
+    <td>${escapeHtml(packageDescription(pkg, lang))}</td>
   </tr>`;
 }
 
@@ -546,7 +550,7 @@ export function renderPackageDetail(config, pkg, generatedAt) {
     </tbody></table>`;
     const body = `<header class="page-heading package-detail-heading"><p><a href="${routeUrl(config, lang, indexRoute)}">${escapeHtml(pkg.type === "formula" ? copy.formulae : copy.casks)}</a> / ${escapeHtml(pkg.token)}</p><h2${status ? ` class="${pkg.disabled ? "disabled" : "deprecated"}"` : ""}>${escapeHtml(pkg.token)}</h2>${status ? `<p class="status-badge">${escapeHtml(status)}</p>` : ""}</header>
       <div class="install"><span class="label">${escapeHtml(copy.installCommand)}:</span>${copyable(installCommand(pkg), copy)}</div>
-      <p class="desc">${escapeHtml(pkg.desc)}</p>
+      <p class="desc">${escapeHtml(packageDescription(pkg, lang))}</p>
       ${homepage ? `<p class="homepage"><a rel="nofollow" href="${escapeHtml(homepage)}">${escapeHtml(homepage)}</a></p>` : ""}
       ${notices.join("")}
       ${metadata}
@@ -558,7 +562,7 @@ export function renderPackageDetail(config, pkg, generatedAt) {
         <li><a href="${routeUrl(config, lang, "packages/")}">${escapeHtml(copy.allPackages)}</a></li>
       </ul>
       <footer id="border-no-bottom">${escapeHtml(copy.generated)}: ${escapeHtml(generatedAt)}</footer>`;
-    return pageShell(config, lang, route, `${pkg.token} · ${copy.title}`, pkg.desc, body);
+    return pageShell(config, lang, route, `${pkg.token} · ${copy.title}`, packageDescription(pkg, lang), body);
   };
   return { [`${pkg.type}/${pkg.token}/index.html`]: render("en"), [`zh/${pkg.type}/${pkg.token}/index.html`]: render("zh") };
 }

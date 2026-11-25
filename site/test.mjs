@@ -69,6 +69,19 @@ end`;
   assert.deepEqual(pkg.macos, ["tahoe"]);
 });
 
+test("parses git URL tags and multiline metadata", () => {
+  const source = `class Demo < Formula
+  desc "Demo git package"
+  homepage "https://example.com"
+  url "git://example.com/demo.git",
+      tag: "v2.1.5",
+      revision: "0123456789abcdef"
+end`;
+  const pkg = parseMetadata(source, "demo", "formula", "Formula/demo.rb");
+  assert.equal(pkg.version, "2.1.5");
+  assert.equal(pkg.url, "");
+});
+
 test("repository inventory contains exactly the formula and cask files", async () => {
   const packages = await loadPackages(root);
   const formulaFiles = (await readdir(path.join(root, "Formula"))).filter((name) => name.endsWith(".rb")).map((name) => name.slice(0, -3)).sort();
@@ -77,7 +90,9 @@ test("repository inventory contains exactly the formula and cask files", async (
   assert.deepEqual(packages.filter((pkg) => pkg.type === "cask").map((pkg) => pkg.token).sort(), caskFiles);
   for (const pkg of packages) {
     assert.ok(pkg.version, `${pkg.fullName} has a version`);
-    assert.ok(pkg.desc, `${pkg.fullName} has a description`);
+    assert.ok(pkg.desc, `${pkg.fullName} has an English description`);
+    assert.ok(pkg.descZh, `${pkg.fullName} has a Chinese description`);
+    assert.match(pkg.descZh, /[\u3400-\u9fff]/, `${pkg.fullName} Chinese description contains Chinese text`);
     assert.ok(pkg.homepage, `${pkg.fullName} has a homepage`);
     assert.ok(existsSync(path.join(root, pkg.sourcePath)), `${pkg.sourcePath} exists`);
     assert.ok(!pkg.url.includes("#{"), `${pkg.fullName} has a resolved artifact URL`);
@@ -108,6 +123,11 @@ test("static build emits bilingual pages and valid internal links", async (conte
   assert.match(home, /data-theme="system"/);
   assert.match(chineseHome, /简体中文/);
   assert.match(chineseHome, /专为 Intel Mac/);
+  const chinesePackages = await readFile(path.join(output, "zh/packages/index.html"), "utf8");
+  assert.match(chinesePackages, /GitHub 官方命令行工具/);
+  assert.match(chinesePackages, /AFM 拼音输入法/);
+  const chineseFormula = await readFile(path.join(output, "zh/formula/gh/index.html"), "utf8");
+  assert.match(chineseFormula, /GitHub 官方命令行工具/);
   const cask = packages.find((pkg) => pkg.type === "cask");
   const caskPage = await readFile(path.join(output, cask.type, cask.token, "index.html"), "utf8");
   assert.match(caskPage, /brew install --cask bemly\/tahoe\//);
