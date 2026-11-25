@@ -20,7 +20,8 @@ class Wget < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 tahoe: "108df4e1235b9ce74a47a66da692284c61816f7f0fb8f7ca5e255172ebe3ae3a"
+    manifest_sha256 "cda46ea881e370b430a5afa006c0b5cb389971e2b527406d964ddcb0c03dfb61"
+    sha256 tahoe: "9b0868f0f2fba5beec76f2ab303281c64a377d5cde2cfe1810c4e54edfdfb24f"
   end
 
   head do
