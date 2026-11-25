@@ -409,10 +409,12 @@ jobs:
             # 无此检查，缺的倒瓶、没瓶的现编。幂等（满足即 no-op）；失败要红，不加 || true。
             brew install --only-dependencies "bemly/tahoe/$f"
             # Homebrew 的 superenv shim 默认指向 core 的 pkg-config 公式；本仓已由
-            # pkgconf 提供 pkg-config 兼容入口，必须显式覆盖，否则 configure 会调用
-            # 不存在的 /usr/local/opt/pkg-config/bin/pkg-config。
+            # pkgconf 提供 pkg-config 兼容入口，必须显式覆盖环境变量，并把 shim 的
+            # 固定目标链接到 pkgconf，覆盖 configure 直接调用 pkg-config 的情况。
             if grep -q 'depends_on "bemly/tahoe/pkgconf"' "Formula/${f}.rb"; then
               export PKG_CONFIG="${BREW_PREFIX}/opt/pkgconf/bin/pkgconf"
+              mkdir -p "${BREW_PREFIX}/opt/pkg-config/bin"
+              ln -sfn "${BREW_PREFIX}/opt/pkgconf/bin/pkgconf" "${BREW_PREFIX}/opt/pkg-config/bin/pkg-config"
             else
               unset PKG_CONFIG
             fi
