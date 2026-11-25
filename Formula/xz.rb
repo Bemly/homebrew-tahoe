@@ -13,6 +13,12 @@ class Xz < Formula
 
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "45aabebe99b5f99a4d35d6aa6ff1ad5f9e36d4b54ec7a812c0e96d74056c4fc0"
+    sha256 cellar: :any, tahoe: "cb826a03bdaa3c37825853b7a6eae8dd842cb0d6c4f2cf4b041fdc283960d946"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
