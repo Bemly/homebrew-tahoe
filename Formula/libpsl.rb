@@ -10,7 +10,8 @@ class Libpsl < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "c3ed5a885c0e35e34f83d5b6357e8350bbd2fd27e04bda452f46e6c91f9244cd"
+    manifest_sha256 "1a0c758e902040d4141919d36eda2143bf708a0ab97cc2bf968a269773ded8e8"
+    sha256 cellar: :any, tahoe: "7974baf175281f0f42c96b01763b7fb7fad82c4e035bfc75c8ee9b02a97b395c"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
