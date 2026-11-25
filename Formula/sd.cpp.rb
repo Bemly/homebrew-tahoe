@@ -7,6 +7,12 @@ class SdCpp < Formula
   license "MIT"
   compatibility_version 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "086341c734e524f9abd2a26c25e428bc381e0d59a1a4ef45502034cd09cc7db7"
+    sha256 cellar: :any_skip_relocation, tahoe: "ad96007091a0ad2606faf583bf07dc7d1fc91e0d76bbdb0eea9a145dfab444fe"
+  end
+
   depends_on "bemly/tahoe/cmake" => :build
   depends_on "bemly/tahoe/ninja" => :build
   depends_on "bemly/tahoe/pkgconf" => :build
