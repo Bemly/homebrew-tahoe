@@ -28,7 +28,7 @@ class Wabt < Formula
   # 11.44），本 tap 的 cmake 是官方 universal 包、已出 GHCR 瓶，秒装。裸名按
   # brew 6 的 FromNameLoader 永远解析到 core（11.27），故指向本 tap 必须写全名。
   depends_on "bemly/tahoe/cmake" => :build
-  # 运行时依赖走本源 fork-openssl@4 自瓶（keg_only），避免回落到 core 源码编译。
+  # 运行时依赖走本源 openssl@4 自瓶，避免回落到 core 源码编译。
   depends_on arch: :x86_64
   depends_on macos: :tahoe
   depends_on "bemly/tahoe/openssl@4"

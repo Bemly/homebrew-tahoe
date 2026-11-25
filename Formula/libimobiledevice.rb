@@ -3,7 +3,7 @@ class Libimobiledevice < Formula
   homepage "https://www.libimobiledevice.org/"
   # 代编译模式：上游只发源码，CI 现编出瓶；主软件，依赖方是 ideviceinstaller/
   # ifuse 等叶子。依赖全部自瓶化：glue/plist/tatsu/usbmuxd 走本 tap 全名，
-  # libtasn1 与 openssl@4 走本源 fork-* 自瓶，避免回落到 core 源码编译。
+  # libtasn1 与 openssl@4 走本源同名自瓶，避免回落到 core 源码编译。
   # revision 行与 core 同步：上游发新版时若 core 掉 revision，此行手工删。
   url "https://github.com/libimobiledevice/libimobiledevice/releases/download/1.4.0/libimobiledevice-1.4.0.tar.bz2"
   sha256 "23cc0077e221c7d991bd0eb02150a0d49199bcca1ddf059edccee9ffd914939d"

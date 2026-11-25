@@ -14,7 +14,7 @@ class X8664UnknownLinuxGnu < Formula
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
-  # 运行时依赖走本源 fork-* 与同名接管瓶（guile），用户端零源码编译。
+  # 运行时依赖走本源同名瓶（guile/xz/zstd），用户端零源码编译。
   depends_on arch: :x86_64
   depends_on "bemly/tahoe/bdw-gc"
   depends_on "bemly/tahoe/python@3.14"
@@ -29,7 +29,7 @@ class X8664UnknownLinuxGnu < Formula
     (prefix/"toolchain").install Dir["./*"]
     Dir.glob(prefix/"toolchain/bin/*") { |file| bin.install_symlink file }
 
-    # 预编译 gdb 硬编码链接了 core 的 python@3.14 与 xz，重指到本源 fork-* 避免拖入 core 依赖
+    # 预编译 gdb 硬编码链接了 core 的 python@3.14 与 xz，重指到本源同名瓶避免拖入 core 依赖
     gdb = prefix/"toolchain/bin/x86_64-unknown-linux-gnu-gdb"
     system "install_name_tool",
            "-change", "/usr/local/opt/python@3.14/Frameworks/Python.framework/Versions/3.14/Python",
