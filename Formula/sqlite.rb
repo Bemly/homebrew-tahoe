@@ -17,7 +17,8 @@ class Sqlite < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "e3e0f82bf19e2ea84ba8a463f873a95bba2909987ab3790193e90b97632faa2f"
+    manifest_sha256 "2d8321f8811215c01e34b39bdbcbaf22ed82cb5a911878e5282839333300e89b"
+    sha256 cellar: :any, tahoe: "ca945986385b7600f63b3c67b457a0ceb2d157080a43de7dd43ed2ff8ea92d34"
   end
 
   keg_only :provided_by_macos
