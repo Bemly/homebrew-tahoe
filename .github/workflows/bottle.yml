@@ -413,6 +413,8 @@ jobs:
             # 不存在的 /usr/local/opt/pkg-config/bin/pkg-config。
             if grep -q 'depends_on "bemly/tahoe/pkgconf"' "Formula/${f}.rb"; then
               export PKG_CONFIG="${BREW_PREFIX}/opt/pkgconf/bin/pkgconf"
+            else
+              unset PKG_CONFIG
             fi
             brew install --build-bottle "bemly/tahoe/$f"
             brew bottle --root-url="$ROOT_URL" --json "bemly/tahoe/$f"
