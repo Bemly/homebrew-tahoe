@@ -25,3 +25,7 @@
 
 # antigravity 成品构建产物
 .build/
+
+# GitHub Pages 构建与测试产物
+_site/
+.site-test-*/
