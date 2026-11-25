@@ -126,6 +126,7 @@ test("static build emits bilingual pages and valid internal links", async (conte
   const chinesePackages = await readFile(path.join(output, "zh/packages/index.html"), "utf8");
   assert.match(chinesePackages, /GitHub 官方命令行工具/);
   assert.match(chinesePackages, /AFM 拼音输入法/);
+  assert.match(chinesePackages, /<span class="type-badge cask">应用<\/span>/);
   const chineseFormula = await readFile(path.join(output, "zh/formula/gh/index.html"), "utf8");
   assert.match(chineseFormula, /GitHub 官方命令行工具/);
   const cask = packages.find((pkg) => pkg.type === "cask");
