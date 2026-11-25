@@ -14,7 +14,8 @@ class VulkanLoader < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "c37318b783770a38842d314449c2600a5b35eba65f0761b4105ea04510fc6aa6"
+    manifest_sha256 "973b33d09459af757b5c53c6f6c66b3f5e5242c8d4c9c7ee4e829c2da82be602"
+    sha256 cellar: :any, tahoe: "b1e2b6d493dff9ff5cd6dca1db6dc5adc667aa132158bbdd713dcf9e3cac1beb"
   end
 
   depends_on "bemly/tahoe/pkgconf" => :build
