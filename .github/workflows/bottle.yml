@@ -104,6 +104,15 @@ jobs:
           rm -rf "$(brew --cache)/api" "$(brew --repository)/Library/Taps/homebrew/homebrew-core"
           brew update
 
+      - name: 确保 Metal 工具链可用
+        run: |
+          set -euo pipefail
+          if ! xcrun metal -v >/dev/null 2>&1 || ! xcrun -f metallib >/dev/null 2>&1; then
+            xcodebuild -downloadComponent MetalToolchain
+          fi
+          xcrun metal -v
+          xcrun -f metallib
+
       # brew tap 默认是 clone，改动会落在克隆副本上导致提交丢失。
       # 用软链接指回工作区，brew bottle --merge --write 才能改到待提交的文件。
       - name: 把本仓软链进 Taps 目录
