@@ -1,6 +1,6 @@
 cask "toshllm" do
-  version "0.88.1"
-  sha256 "1f23c70f05038d0eba6a8c5a75fa120a2e0214af3ae4b1b90ae3dfc7a78a6470"
+  version "2026.11.24-ffbf427d"
+  sha256 "826771791e12aa36adb960eaa9ac7313e9ccdd453d831bb5398c089e63e3e5ae"
 
   # 源码构建自 Bemly/toshllm 的固定 commit，watcher 比较 main HEAD，
   # 落后时由 patched.yml 构建 dmg、上传本仓 Release 并回填版本/sha。
