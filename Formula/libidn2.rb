@@ -21,8 +21,8 @@ class Libidn2 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "498ea4746dfd3b0ef7ef996a2ceeec54ef82de5ef7593c96911255b3744d534a"
-    sha256 tahoe: "73ac5e66d660b8fb9b1ea9ac0bcd332d4385861f46ee082b0f1259018bacefc6"
+    manifest_sha256 "21db5ecd424feb6434624cb792e40ded486c90fb6261964d4c44bf1c9a1e5bdf"
+    sha256 tahoe: "24b8e2faf13c587876cfe41620648df608db5e9c30076767f8bb06a4dde62d1c"
   end
 
   head do
