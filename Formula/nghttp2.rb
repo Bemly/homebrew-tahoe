@@ -7,7 +7,8 @@ class Nghttp2 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any, tahoe: "fb8a9a37c67091459be3df5949fd593274d9812908c6f163c20c6e13a544062e"
+    manifest_sha256 "2eff732c4c7f64aea5b45f3e01bf4da2a212af6e9dce04080fb67de565f26e39"
+    sha256 cellar: :any, tahoe: "5f25d4a961c9c4988000adf5fafc15039c8deb1e5f1769a330cd2820669dd2d4"
   end
 
   head do
