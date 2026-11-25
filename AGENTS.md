@@ -306,10 +306,11 @@ cask 无 bottle 机制：watcher 检测到新版后下载发布包、上传本�
 1. 遍历 `Formula/*.rb` 与 `Casks/*.rb`，按同名匹配 `updater/<name>.swift`（11 个 pinned 包故意无检查器：`afm`、`amd`、`checkra1n`、`cmd`、`ffserver`、`heliport`、`llvm`、`macos-tskmgr`、`neofetch`、`palera1n`、`winstart`）。
 2. `swiftc -O updater/UpdaterCore.swift updater/<name>.swift` 编译并运行（每包 `timeout 600`）；默认 8 路并发执行（`WATCH_JOBS` 可覆盖），各包写独立日志与 `GITHUB_OUTPUT`；启动时先按队列打印检查序号，主循环再按原队列顺序等待并立即流式输出详细日志和状态，避免交叉输出。
 3. 本地版本优先取顶层 `version` 行（跳过 `fails_with` 块内），否则从 `url` 解析。
-4. 上游来源（优先级 `customRelease` > `raw` > `github` > `brew`）：
+4. 上游来源（优先级 `gitHead` > `customRelease` > `raw` > `github` > `brew`）：
 
 | 流 | 版本判据 | url / sha 来源 | 典型 |
 | --- | --- | --- | --- |
+| `gitHead` | 公式固定 commit 与自有 fork 指定分支 HEAD 的祖先关系 | `archive/<HEAD>.tar.gz`，下载实算 sha；快照版本为 `提交日期-短hash` | Bemly 的源码 fork |
 | `customRelease` | 检查器闭包调上游接口 / 页面 | 返回 `UpstreamRelease`（sha 置空则下载实算） | workbuddy、dsh-gui、qwen-ime、openjdk、swift、antigravity |
 | `raw` | 源 tap 公式 raw 文本 `version` | GoReleaser 结构（`rawDualArch` 同步双块） | opencode、sst、torpedo |
 | `github` | `HEAD releases/latest` 跳转 tag | 剥 `githubTagPrefix` 套 `downloadURL` 模板 | fzf、chisel、brewui、frida-server、交叉工具链 |
@@ -399,6 +400,7 @@ brew trust bemly/tahoe
 ### 11.3 Watcher 检查器与改写
 
 - **Swift 编译规则**：`updater/` 必须用 `swiftc -O` 编译执行；检查器构造实参必须严格与 `CheckConfig.init` 声明同序；HTTP header 解析统一用 `CharacterSet.newlines` 兼容 runner curl 的纯 `\r` 分隔；`github` 流只认含 `/tag/` 的 `Location` 跳转。
+- **自有 fork 的 hash 流**：`gitHeadRepo` 要求公式 url 固定 40 位 commit；`git ls-remote` 读取分支 HEAD，GitHub compare 的 `ahead` 表示主线领先、`behind` 表示本地领先、`diverged` 转人工同步。只有主线领先才下载归档、实算 SHA、改为 `YYYY.MM.DD-<shortsha>` 版本并走 `updated` → artifact → `bottle.yml`；compare 限流或 commit 不存在必须 `check-failed`，绝不能猜关系。
 - **版本解析与比较**：解析与改写 `version` 时跳过 `fails_with ... do ... end` 块；数字段按数值判等（兼容去零/补零，如 `yt-dlp`），预发布后缀小于正式版；raw 流先截 `on_linux` 并识别 `intel?` 块。
 - **sha 与改写安全**：brew JSON 的 `urls.stable.checksum` 只属于源码包（仅全量式可用），模板式必须读 `checksums.txt`（注意 `*` 前缀不匹配时置 `nil`）或下载实算；`customRelease` 与全量式整条替换 `url` 行（因此原本使用 `#{version}` 插值的镜像 cask 在 watcher 跑过后会变字面量，需保持插值时按需改回），模板式同步替换 `url` 与 `mirror` 版本子串及 `vX.Y/` 目录段；改写时摘除 `bottle do` 并折叠相邻多余空行、版本变更时清掉旧 `revision N`，且在内存自检通过后才落盘；含版本耦合资源/补丁列表的公式（`git`、`bash`、`readline`）通过 `manualSyncReason` 走 `status=manual-sync` 告警，无 `status` 输出一律视为失败还原。
 
