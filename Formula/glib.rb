@@ -3,8 +3,8 @@ class Glib < Formula
 
   desc "Core application library for C"
   homepage "https://docs.gtk.org/glib/"
-  url "https://download.gnome.org/sources/glib/2.90/glib-2.90.1.tar.xz"
-  sha256 "93c941aa17d5eb1d53fe838365f29a8b4e539c222a256d974ec8f30fc413e396"
+  url "https://download.gnome.org/sources/glib/2.90/glib-2.90.2.tar.xz"
+  sha256 "edf473b4f5ee70a31d2410622ee605dc4a2c8c46dbc0ec53c9abbaf3960232fd"
   license "LGPL-2.1-or-later"
   compatibility_version 1
 
@@ -15,8 +15,8 @@ class Glib < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "6df76e2152d0ac9c87c9c76db0cc829b9c006f173ee8e6253a454f261bd9126a"
-    sha256 tahoe: "ade0e7ac0f9a134a4973db708031731c7e6a9462f1b3b65389c3f68dd76d15c1"
+    manifest_sha256 "848c9b3ac16428233ae5d880239ea3eab46d02bfb06b699564e1c3a7bd7f5da9"
+    sha256 tahoe: "224ad7746863b27c60b43c89fc84e8d0075a5d7e732045ec938d49a8fb7aa6ec"
   end
 
   depends_on "bemly/tahoe/gettext" => :build
