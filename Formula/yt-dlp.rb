@@ -5,13 +5,14 @@ class YtDlp < Formula
   # 零 brew 依赖；此构建无补全参数，不硬凑补全文件；见 AGENTS.md §11.3）。
   # 文件名无版本但路径段是全版本（/download/2026.08.19/），brew 能正确扫出，
   # 故不写 version 行（写了判冗余；cmake 同例，先写后删）。
-  url "https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.26/yt-dlp_macos"
-  sha256 "0f922c15ccc0b83eefa1c8bc9104e434318c4bf16e408e1ee93b7745a6efe0aa"
+  url "https://github.com/yt-dlp/yt-dlp/releases/download/2026.11.23/yt-dlp_macos"
+  sha256 "57654854886d0398a798895aadf5173e2749fbb5e249b9f3728022ab376e11fb"
   license "Unlicense"
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "a773a8b66a96e5ac152b3b564c606be3b05298469445f5c9c688a9b842b14965"
+    manifest_sha256 "7923ea14e58ea3939e4ad1a71ac6e75e8a2247aea250ec99aa41e4b3cd61394a"
+    sha256 cellar: :any_skip_relocation, tahoe: "070bd7a4298643ef971641a63f60d5cbb59d6218118a6c57360cda806cf09a5c"
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
