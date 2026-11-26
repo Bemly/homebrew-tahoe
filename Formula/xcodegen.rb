@@ -1,14 +1,15 @@
 class Xcodegen < Formula
   desc "Generate your Xcode project from a spec file and your folder structure"
   homepage "https://github.com/yonaskolb/XcodeGen"
-  url "https://github.com/yonaskolb/XcodeGen/releases/download/2.48.0/xcodegen.zip"
-  sha256 "620c9f0dc10849f94728ab5df52d225ebab8187439dd6fee1925e59e80dff892"
+  url "https://github.com/yonaskolb/XcodeGen/releases/download/2.49.0/xcodegen.zip"
+  sha256 "ae5598b33a19ad1e23e775d6648f97375c3529c970905f489358a21055b65e53"
   license "MIT"
   compatibility_version 1
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "102978fcca524339bd3fae2e86d0a45a3ef7f7dd17fa9752b153b4c90b6da720"
+    manifest_sha256 "61cd46cedba5bbdd5b9420509a57d87977dfe29ebef1f899febee8323c4ce416"
+    sha256 cellar: :any_skip_relocation, tahoe: "1ffdf6bd88e61c1ef2122e6bee0167ce0abaadd7f4aa8602697e4ddd3696aa5e"
   end
 
   depends_on arch: :x86_64
