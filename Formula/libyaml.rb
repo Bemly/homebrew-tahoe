@@ -1,8 +1,8 @@
 class Libyaml < Formula
   desc "YAML Parser"
   homepage "https://github.com/yaml/libyaml"
-  url "https://github.com/yaml/libyaml/archive/refs/tags/0.2.5.tar.gz"
-  sha256 "fa240dbf262be053f3898006d502d514936c818e422afdcf33921c63bed9bf2e"
+  url "https://github.com/yaml/libyaml/archive/refs/tags/0.2.7.tar.gz"
+  sha256 "7f76964485c67dc4e1537fdfd4ad5c8772bcef501c5451b617e43f831034994e"
   license "MIT"
   compatibility_version 1
 
@@ -13,8 +13,8 @@ class Libyaml < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "6c1e9a6f09d046bf5a0f4bd0d8c3208731af01515584cb7bff7fd0f99de362b8"
-    sha256 cellar: :any, tahoe: "781953be424e02dcce486617441dae38b2a65efc7b69781481b54d71fa424125"
+    manifest_sha256 "f3de5d5a33c398b438f56419504f433ebe14f300b09055d5dcbfe3e996992e4b"
+    sha256 cellar: :any, tahoe: "29f028beb528e64148f428084f33549acda52a95cd551570b374e61aff40ad86"
   end
 
   depends_on "autoconf" => :build
