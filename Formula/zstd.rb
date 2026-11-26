@@ -1,16 +1,15 @@
 class Zstd < Formula
   desc "Zstandard is a real-time compression algorithm"
   homepage "https://facebook.github.io/zstd/"
-  url "https://github.com/facebook/zstd/archive/refs/tags/v1.5.7.tar.gz"
-  mirror "http://fresh-center.net/linux/misc/zstd-1.5.7.tar.gz"
-  mirror "http://fresh-center.net/linux/misc/legacy/zstd-1.5.7.tar.gz"
-  sha256 "37d7284556b20954e56e1ca85b80226768902e2edabd3b649e9e72c0c9012ee3"
+  url "https://github.com/meta/zstd/archive/refs/tags/v1.6.0.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/zstd-1.6.0.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/legacy/zstd-1.6.0.tar.gz"
+  sha256 "289bb207935e5b4f241239f9832e665fa6b9636c3f87f479e125371e13842b8e"
   license all_of: [
     { any_of: ["BSD-3-Clause", "GPL-2.0-only"] },
     "BSD-2-Clause", # programs/zstdgrep, lib/libzstd.pc.in
     "MIT", # lib/dictBuilder/divsufsort.c
   ]
-  revision 1
   compatibility_version 1
 
   head "https://github.com/facebook/zstd.git", branch: "dev"
@@ -22,8 +21,8 @@ class Zstd < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "292dc8c6d055e8f9a8bfe0490618781cb6a22fddc9fd1c2c574d3343d9e72768"
-    sha256 cellar: :any, tahoe: "2e835c2a62db7432421525be7965d258ffa46ab724873742ce7a74579fe4725a"
+    manifest_sha256 "54d3dbdb956c0bf28c52c02834affc8f15f81b23f2215ddc337bc79e9da459d9"
+    sha256 cellar: :any, tahoe: "67490135d0e9731e5d6a7e7e17898f4afadeeb4bae39ec7dad652c8c2caddb4c"
   end
 
 
