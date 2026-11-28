@@ -3,15 +3,15 @@ class FridaServer < Formula
   homepage "https://frida.re"
   # frida-server 是 frida/frida 发布的裸二进制（macOS 侧只有 .xz 格式，无
   # checksums 清单——sha 由检查器下载实算）。xz 内是单文件、无顶层目录。
-  url "https://github.com/frida/frida/releases/download/17.28.0/frida-server-17.28.0-macos-x86_64.xz"
-  sha256 "73d089eb197dc91007da37c16c917dfc8327daf8ac19c9892bb61d4734fc754b"
+  url "https://github.com/frida/frida/releases/download/17.28.1/frida-server-17.28.1-macos-x86_64.xz"
+  sha256 "43b0fa76927557754c019253aca2a43148fcf44dc9d8dc9ae7b87c6fa4a15d6d"
   # 根 COPYING 是 wxWindows Library Licence 3.1（= LGPL-2.1 + 静态链接例外）。
   license "LGPL-2.1-only" => { with: "WxWindows-exception-3.1" }
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    manifest_sha256 "6b04c9bfda4384f514c11ecef1faf81a20b2ce9a5711fa053e572269e7af5bf0"
-    sha256 cellar: :any_skip_relocation, tahoe: "91c1f15e9e5275f189eb75071b840d796fb40c1a2f505b6b7fa90cf3f5e5437e"
+    manifest_sha256 "ca4cc173bd5710f20b0e0b3d4d6efd6010bd7c9089c756f8169d9225e92b6346"
+    sha256 cellar: :any_skip_relocation, tahoe: "044582dbf838bd4f49ca98865fdd7ae6e2f5bb929911eb0627f8d8be518c3dfb"
   end
 
   # brew 解 .xz 的 UnpackStrategy::Xz 硬依赖 xz 公式（unpack_strategy/xz.rb
