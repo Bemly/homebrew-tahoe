@@ -5,13 +5,14 @@ class DockerCompose < Formula
   # brew 按未压缩文件处理，直接改名装进 bin）。
   # 版本号由 brew 从 URL（含路径段）扫描得出，实测文件名里的 x86_64 与
   # 无版本文件名都不影响扫描，不重复声明 version（否则 audit 判为冗余）。
-  url "https://github.com/docker/compose/releases/download/v5.8.0/docker-compose-darwin-x86_64"
-  sha256 "5c41cd573c549dc66abb03c5b29d6d4dfaae206b2e79848d1c32482bb2a3b416"
+  url "https://github.com/docker/compose/releases/download/v5.8.1/docker-compose-darwin-x86_64"
+  sha256 "59ddcb7f6a077b2b11b361fca4c62a1de20fd44054ec6c98188c9bb993db4fbb"
   license "Apache-2.0"
 
   bottle do
     root_url "https://ghcr.io/v2/bemly/tahoe"
-    sha256 cellar: :any_skip_relocation, tahoe: "fe048fb014c53ef1de473a221ee055baa4156de60b228cdc09a14d34cfeaa2d8"
+    manifest_sha256 "0133f759b459a07f58dc6ceb7b3773ff3f4e048cb65120e8b2611dc642a8f67b"
+    sha256 cellar: :any_skip_relocation, tahoe: "c69e31817c3f3ff6c00ae608f9ce0c70d589f4ce71c282b435451c2efc97311d"
   end
 
   # 本 tap 只收录 Intel(x86_64) + macOS 26(Tahoe) 及以上可用的二进制。
