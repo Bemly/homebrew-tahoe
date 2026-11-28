@@ -50,9 +50,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## 收录的软件
 
-> 共收录 **153 个公式**（61 个预编译直引 + 92 个源码代编译）与 **26 个 cask**。
+> 共收录 **154 个公式**（62 个预编译直引 + 92 个源码代编译）与 **26 个 cask**。
 
-### CLI 与开发工具 — 预编译直引公式（61 个）
+### CLI 与开发工具 — 预编译直引公式（62 个）
 
 | 软件 | 说明 |
 | --- | --- |
@@ -114,6 +114,7 @@ brew install --cask bemly/tahoe/antigravity
 | `torpedo` | `sst/torpedo` VPC 数据库访问工具，取 `anomalyco/homebrew-tap` 的 Intel 段（`torpedo-mac-x86_64.tar.gz`） |
 | `x86_64-unknown-linux-gnu` | 面向 x86_64 Linux 的 GCC 交叉工具链（Intel host 预编译，thin x86_64）；运行时依赖走本源 `guile`、`python@3.14`、`bdw-gc`、`xz`、`zstd` |
 | `xcodegen` | 按配置文件生成 Xcode 工程，取官方 universal 预编译包（`xcodegen.zip`，含 `SettingPresets`，零依赖）；与 core 同名 |
+| `xcodes` | 安装与切换 Xcode 版本，取官方 universal 预编译包（`xcodes.zip`，Developer ID 签名并经公证，零依赖）；与 core 同名（core 无 Intel 瓶、会源码编译） |
 | `yt-dlp` | 音视频下载器，上游 universal macOS 单二进制（零依赖，不拖整套 Python 栈） |
 | `z3` | 高性能定理证明器，官方 macOS x64 预编译包（`z3-<ver>-x64-osx-13.3.zip`，零依赖）；与 core 同名 |
 | `zig` | Zig 工具链，官方 `zig-x86_64-macos-<ver>.tar.xz`（Intel host）；与 core 同名 |

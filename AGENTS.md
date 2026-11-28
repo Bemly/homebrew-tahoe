@@ -43,7 +43,7 @@ Homebrew 官方从 macOS 26 起不再构建 `x86_64_tahoe` bottle（core 中为 
 homebrew-tahoe/
 ├── AGENTS.md                          # 本文件：开发约定与索引
 ├── README.md / README.zh.md           # 面向用户的使用说明（英文 / 中文）
-├── Formula/                           # 153 个公式（61 个预编译 + 92 个源码）
+├── Formula/                           # 154 个公式（62 个预编译 + 92 个源码）
 ├── Casks/                             # 26 个 cask（桌面 app / 输入法）
 ├── Patches/                           # glib / libssh2 / libtool / python 补丁
 ├── Widgets/antigravity-niang/         # antigravity 补丁成品构建（挂件源码 + asar 工具 + build.sh）
@@ -51,7 +51,7 @@ homebrew-tahoe/
 ├── audit_exceptions/                  # 装后 audit 豁免（mismatched_binary_allowlist.json）
 ├── updater/
 │   ├── UpdaterCore.swift              # 检查器共享核心（版本来源 / 比对 / 改写 / 输出协议）
-│   └── <name>.swift                   # 167 个检查器入口，与 Formula|Casks 一一同名
+│   └── <name>.swift                   # 168 个检查器入口，与 Formula|Casks 一一同名
 └── .github/workflows/
     ├── watch-updates.yml              # 每日自动 + 手动触发的批量版本 watcher（ubuntu-latest + Swift）
     ├── bottle.yml                     # 手动触发的制瓶 + 推 GHCR（macos-26-intel）
@@ -103,7 +103,7 @@ end
 
 ## 6. 当前收录
 
-> **153 个公式（61 个预编译直引 + 92 个源码包）**，`updater/` 共 167 个检查器（另有 `UpdaterCore.swift`）。
+> **154 个公式（62 个预编译直引 + 92 个源码包）**，`updater/` 共 168 个检查器（另有 `UpdaterCore.swift`）。
 
 ### 6.1 预编译直引（上游 macOS Intel 包）
 
@@ -167,6 +167,7 @@ end
 | `torpedo` | 0.0.13 | anomalyco raw（Intel 段） | 无版本命令，不做版本自检 |
 | `x86_64-unknown-linux-gnu` | 15.2.0 | messense 预编译（Intel host） | 203MB；`.sha256` sidecar；运行时依赖走本源 `guile`/`python@3.14`/`xz`/`zstd` |
 | `xcodegen` | 2.48.0 | GitHub `xcodegen.zip` | 官方 universal 预编译（二进制 + `SettingPresets`）；github 流；与 core 同名 |
+| `xcodes` | 2.2.1 | GitHub `xcodes.zip` | 官方 universal 预编译（Developer ID 签名 + 公证）；github 流 tag 无 v；与 core 同名（core 无 Intel 瓶、会源码编译） |
 | `yt-dlp` | 2026.10.26 | GitHub `yt-dlp_macos` 单二进制 | universal；零依赖；brew 模板流 |
 | `z3` | 5.3.3 | 官方 `z3-<ver>-x64-osx-13.3.zip` | 预编译；显式 version（URL 会扫成 13.3） |
 | `zig` | 0.17.1 | 官方 `zig-x86_64-macos-<ver>.tar.xz` | 预编译；与 core 同名 |

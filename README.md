@@ -61,9 +61,9 @@ brew install --cask bemly/tahoe/antigravity
 
 ## Packages
 
-> Total: **153 formulae** (61 prebuilt + 92 source-built) and **26 casks**.
+> Total: **154 formulae** (62 prebuilt + 92 source-built) and **26 casks**.
 
-### CLI & Developer Tools — Prebuilt Formulae (61)
+### CLI & Developer Tools — Prebuilt Formulae (62)
 
 | Package | Notes |
 | --- | --- |
@@ -125,6 +125,7 @@ brew install --cask bemly/tahoe/antigravity
 | `torpedo` | `sst/torpedo` VPC database access tool, Intel-only slice of `anomalyco/homebrew-tap` (`torpedo-mac-x86_64.tar.gz`) |
 | `x86_64-unknown-linux-gnu` | GCC cross toolchain for x86_64 Linux (Intel host prebuilt, thin x86_64); runtime deps use this tap's `guile`, `python@3.14`, `bdw-gc`, `xz`, and `zstd` |
 | `xcodegen` | Generate Xcode projects from a spec file, official universal prebuilt (`xcodegen.zip` with `SettingPresets`, zero dependencies); same-name conflict with core |
+| `xcodes` | Install and switch between Xcode versions, official universal prebuilt (`xcodes.zip`, Developer ID-signed and notarized, zero dependencies); same-name conflict with core (core has no Intel bottle and builds from source) |
 | `yt-dlp` | Feature-rich audio/video downloader, upstream universal macOS binary (zero dependencies; avoids pulling a full Python stack) |
 | `z3` | Theorem prover, official macOS x64 prebuilt (`z3-<ver>-x64-osx-13.3.zip`, zero dependencies); same-name conflict with core |
 | `zig` | Zig toolchain, official `zig-x86_64-macos-<ver>.tar.xz` (Intel host); same-name conflict with core |
