@@ -7,6 +7,12 @@ class Xcodes < Formula
   sha256 "b7e60a095dcba4235a4634e6c996dbb7bbb65e3b580c79c3ed7eb5cf02e57ce3"
   license "MIT"
 
+  bottle do
+    root_url "https://ghcr.io/v2/bemly/tahoe"
+    manifest_sha256 "684ea9cfc1491793c6bf37bd6671fc6be3cf913f63b4a968c88694ea0c4feb8a"
+    sha256 cellar: :any_skip_relocation, tahoe: "bf81860174f6c3175f836127621b5d31ab8a0d78a0eb87eb28ff26a6f872ab59"
+  end
+
   depends_on arch: :x86_64
   depends_on macos: :tahoe
 
