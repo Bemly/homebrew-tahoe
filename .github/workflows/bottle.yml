@@ -392,6 +392,11 @@ jobs:
             # 加 --ignore-dependencies 是因为 brew 会以「被其它已装包依赖」为由拒绝卸载
             # （如镜像预装的 ca-certificates）；runner 是一次性环境，强卸安全。
             brew uninstall --force --ignore-dependencies "$f" 2>/dev/null || true
+            # 同名 cask 提供的 bin 链接不会随公式卸载消失（实测 xcodes-app 的
+            # /usr/local/bin/xcodes 在 cask 卸载后残留，阻塞本仓公式的 brew link，
+            # 报 "brew link step did not complete successfully"）。runner 是一次性
+            # 环境，直接删掉与公式同名的残留链接再装，避免 link 冲突。
+            rm -f "${BREW_PREFIX}/bin/${f}" 2>/dev/null || true
             # 构建工具走 PATH（llvm/z3，见 AGENTS.md §11.2）：公式里用 system "cmake"
             # 但刻意不声明 cmake 依赖——树里可能已有 core 依赖拖入裸 cmake，再挂全名会让
             # 同一 Cellar 名以两个 full_name 进锁数组，macOS flock 同进程双开自锁。
